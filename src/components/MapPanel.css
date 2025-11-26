@@ -1,0 +1,72 @@
+.map-panel {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.current-map h3 {
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.map-description {
+  color: #666;
+  margin-bottom: 10px;
+}
+
+.map-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.85em;
+  font-weight: bold;
+}
+
+.map-badge.safe {
+  background: #4caf50;
+  color: white;
+}
+
+.map-badge.wild {
+  background: #ff9800;
+  color: white;
+}
+
+.connected-maps {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.connected-maps h4 {
+  margin-bottom: 10px;
+  color: #333;
+  font-size: 0.9em;
+}
+
+.map-button {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 8px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: bold;
+}
+
+.map-button:hover:not(:disabled) {
+  background: #764ba2;
+  transform: translateY(-2px);
+}
+
+.map-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+

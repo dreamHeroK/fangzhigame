@@ -1,0 +1,113 @@
+.action-panel {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  align-items: center;
+}
+
+.skill-selector {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.skill-select {
+  padding: 10px;
+  border-radius: 6px;
+  border: 2px solid #667eea;
+  background: white;
+  font-size: 0.9em;
+  cursor: pointer;
+  min-width: 180px;
+}
+
+.skill-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.medicine-selector {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.medicine-select {
+  padding: 10px;
+  border-radius: 6px;
+  border: 2px solid #4caf50;
+  background: white;
+  font-size: 0.9em;
+  cursor: pointer;
+  min-width: 180px;
+}
+
+.medicine-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-medicine {
+  background: linear-gradient(135deg, #4caf50, #8bc34a);
+  color: white;
+}
+
+.btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+}
+
+.btn-attack {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+  color: white;
+}
+
+.btn-defend {
+  background: linear-gradient(135deg, #4ecdc4, #44a08d);
+  color: white;
+}
+
+.btn-skill {
+  background: linear-gradient(135deg, #f093fb, #f5576c);
+  color: white;
+}
+
+.btn-capture {
+  background: linear-gradient(135deg, #4facfe, #00f2fe);
+  color: white;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (max-width: 768px) {
+  .action-panel {
+    flex-direction: column;
+  }
+  
+  .btn {
+    width: 100%;
+  }
+}
+

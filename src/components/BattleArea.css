@@ -1,0 +1,76 @@
+.battle-area {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 10px;
+  padding: 30px;
+  margin-bottom: 20px;
+  min-height: 300px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.monsters-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  justify-content: center;
+}
+
+.no-monsters {
+  text-align: center;
+  color: #666;
+  font-size: 1.2em;
+  padding: 50px;
+}
+
+.monster {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+  border-radius: 10px;
+  padding: 15px;
+  min-width: 120px;
+  text-align: center;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.monster:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.monster.selected {
+  border: 3px solid yellow;
+  box-shadow: 0 0 15px yellow;
+}
+
+.monster.dead {
+  opacity: 0.5;
+  filter: grayscale(100%);
+}
+
+.monster-name {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.monster-hp {
+  font-size: 0.8em;
+  margin-top: 5px;
+}
+
+.monster-hp-bar {
+  width: 100%;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  margin-top: 5px;
+  overflow: hidden;
+}
+
+.monster-hp-fill {
+  height: 100%;
+  background: #4caf50;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
