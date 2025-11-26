@@ -11,7 +11,16 @@ const elements = [
 ]
 
 function CharacterSelect() {
-  const { setPlayer, setMoney, setInventory } = useGame()
+  const { 
+    setPlayer, 
+    setMoney, 
+    setInventory, 
+    setElementPoints, 
+    setEquipmentInventory, 
+    setEquippedItems,
+    loadGame,
+    hasSavedGame 
+  } = useGame()
 
   const handleSelect = (element) => {
     // 所有角色初始属性相同：力量、体质、灵力、敏捷各5点
@@ -49,7 +58,6 @@ function CharacterSelect() {
     setPlayer(player)
     
     // 初始化金钱和物品
-    const { setMoney, setInventory, setElementPoints, setEquipmentInventory, setEquippedItems } = useGame()
     setMoney(1000)
     setInventory({
       'small_hp': 5, // 初始给5个小还丹
@@ -60,10 +68,23 @@ function CharacterSelect() {
     setEquippedItems({})
   }
 
+  const handleLoadGame = () => {
+    if (hasSavedGame && window.confirm('确定要加载存档吗？这将覆盖当前选择。')) {
+      loadGame()
+    }
+  }
+
   return (
     <div className="character-select">
       <div className="container">
         <h1>选择你的角色</h1>
+        {hasSavedGame && (
+          <div className="load-save-prompt">
+            <button className="btn-load-save" onClick={handleLoadGame}>
+              加载存档
+            </button>
+          </div>
+        )}
         <div className="character-grid">
           {elements.map(({ element, icon, name, desc }) => (
             <div

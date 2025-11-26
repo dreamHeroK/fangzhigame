@@ -1,4 +1,7 @@
 .map-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   background: rgba(255, 255, 255, 0.95);
   border-radius: 10px;
   padding: 20px;
@@ -68,5 +71,14 @@
 .map-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.map-button.shop-button {
+  margin-top: 12px;
+  background: linear-gradient(135deg, #4caf50, #66bb6a);
+}
+
+.map-button.shop-button:hover:not(:disabled) {
+  background: #43a047;
 }
 

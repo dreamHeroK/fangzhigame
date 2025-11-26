@@ -3,16 +3,28 @@ import { getAllMedicines } from './items'
 import { getMonsterTemplates } from './monsters'
 import { calculateBattleStats } from './attributeCalc'
 
+const BABY_CHANCE = 0.15
+const BABY_GROWTH = 1.4
+
+const applyGrowth = (value = 0, multiplier = 1) => Math.max(1, Math.round(value * multiplier))
+
 export function generateMonsters(player, currentMap = '揽仙镇外') {
-  const count = Math.floor(Math.random() * 10) + 1 // 1-10随机
   const monsters = []
 
   const mapData = maps[currentMap]
+  if (!mapData || mapData.type === 'safe') {
+    return monsters
+  }
+
   let levelRange = { min: 1, max: 5 }
   
   if (mapData && mapData.monsterLevel) {
     levelRange = mapData.monsterLevel
   }
+
+  const groupSize = mapData.monsterGroupSize || { min: 1, max: 2 }
+  const groupCountRange = Math.max(groupSize.max - groupSize.min + 1, 1)
+  const count = groupSize.min + Math.floor(Math.random() * groupCountRange)
 
   // 获取该地图的怪物模板
   const templates = getMonsterTemplates(currentMap)
@@ -25,26 +37,29 @@ export function generateMonsters(player, currentMap = '揽仙镇外') {
   for (let i = 0; i < count; i++) {
     // 随机选择一个模板
     const template = templates[Math.floor(Math.random() * templates.length)]
+    const isBaby = Math.random() < BABY_CHANCE
     // 如果模板有固定等级，使用固定等级；否则随机等级
     const baseLevel = template.fixedLevel || 
       Math.max(1, levelRange.min + Math.floor(Math.random() * (levelRange.max - levelRange.min + 1)))
+    const finalLevel = isBaby ? 1 : baseLevel
+    const growthMultiplier = isBaby ? BABY_GROWTH : 1
 
     // 根据基础属性计算战斗属性（确保包含所有四个属性）
     const monsterBaseAttrs = {
-      strength: template.baseStats.strength || 0,
-      constitution: template.baseStats.constitution || 0,
-      spirit: template.baseStats.spirit || 0,
-      agility: template.baseStats.agility || 0,
+      strength: applyGrowth(template.baseStats.strength, growthMultiplier),
+      constitution: applyGrowth(template.baseStats.constitution, growthMultiplier),
+      spirit: applyGrowth(template.baseStats.spirit, growthMultiplier),
+      agility: applyGrowth(template.baseStats.agility, growthMultiplier),
     }
-    const battleStats = calculateBattleStats(monsterBaseAttrs, baseLevel)
+    const battleStats = calculateBattleStats(monsterBaseAttrs, finalLevel)
 
     const monster = {
       id: i,
       type: template.type,
       element: template.element,
-      name: `${template.name}${i + 1}`,
+      name: isBaby ? `宝宝${template.name}` : `${template.name}${i + 1}`,
       icon: template.icon,
-      level: baseLevel,
+      level: finalLevel,
       attackType: template.attackType,
       skills: template.skills ? [...template.skills] : [],
       mp: battleStats.maxMp,
@@ -58,6 +73,8 @@ export function generateMonsters(player, currentMap = '揽仙镇外') {
       ...battleStats,
       hp: battleStats.maxHp,
       captured: false,
+      isBaby,
+      rarity: isBaby ? 'baby' : 'normal',
     }
 
     monsters.push(monster)
@@ -75,24 +92,27 @@ function generateDefaultMonsters(player, currentMap, count, levelRange) {
     const element = elements[Math.floor(Math.random() * elements.length)]
     const level = levelRange.min + Math.floor(Math.random() * (levelRange.max - levelRange.min + 1))
     const baseLevel = Math.max(1, level)
+    const isBaby = Math.random() < BABY_CHANCE
+    const finalLevel = isBaby ? 1 : baseLevel
+    const growthMultiplier = isBaby ? BABY_GROWTH : 1
 
     // 使用默认基础属性
     const baseStats = {
-      strength: 3,
-      constitution: 3,
-      spirit: 3,
-      agility: 4,
+      strength: applyGrowth(3, growthMultiplier),
+      constitution: applyGrowth(3, growthMultiplier),
+      spirit: applyGrowth(3, growthMultiplier),
+      agility: applyGrowth(4, growthMultiplier),
     }
 
-    const battleStats = calculateBattleStats(baseStats, baseLevel)
+    const battleStats = calculateBattleStats(baseStats, finalLevel)
 
     const monster = {
       id: i,
       type: 'default',
       element: element,
-      name: `${element}系怪物${i + 1}`,
+      name: isBaby ? `宝宝${element}兽` : `${element}系怪物${i + 1}`,
       icon: '👹',
-      level: baseLevel,
+      level: finalLevel,
       attackType: 'physical',
       skills: [],
       mp: battleStats.maxMp,
@@ -104,6 +124,8 @@ function generateDefaultMonsters(player, currentMap, count, levelRange) {
       ...battleStats,
       hp: battleStats.maxHp,
       captured: false,
+      isBaby,
+      rarity: isBaby ? 'baby' : 'normal',
     }
 
     monsters.push(monster)

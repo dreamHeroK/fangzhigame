@@ -18,7 +18,7 @@ const elementIcons = {
   earth: '⛰️',
 }
 
-function ElementPanel({ onClose }) {
+function ElementPanel({ onClose, embedded = false }) {
   const { player, elementPoints, setElementPoints } = useGame()
   const [tempPoints, setTempPoints] = useState(null)
 
@@ -51,17 +51,22 @@ function ElementPanel({ onClose }) {
 
   const saveElementPoints = () => {
     setElementPoints(tempPoints)
-    onClose()
+    if (!embedded) {
+      onClose()
+    }
   }
 
   const totalPoints = Object.values(tempPoints).reduce((sum, val) => sum + val, 0)
   const maxPoints = player.level * 2
 
-  return (
-    <div className="modal active" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <span className="close" onClick={onClose}>&times;</span>
-        <h2>相性点分配</h2>
+  const content = (
+    <>
+      {!embedded && (
+        <>
+          <span className="close" onClick={onClose}>&times;</span>
+          <h2>相性点分配</h2>
+        </>
+      )}
         <div className="element-panel-content">
           <p className="points-info">
             已分配: {totalPoints} / {maxPoints} 点
@@ -105,6 +110,17 @@ function ElementPanel({ onClose }) {
             保存
           </button>
         </div>
+    </>
+  )
+
+  if (embedded) {
+    return <div className="element-panel-embedded">{content}</div>
+  }
+
+  return (
+    <div className="modal active" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        {content}
       </div>
     </div>
   )

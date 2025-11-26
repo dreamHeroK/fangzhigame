@@ -57,6 +57,14 @@
   color: #333;
 }
 
+.attr-panel-embedded {
+  width: 100%;
+}
+
+.attr-panel-embedded .attr-panel-content {
+  padding: 0;
+}
+
 .attr-panel-content {
   margin-top: 20px;
 }

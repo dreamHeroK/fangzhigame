@@ -4,7 +4,7 @@ import { calculateBattleStats } from '../utils/attributeCalc'
 import { getAllEquipmentStats } from '../utils/equipment'
 import './AttributePanel.css'
 
-function AttributePanel({ onClose }) {
+function AttributePanel({ onClose, embedded = false }) {
   const { player, setPlayer, elementPoints, equippedItems } = useGame()
   const [tempAttributes, setTempAttributes] = useState(null)
 
@@ -88,7 +88,9 @@ function AttributePanel({ onClose }) {
     }
 
     setPlayer(updatedPlayer)
-    onClose()
+    if (!embedded) {
+      onClose()
+    }
   }
 
   const canDecrease = (attr) => {
@@ -111,13 +113,16 @@ function AttributePanel({ onClose }) {
     equipmentStats
   )
 
-  return (
-    <div className="modal active" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <span className="close" onClick={onClose}>
-          &times;
-        </span>
-        <h2>属性加点</h2>
+  const content = (
+    <>
+      {!embedded && (
+        <>
+          <span className="close" onClick={onClose}>
+            &times;
+          </span>
+          <h2>属性加点</h2>
+        </>
+      )}
         <div className="attr-panel-content">
           <div className="attr-control">
             <label>力量:</label>
@@ -212,6 +217,17 @@ function AttributePanel({ onClose }) {
             保存
           </button>
         </div>
+    </>
+  )
+
+  if (embedded) {
+    return <div className="attr-panel-embedded">{content}</div>
+  }
+
+  return (
+    <div className="modal active" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        {content}
       </div>
     </div>
   )

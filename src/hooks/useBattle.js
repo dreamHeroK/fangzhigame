@@ -3,6 +3,7 @@ import { generateMonsters, generateDrops } from '../utils/gameUtils'
 import { isAdvantageous } from '../utils/sects'
 import { updatePlayerBattleStats } from '../utils/attributeCalc'
 import { getAllEquipmentStats } from '../utils/equipment'
+import { maps } from '../utils/maps'
 
 export function useBattle() {
   const {
@@ -30,8 +31,17 @@ export function useBattle() {
 
   const startBattle = () => {
     if (inBattle) return
+    const mapData = maps[currentMap]
+    if (!mapData || mapData.type === 'safe') {
+      addLog('这里是安全区，无法战斗！')
+      return
+    }
 
     const newMonsters = generateMonsters(player, currentMap)
+    if (!newMonsters.length) {
+      addLog('这里没有怪物可以挑战。')
+      return
+    }
     setMonsters(newMonsters)
     setInBattle(true)
     setPlayerTurn(true)

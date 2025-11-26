@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useGame } from '../context/GameContext'
 import { useBattle } from '../hooks/useBattle'
 import { getAllMedicines } from '../utils/items'
+import { maps } from '../utils/maps'
 import './ActionPanel.css'
 
 const elementIcons = {
@@ -13,10 +14,36 @@ const elementIcons = {
 }
 
 function ActionPanel() {
-  const { inBattle, playerTurn, selectedMonster, player, inventory, setInventory } = useGame()
+  const {
+    inBattle,
+    playerTurn,
+    selectedMonster,
+    setSelectedMonster,
+    player,
+    inventory,
+    autoSettings,
+    setAutoSettings,
+    currentMap,
+    monsters,
+  } = useGame()
   const { startBattle, playerAttack, playerDefend, playerSkill, captureMonster, useMedicine } = useBattle()
   const [selectedSkill, setSelectedSkill] = useState(null)
   const [selectedMedicine, setSelectedMedicine] = useState(null)
+  const playerAttackRef = useRef(playerAttack)
+  const playerSkillRef = useRef(playerSkill)
+  const captureMonsterRef = useRef(captureMonster)
+
+  useEffect(() => {
+    playerAttackRef.current = playerAttack
+  }, [playerAttack])
+
+  useEffect(() => {
+    playerSkillRef.current = playerSkill
+  }, [playerSkill])
+
+  useEffect(() => {
+    captureMonsterRef.current = captureMonster
+  }, [captureMonster])
 
   const handleSkillClick = () => {
     if (!selectedSkill && player?.skills && player.skills.length > 0) {
@@ -29,13 +56,71 @@ function ActionPanel() {
 
   const learnedSkills = player?.skills || []
   const availableMedicines = getAllMedicines().filter(med => (inventory[med.id] || 0) > 0)
+  const isSafeZone = maps[currentMap]?.type === 'safe'
+
+  useEffect(() => {
+    if (!autoSettings.autoBattle || !inBattle || !playerTurn || !player) return
+
+    const aliveMonsters = (monsters || []).filter(m => m.hp > 0)
+    if (!aliveMonsters.length) return
+
+    if (!selectedMonster || selectedMonster.hp <= 0) {
+      setSelectedMonster(aliveMonsters[0])
+      return
+    }
+
+    if (
+      autoSettings.autoCapture &&
+      selectedMonster.hp > 0 &&
+      selectedMonster.maxHp > 0 &&
+      selectedMonster.hp / selectedMonster.maxHp <= 0.3
+    ) {
+      captureMonsterRef.current()
+      return
+    }
+
+    const autoSkill = learnedSkills.find(skill => skill.id === autoSettings.autoSkillId)
+    if (autoSkill && player.mp >= autoSkill.mpCost) {
+      playerSkillRef.current(autoSkill)
+    } else {
+      playerAttackRef.current()
+    }
+  }, [
+    autoSettings,
+    inBattle,
+    playerTurn,
+    selectedMonster,
+    monsters,
+    learnedSkills,
+    player,
+    setSelectedMonster,
+  ])
+
+  const handleAutoSettingsChange = (key, value) => {
+    setAutoSettings(prev => ({
+      ...prev,
+      [key]: value,
+    }))
+  }
 
   return (
     <div className="action-panel">
       {!inBattle ? (
-        <button className="btn btn-primary" onClick={startBattle}>
-          开始战斗
-        </button>
+        <div className="pre-battle-actions">
+          <button
+            className="btn btn-primary"
+            onClick={startBattle}
+            disabled={isSafeZone}
+            title={isSafeZone ? '安全区无法战斗' : ''}
+          >
+            开始战斗
+          </button>
+          {isSafeZone && (
+            <div className="safe-hint">
+              安全区无法战斗，请前往野外地图。
+            </div>
+          )}
+        </div>
       ) : (
         <>
           <button
@@ -128,6 +213,47 @@ function ActionPanel() {
           )}
         </>
       )}
+      <div className="auto-settings-panel">
+        <div className="auto-settings-header">自动战斗设置</div>
+        <label className="auto-checkbox">
+          <input
+            type="checkbox"
+            checked={autoSettings.autoBattle}
+            onChange={(e) => handleAutoSettingsChange('autoBattle', e.target.checked)}
+          />
+          启用自动战斗
+        </label>
+        <label className="auto-checkbox">
+          <input
+            type="checkbox"
+            checked={autoSettings.autoCapture}
+            onChange={(e) => handleAutoSettingsChange('autoCapture', e.target.checked)}
+          />
+          自动捕捉（血量≤30%）
+        </label>
+        <div className="auto-skill-selector">
+          <span>优先技能:</span>
+          <select
+            className="skill-select"
+            value={autoSettings.autoSkillId ?? ''}
+            onChange={(e) =>
+              handleAutoSettingsChange(
+                'autoSkillId',
+                e.target.value ? parseInt(e.target.value, 10) : null
+              )
+            }
+            disabled={learnedSkills.length === 0}
+          >
+            <option value="">普通攻击</option>
+            {learnedSkills.map(skill => (
+              <option key={skill.id} value={skill.id}>
+                {elementIcons[skill.element]} {skill.name} ({skill.mpCost}MP)
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="auto-tip">若法力不足，自动改用物理攻击。</div>
+      </div>
     </div>
   )
 }

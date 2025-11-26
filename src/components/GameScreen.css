@@ -1,25 +1,55 @@
 .game-screen {
   min-height: 100vh;
   padding: 20px;
+  padding-bottom: 100px; /* 为底部固定按钮留出空间 */
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  flex-direction: column;
 }
 
-.game-header {
-  display: flex;
+/* 顶部：地图、战斗区域、战斗属性和战斗操作 */
+.game-top-section {
+  margin-bottom: 20px;
+}
+
+.map-battle-container {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
   gap: 20px;
   margin-bottom: 20px;
-  flex-wrap: wrap;
+  align-items: stretch;
 }
 
-.shop-button-container {
-  margin-bottom: 20px;
-  text-align: center;
+.map-battle-container > * {
+  min-height: 300px;
+  height: 100%;
 }
 
-.btn-shop {
+.battle-control-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* 底部固定按钮 */
+.fixed-bottom-buttons {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  padding: 15px 20px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.fixed-bottom-buttons .btn {
   padding: 12px 24px;
-  background: linear-gradient(135deg, #ff9800, #f57c00);
-  color: white;
   border: none;
   border-radius: 8px;
   font-size: 1em;
@@ -27,6 +57,22 @@
   transition: all 0.3s ease;
   font-weight: bold;
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  min-width: 120px;
+}
+
+.btn-info {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+}
+
+.btn-info:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.btn-shop {
+  background: linear-gradient(135deg, #ff9800, #f57c00);
+  color: white;
 }
 
 .btn-shop:hover {
@@ -34,9 +80,50 @@
   box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
 
+.btn-save {
+  background: linear-gradient(135deg, #43e97b, #38f9d7);
+  color: white;
+}
+
+.btn-save:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #f44336, #d32f2f);
+  color: white;
+}
+
+.btn-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(244, 67, 54, 0.4);
+}
+
+@media (max-width: 1200px) {
+  .map-battle-container {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
-  .game-header {
+  .game-screen {
+    padding: 10px;
+    padding-bottom: 90px;
+  }
+  
+  .fixed-bottom-buttons {
     flex-direction: column;
+    padding: 10px;
+  }
+  
+  .fixed-bottom-buttons .btn {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .battle-control-container {
+    gap: 10px;
   }
 }
 

@@ -5,6 +5,22 @@
   flex-wrap: wrap;
   margin-bottom: 20px;
   align-items: center;
+  width: 100%;
+}
+
+.pre-battle-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.safe-hint {
+  font-size: 0.9em;
+  color: #ffeb3b;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 6px 12px;
+  border-radius: 6px;
 }
 
 .skill-selector {
@@ -101,6 +117,48 @@
   transform: none;
 }
 
+.auto-settings-panel {
+  flex: 1 1 100%;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
+  padding: 15px;
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  align-items: center;
+}
+
+.auto-settings-header {
+  font-weight: bold;
+  color: #333;
+  grid-column: 1 / -1;
+}
+
+.auto-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95em;
+  color: #333;
+}
+
+.auto-checkbox input {
+  transform: scale(1.2);
+}
+
+.auto-skill-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.auto-tip {
+  grid-column: 1 / -1;
+  font-size: 0.85em;
+  color: #666;
+}
+
 @media (max-width: 768px) {
   .action-panel {
     flex-direction: column;
@@ -108,6 +166,10 @@
   
   .btn {
     width: 100%;
+  }
+
+  .auto-settings-panel {
+    grid-template-columns: 1fr;
   }
 }
 

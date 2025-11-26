@@ -20,6 +20,29 @@
   text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
 }
 
+.load-save-prompt {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.btn-load-save {
+  padding: 12px 30px;
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: bold;
+  box-shadow: 0 4px 12px rgba(67, 233, 123, 0.4);
+}
+
+.btn-load-save:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(67, 233, 123, 0.6);
+}
+
 .character-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

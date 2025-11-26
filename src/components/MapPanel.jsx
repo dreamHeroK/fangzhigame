@@ -2,7 +2,7 @@ import { useGame } from '../context/GameContext'
 import { maps } from '../utils/maps'
 import './MapPanel.css'
 
-function MapPanel() {
+function MapPanel({ onOpenShop }) {
   const { currentMap, setCurrentMap, inBattle } = useGame()
   const currentMapData = maps[currentMap]
 
@@ -24,6 +24,14 @@ function MapPanel() {
         )}
         {currentMapData.type === 'wild' && (
           <span className="map-badge wild">野外</span>
+        )}
+        {currentMapData.type === 'safe' && onOpenShop && (
+          <button
+            className="map-button shop-button"
+            onClick={() => onOpenShop && onOpenShop()}
+          >
+            进入药品商店
+          </button>
         )}
       </div>
       <div className="connected-maps">
