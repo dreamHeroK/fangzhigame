@@ -13,7 +13,8 @@ function encrypt(text, key) {
     const charCode = text.charCodeAt(i) ^ key.charCodeAt(i % key.length)
     result += String.fromCharCode(charCode)
   }
-  return btoa(result) // Base64编码
+  // 先使用 encodeURIComponent 处理 Unicode 字符，然后再 Base64 编码
+  return btoa(encodeURIComponent(result))
 }
 
 /**
@@ -21,7 +22,8 @@ function encrypt(text, key) {
  */
 function decrypt(encryptedText, key) {
   try {
-    const text = atob(encryptedText) // Base64解码
+    // 先 Base64 解码，然后使用 decodeURIComponent 处理 Unicode 字符
+    const text = decodeURIComponent(atob(encryptedText))
     let result = ''
     for (let i = 0; i < text.length; i++) {
       const charCode = text.charCodeAt(i) ^ key.charCodeAt(i % key.length)
