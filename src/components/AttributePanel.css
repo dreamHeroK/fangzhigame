@@ -138,3 +138,57 @@
   font-weight: bold;
 }
 
+.assign-step {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 10px;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.assign-step label {
+  font-weight: bold;
+}
+
+.assign-step input {
+  width: 80px;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.95em;
+}
+
+.assign-step-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.assign-step-btn {
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  background: #e2e8f0;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9em;
+}
+
+.assign-step-btn:hover:not(:disabled) {
+  background: #cbd5f5;
+}
+
+.assign-step-btn.active {
+  background: #667eea;
+  color: #fff;
+}
+
+.assign-step-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+

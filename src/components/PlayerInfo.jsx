@@ -1,7 +1,7 @@
 import { useGame } from '../context/GameContext'
 import './PlayerInfo.css'
 
-function PlayerInfo({ onOpenPlayerAttributePanel, onOpenSectPanel, onOpenEquipmentPanel }) {
+function PlayerInfo({ onOpenSectPanel, onOpenEquipmentPanel }) {
   const { player, money, elementPoints } = useGame()
 
   if (!player) return null
@@ -47,9 +47,6 @@ function PlayerInfo({ onOpenPlayerAttributePanel, onOpenSectPanel, onOpenEquipme
         <div className="attr-item money-display">金钱: <span className="money-value">{money}</span> 文</div>
       </div>
       <div className="player-actions">
-        <button className="btn btn-primary" onClick={onOpenPlayerAttributePanel}>
-          人物属性
-        </button>
         <button className="btn btn-secondary" onClick={onOpenSectPanel}>
           {player.sect ? '门派技能' : player.level >= 10 ? '拜入门派' : '门派(需10级)'}
         </button>

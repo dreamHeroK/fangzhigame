@@ -21,3 +21,44 @@
   }
 }
 
+.modal {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 1000;
+}
+
+.modal.active {
+  display: flex;
+}
+
+.modal .modal-content {
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+}
+
+.modal .close {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  font-size: 1.75rem;
+  color: #8c8c8c;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.modal .close:hover {
+  color: #333333;
+}
+

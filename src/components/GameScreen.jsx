@@ -11,7 +11,6 @@ import SectPanel from './SectPanel'
 import MedicineShop from './MedicineShop'
 import EquipmentPanel from './EquipmentPanel'
 import SaveLoadPanel from './SaveLoadPanel'
-import PlayerAttributePanel from './PlayerAttributePanel'
 import BagPanel from './BagPanel'
 import RedeemCodeModal from './RedeemCodeModal'
 import NpcPanel from './NpcPanel'
@@ -25,7 +24,6 @@ function GameScreen() {
   const [showMedicineShop, setShowMedicineShop] = useState(false)
   const [showEquipmentPanel, setShowEquipmentPanel] = useState(false)
   const [showSaveLoadPanel, setShowSaveLoadPanel] = useState(false)
-  const [showPlayerAttributePanel, setShowPlayerAttributePanel] = useState(false)
   const [showBagPanel, setShowBagPanel] = useState(false)
   const [showRedeemModal, setShowRedeemModal] = useState(false)
   const [showNpcPanel, setShowNpcPanel] = useState(false)
@@ -82,10 +80,6 @@ function GameScreen() {
       {showPlayerInfoPanel && (
         <PlayerInfoPanel 
           onClose={() => setShowPlayerInfoPanel(false)}
-          onOpenPlayerAttributePanel={() => {
-            setShowPlayerInfoPanel(false)
-            setShowPlayerAttributePanel(true)
-          }}
           onOpenSectPanel={() => {
             setShowPlayerInfoPanel(false)
             setShowSectPanel(true)
@@ -99,10 +93,6 @@ function GameScreen() {
             setShowPetPanel(true)
           }}
         />
-      )}
-
-      {showPlayerAttributePanel && (
-        <PlayerAttributePanel onClose={() => setShowPlayerAttributePanel(false)} />
       )}
 
       {showPetPanel && (

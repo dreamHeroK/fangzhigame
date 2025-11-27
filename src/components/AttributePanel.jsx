@@ -7,6 +7,7 @@ import './AttributePanel.css'
 function AttributePanel({ onClose, embedded = false }) {
   const { player, setPlayer, elementPoints, equippedItems } = useGame()
   const [tempAttributes, setTempAttributes] = useState(null)
+  const [assignStep, setAssignStep] = useState(1)
 
   useEffect(() => {
     if (player) {
@@ -22,30 +23,47 @@ function AttributePanel({ onClose, embedded = false }) {
 
   if (!player || !tempAttributes) return null
 
-  const adjustAttribute = (attr, increase) => {
+  const normalizeAmount = (amount) => {
+    const numeric = Number(amount)
+    if (Number.isNaN(numeric) || numeric <= 0) {
+      return 1
+    }
+    return Math.floor(numeric)
+  }
+
+  const adjustAttribute = (attr, increase, amount = assignStep) => {
     const newAttrs = { ...tempAttributes }
+    const normalizedAmount = normalizeAmount(amount)
 
     if (increase) {
       if (newAttrs.points <= 0) return
-      newAttrs.points--
-      if (attr === 'strength') newAttrs.strength++
-      else if (attr === 'constitution') newAttrs.constitution++
-      else if (attr === 'spirit') newAttrs.spirit++
-      else if (attr === 'agility') newAttrs.agility++
+      const pointsToUse = Math.min(normalizedAmount, newAttrs.points)
+      newAttrs[attr] += pointsToUse
+      newAttrs.points -= pointsToUse
     } else {
       const baseValue = player.baseAttrs?.[attr] || 0
       const currentValue = newAttrs[attr]
 
       if (currentValue <= baseValue) return
 
-      newAttrs.points++
-      if (attr === 'strength') newAttrs.strength--
-      else if (attr === 'constitution') newAttrs.constitution--
-      else if (attr === 'spirit') newAttrs.spirit--
-      else if (attr === 'agility') newAttrs.agility--
+      const maxDecrement = currentValue - baseValue
+      const decrement = Math.min(normalizedAmount, maxDecrement)
+      newAttrs[attr] -= decrement
+      newAttrs.points += decrement
     }
 
     setTempAttributes(newAttrs)
+  }
+
+  const quickAssignSteps = [1, 5, 10]
+
+  const handleAssignStepChange = (value) => {
+    const parsed = parseInt(value, 10)
+    if (Number.isNaN(parsed) || parsed <= 0) {
+      setAssignStep(1)
+    } else {
+      setAssignStep(parsed)
+    }
   }
 
   const saveAttributes = () => {
@@ -124,9 +142,37 @@ function AttributePanel({ onClose, embedded = false }) {
         </>
       )}
         <div className="attr-panel-content">
+          <div className="assign-step">
+            <label>批量分配</label>
+            <input
+              type="number"
+              min="1"
+              value={assignStep}
+              onChange={(e) => handleAssignStepChange(e.target.value)}
+            />
+            <div className="assign-step-buttons">
+              {quickAssignSteps.map((step) => (
+                <button
+                  key={step}
+                  type="button"
+                  className={`assign-step-btn${assignStep === step ? ' active' : ''}`}
+                  onClick={() => setAssignStep(step)}
+                >
+                  +{step}
+                </button>
+              ))}
+              <button
+                type="button"
+                className="assign-step-btn"
+                onClick={() => tempAttributes.points > 0 && setAssignStep(tempAttributes.points)}
+                disabled={tempAttributes.points <= 0}
+              >
+                全部
+              </button>
+            </div>
+          </div>
           <div className="attr-control">
             <label>力量:</label>
-            <span className="attr-desc">(影响物理攻击和命中)</span>
             <button
               className="attr-btn"
               onClick={() => adjustAttribute('strength', false)}
@@ -145,7 +191,6 @@ function AttributePanel({ onClose, embedded = false }) {
           </div>
           <div className="attr-control">
             <label>体质:</label>
-            <span className="attr-desc">(影响气血和防御)</span>
             <button
               className="attr-btn"
               onClick={() => adjustAttribute('constitution', false)}
@@ -164,7 +209,6 @@ function AttributePanel({ onClose, embedded = false }) {
           </div>
           <div className="attr-control">
             <label>灵力:</label>
-            <span className="attr-desc">(影响法力和法术伤害)</span>
             <button
               className="attr-btn"
               onClick={() => adjustAttribute('spirit', false)}
@@ -183,7 +227,6 @@ function AttributePanel({ onClose, embedded = false }) {
           </div>
           <div className="attr-control">
             <label>敏捷:</label>
-            <span className="attr-desc">(影响攻击顺序)</span>
             <button
               className="attr-btn"
               onClick={() => adjustAttribute('agility', false)}
