@@ -140,6 +140,138 @@ export function useBattle() {
     }
   }
 
+  const getPetExpRequirement = (level = 1) => Math.max(25, Math.floor(30 + level * 20))
+
+  const recalcPetStats = (pet) => {
+    const petStats = pet.growth ? {
+      growth: pet.growth,
+      attackAptitude: pet.attackAptitude || 1000,
+      defenseAptitude: pet.defenseAptitude || 1000,
+      magicAptitude: pet.magicAptitude || 1000,
+    } : null
+
+    const battleStats = calculateBattleStats(
+      {
+        strength: pet.strength || 0,
+        constitution: pet.constitution || 0,
+        spirit: pet.spirit || 0,
+        agility: pet.agility || 0,
+      },
+      pet.level || 1,
+      null,
+      {},
+      petStats
+    )
+
+    const updatedPet = {
+      ...pet,
+      attack: battleStats.attack,
+      defense: battleStats.defense,
+      speed: battleStats.speed,
+      maxHp: battleStats.maxHp,
+      maxMp: battleStats.maxMp,
+      hitRate: battleStats.hitRate,
+      magicDamage: battleStats.magicDamage,
+      exp: pet.exp ?? 0,
+      expMax: pet.expMax ?? getPetExpRequirement(pet.level || 1),
+      storedExp: pet.storedExp ?? 0,
+    }
+
+    updatedPet.hp = Math.min(battleStats.maxHp, pet.hp ?? battleStats.maxHp)
+    updatedPet.mp = Math.min(battleStats.maxMp, pet.mp ?? battleStats.maxMp)
+
+    return updatedPet
+  }
+
+  const applyPetExperience = (pet, petExpGain) => {
+    const maxPetLevel = (player?.level || 1) + 5
+    let leveledUp = false
+    let storedExpAdded = 0
+
+    let updated = {
+      ...pet,
+      exp: pet.exp ?? 0,
+      expMax: pet.expMax ?? getPetExpRequirement(pet.level || 1),
+      storedExp: pet.storedExp ?? 0,
+      level: pet.level || 1,
+      points: pet.points || 0,
+    }
+
+    let availableExp = updated.exp + petExpGain
+
+    if (updated.level >= maxPetLevel) {
+      storedExpAdded += availableExp
+      updated.storedExp += availableExp
+      availableExp = 0
+    } else if (updated.storedExp > 0) {
+      availableExp += updated.storedExp
+      updated.storedExp = 0
+    }
+
+    while (availableExp >= updated.expMax && updated.level < maxPetLevel) {
+      availableExp -= updated.expMax
+      updated.level += 1
+      updated.points += 3
+      updated.expMax = getPetExpRequirement(updated.level)
+      leveledUp = true
+
+      if (updated.level >= maxPetLevel) {
+        storedExpAdded += availableExp
+        updated.storedExp += availableExp
+        availableExp = 0
+        break
+      }
+    }
+
+    updated.exp = availableExp
+
+    let recalculated = recalcPetStats(updated)
+    recalculated.exp = updated.exp
+    recalculated.expMax = updated.expMax
+    recalculated.storedExp = updated.storedExp
+    recalculated.points = updated.points
+    recalculated.level = updated.level
+
+    if (leveledUp) {
+      recalculated.hp = recalculated.maxHp
+      recalculated.mp = recalculated.maxMp
+    }
+
+    return { updatedPet: recalculated, leveledUp, storedExpAdded }
+  }
+
+  const grantPetExperience = (playerExpGain) => {
+    if (!activePet || playerExpGain <= 0) return
+
+    const petExpGain = Math.floor(playerExpGain * 1.5)
+    if (petExpGain <= 0) return
+
+    const petInList = pets.find(p => p.id === activePet.id)
+    const basePet = petInList || activePet
+
+    const { updatedPet, leveledUp, storedExpAdded } = applyPetExperience(basePet, petExpGain)
+
+    if (petInList) {
+      setPets(prevPets => prevPets.map(p => p.id === basePet.id ? updatedPet : p))
+    }
+
+    setActivePet(updatedPet)
+    addLog(`${updatedPet.name} 获得 ${petExpGain} 点宠物经验！`)
+
+    const levelCap = (player?.level || 1) + 5
+    if (storedExpAdded > 0 || updatedPet.storedExp > 0) {
+      if (updatedPet.level >= levelCap) {
+        addLog(`${updatedPet.name} 等级领先，额外经验已储存，总储存 ${updatedPet.storedExp} 点`)
+      } else if (storedExpAdded > 0) {
+        addLog(`${updatedPet.name} 使用储存经验并继续升级！`)
+      }
+    }
+
+    if (leveledUp) {
+      addLog(`${updatedPet.name} 升级到 ${updatedPet.level} 级！`)
+    }
+  }
+
   // ========== 战斗流程函数 ==========
 
   // 获取所有战斗单位并按速度排序
@@ -238,46 +370,14 @@ export function useBattle() {
     // 更新参战宠物的属性（如果有）
     let updatedPetsList = pets
     if (activePet) {
-      const pet = pets.find(p => p.id === activePet.id)
-      if (pet) {
-        const petStats = pet.growth ? {
-          growth: pet.growth,
-          attackAptitude: pet.attackAptitude || 1000,
-          defenseAptitude: pet.defenseAptitude || 1000,
-          magicAptitude: pet.magicAptitude || 1000,
-        } : null
-        const battleStats = calculateBattleStats(
-          {
-            strength: pet.strength || 0,
-            constitution: pet.constitution || 0,
-            spirit: pet.spirit || 0,
-            agility: pet.agility || 0,
-          },
-          pet.level,
-          null,
-          {},
-          petStats
-        )
-        const updatedPet = {
-          ...pet,
-          attack: battleStats.attack,
-          defense: battleStats.defense,
-          speed: battleStats.speed,
-          maxHp: battleStats.maxHp,
-          maxMp: battleStats.maxMp,
-          hitRate: battleStats.hitRate,
-          magicDamage: battleStats.magicDamage,
-        }
+      const petIndex = pets.findIndex(p => p.id === activePet.id)
+      if (petIndex >= 0) {
+        let updatedPet = recalcPetStats(pets[petIndex])
         if (redeemStatus?.godMode) {
           updatedPet.hp = updatedPet.maxHp
           updatedPet.mp = updatedPet.maxMp
-        } else if (updatedPet.hp > updatedPet.maxHp) {
-          updatedPet.hp = updatedPet.maxHp
         }
-        if (updatedPet.mp > updatedPet.maxMp) {
-          updatedPet.mp = updatedPet.maxMp
-        }
-        updatedPetsList = pets.map(p => p.id === pet.id ? updatedPet : p)
+        updatedPetsList = pets.map((pet, idx) => idx === petIndex ? updatedPet : pet)
         setPets(updatedPetsList)
         setActivePet(updatedPet)
       }
@@ -697,7 +797,7 @@ export function useBattle() {
 
     if (success) {
       // 使用怪物的基础属性
-      const pet = {
+      let pet = {
         id: pets.length,
         element: monster.element,
         name: monster.name.replace('怪物', '宠物').replace(/\d+$/, ''),
@@ -722,6 +822,13 @@ export function useBattle() {
         mp: monster.mp || 0,
         maxMp: monster.maxMp || 0,
       }
+
+      pet.exp = 0
+      pet.expMax = getPetExpRequirement(pet.level || 1)
+      pet.storedExp = 0
+      pet = recalcPetStats(pet)
+      pet.hp = pet.maxHp
+      pet.mp = pet.maxMp
 
       setPets([...pets, pet])
       const updatedMonsters = monsters.map(m =>
@@ -819,13 +926,13 @@ export function useBattle() {
     const aliveMonsters = currentMonsters.filter(m => m.hp > 0)
 
     if (aliveMonsters.length === 0) {
-      endBattle(true)
+      endBattle(true, currentMonsters)
       return true // 返回 true 表示战斗已结束
     }
     return false // 返回 false 表示战斗未结束
   }
 
-  const endBattle = (victory) => {
+  const endBattle = (victory, finalMonsters = monsters) => {
     setInBattle(false)
     setPlayerTurn(false)
     setSelectedMonster(null)
@@ -834,7 +941,7 @@ export function useBattle() {
       addLog('战斗胜利！')
       
       // 计算所有被击败怪物的经验和掉落
-      const defeatedMonsters = monsters.filter(m => m.hp <= 0 && !m.captured)
+      const defeatedMonsters = finalMonsters.filter(m => m.hp <= 0 && !m.captured)
       let totalExp = 0
       const drops = []
       
@@ -854,9 +961,10 @@ export function useBattle() {
           exp: player.exp + totalExp,
         }
         setPlayer(updatedPlayer)
-        addLog(`获得 ${totalExp} 点经验！`)
+        addLog(`${player.name} 获得 ${totalExp} 点经验！`)
         // checkLevelUp 会更新玩家状态，但我们需要在它之后检查连续战斗
         checkLevelUp(updatedPlayer)
+        grantPetExperience(totalExp)
       }
       
       // 处理掉落
