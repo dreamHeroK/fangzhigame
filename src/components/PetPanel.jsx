@@ -12,7 +12,7 @@ const elementIcons = {
 }
 
 function PetPanel({ onClose }) {
-  const { pets, setPets } = useGame()
+  const { pets, setPets, activePet, setActivePet, autoSettings, setAutoSettings } = useGame()
   const [selectedPet, setSelectedPet] = useState(null)
   const [tempAttributes, setTempAttributes] = useState(null)
 
@@ -70,7 +70,13 @@ function PetPanel({ onClose }) {
           points: tempAttributes.points,
         }
         
-        // 重新计算战斗属性
+        // 重新计算战斗属性（考虑宠物资质和成长性）
+        const petStats = pet.growth ? {
+          growth: pet.growth,
+          attackAptitude: pet.attackAptitude || 1000,
+          defenseAptitude: pet.defenseAptitude || 1000,
+          magicAptitude: pet.magicAptitude || 1000,
+        } : null
         const battleStats = calculateBattleStats(
           {
             strength: tempAttributes.strength,
@@ -78,7 +84,10 @@ function PetPanel({ onClose }) {
             spirit: tempAttributes.spirit,
             agility: tempAttributes.agility,
           },
-          pet.level
+          pet.level,
+          null,
+          {},
+          petStats
         )
         
         updated.attack = battleStats.attack
@@ -109,16 +118,27 @@ function PetPanel({ onClose }) {
     return currentValue > baseValue
   }
 
-  // 计算预览属性
-  const previewStats = selectedPet && tempAttributes ? calculateBattleStats(
-    {
-      strength: tempAttributes.strength,
-      constitution: tempAttributes.constitution,
-      spirit: tempAttributes.spirit,
-      agility: tempAttributes.agility,
-    },
-    selectedPet.level
-  ) : null
+  // 计算预览属性（考虑宠物资质和成长性）
+  const previewStats = selectedPet && tempAttributes ? (() => {
+    const petStats = selectedPet.growth ? {
+      growth: selectedPet.growth,
+      attackAptitude: selectedPet.attackAptitude || 1000,
+      defenseAptitude: selectedPet.defenseAptitude || 1000,
+      magicAptitude: selectedPet.magicAptitude || 1000,
+    } : null
+    return calculateBattleStats(
+      {
+        strength: tempAttributes.strength,
+        constitution: tempAttributes.constitution,
+        spirit: tempAttributes.spirit,
+        agility: tempAttributes.agility,
+      },
+      selectedPet.level,
+      null,
+      {},
+      petStats
+    )
+  })() : null
 
   return (
     <div className="modal active" onClick={onClose}>
@@ -140,6 +160,7 @@ function PetPanel({ onClose }) {
                 >
                   <div className="pet-item-name">
                     {elementIcons[pet.element]} {pet.name}
+                    {pet.isDivine && <span className="divine-badge">神兽</span>}
                   </div>
                   <div className="pet-item-element">等级: {pet.level}</div>
                 </div>
@@ -150,7 +171,16 @@ function PetPanel({ onClose }) {
             <div className="pet-detail">
               <h3>
                 {elementIcons[selectedPet.element]} {selectedPet.name}
+                {selectedPet.isDivine && <span className="divine-badge">神兽</span>}
               </h3>
+              {selectedPet.isDivine && (
+                <div className="divine-stats">
+                  <div>成长性: {selectedPet.growth || 1000}</div>
+                  <div>攻击资质: {selectedPet.attackAptitude || 1000}</div>
+                  <div>防御资质: {selectedPet.defenseAptitude || 1000}</div>
+                  <div>法力资质: {selectedPet.magicAptitude || 1000}</div>
+                </div>
+              )}
               <div className="pet-stats">
                 <div className="stat-item">
                   <span className="stat-label">生命:</span>
@@ -267,11 +297,68 @@ function PetPanel({ onClose }) {
                   </div>
                 </div>
               )}
-              <button className="btn btn-primary" onClick={savePetAttributes}>
-                保存
-              </button>
+              <div className="pet-actions">
+                <button className="btn btn-primary" onClick={savePetAttributes}>
+                  保存属性
+                </button>
+                <button
+                  className={`btn ${activePet?.id === selectedPet.id ? 'btn-secondary' : 'btn-success'}`}
+                  onClick={() => {
+                    if (activePet?.id === selectedPet.id) {
+                      setActivePet(null)
+                    } else {
+                      // 从 pets 数组中获取最新的宠物数据
+                      const latestPet = pets.find(p => p.id === selectedPet.id)
+                      if (latestPet) {
+                        setActivePet(latestPet)
+                      }
+                    }
+                  }}
+                >
+                  {activePet?.id === selectedPet.id ? '下阵' : '上阵'}
+                </button>
+              </div>
+              {activePet?.id === selectedPet.id && (
+                <div className="pet-skill-config">
+                  <h4>自动战斗技能配置</h4>
+                  <div className="auto-skill-selector">
+                    <span>宠物优先技能:</span>
+                    <select
+                      className="skill-select"
+                      value={autoSettings.autoPetSkillId ?? ''}
+                      onChange={(e) => {
+                        const value = e.target.value
+                        // 保持原始类型（字符串或数字）
+                        setAutoSettings(prev => ({
+                          ...prev,
+                          autoPetSkillId: value ? (isNaN(value) ? value : Number(value)) : null,
+                        }))
+                      }}
+                    >
+                      <option value="">普通攻击</option>
+                      {(selectedPet.skills || []).map(skill => (
+                        <option key={skill.id} value={skill.id}>
+                          {elementIcons[skill.element]} {skill.name} ({skill.mpCost}MP)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
             </div>
           )}
+          {activePet && (() => {
+            // 从 pets 数组中获取最新的宠物数据
+            const latestActivePet = pets.find(p => p.id === activePet.id) || activePet
+            return (
+              <div className="active-pet-info">
+                <h4>当前上阵宠物</h4>
+                <div className="active-pet-card">
+                  {elementIcons[latestActivePet.element]} {latestActivePet.name} (Lv.{latestActivePet.level})
+                </div>
+              </div>
+            )
+          })()}
         </div>
       </div>
     </div>

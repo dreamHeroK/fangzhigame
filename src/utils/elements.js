@@ -31,6 +31,9 @@ export function calculateElementBonus(elementPoints) {
   
   // 法术攻击提升（每点总相性 +0.5%）
   const spellAttackBonus = 1 + totalPoints * 0.005
+
+  // 物理攻击提升（每点总相性 +0.5%）
+  const attackPercentBonus = 1 + totalPoints * 0.005
   
   // 气血上限提升（每点总相性 +10）
   const hpBonus = totalPoints * 10
@@ -41,17 +44,14 @@ export function calculateElementBonus(elementPoints) {
   // 攻击速度提升（每点总相性 +0.2）
   const speedBonus = totalPoints * 0.2
   
-  // 物理攻击提升（每点总相性 +0.5）
-  const attackBonus = totalPoints * 0.5
-  
   return {
     spellDamageBonus,
     spellResistance,
     spellAttackBonus,
+    attackPercentBonus,
     hpBonus,
     defenseBonus,
     speedBonus,
-    attackBonus,
   }
 }
 

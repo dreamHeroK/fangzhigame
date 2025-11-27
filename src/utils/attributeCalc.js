@@ -11,9 +11,10 @@ import { getAllEquipmentStats } from './equipment'
  * @param {number} level - 等级
  * @param {Object} elementPoints - 相性点 {gold, wood, water, fire, earth}
  * @param {Object} equipmentStats - 装备属性
+ * @param {Object} petStats - 宠物特殊属性 {growth, attackAptitude, defenseAptitude, magicAptitude}
  * @returns {Object} 战斗属性 {attack, defense, speed, maxHp, maxMp, hitRate, magicDamage, spellDamageBonus, spellResistance}
  */
-export function calculateBattleStats(baseAttrs, level = 1, elementPoints = null, equipmentStats = {}) {
+export function calculateBattleStats(baseAttrs, level = 1, elementPoints = null, equipmentStats = {}, petStats = null) {
   const { 
     strength = 0,      // 力量：影响物理攻击力和命中率
     constitution = 0,  // 体质：影响气血和防御力
@@ -21,26 +22,33 @@ export function calculateBattleStats(baseAttrs, level = 1, elementPoints = null,
     agility = 0        // 敏捷：影响攻击顺序（速度）
   } = baseAttrs
   
-  // 基础物理攻击力 = 基础攻击 + 力量 * 2.5 + 等级加成
-  let attack = 10 + strength * 2.5 + level * 1
+  // 如果是宠物，使用资质和成长性
+  const isPet = petStats !== null
+  const growth = isPet ? (petStats.growth || 1000) / 1000 : 1  // 成长性倍率（1000 = 1倍，10000 = 10倍）
+  const attackAptitude = isPet ? (petStats.attackAptitude || 1000) / 1000 : 1  // 攻击资质倍率
+  const defenseAptitude = isPet ? (petStats.defenseAptitude || 1000) / 1000 : 1  // 防御资质倍率
+  const magicAptitude = isPet ? (petStats.magicAptitude || 1000) / 1000 : 1  // 法力资质倍率
   
-  // 基础防御力 = 基础防御 + 体质 * 2 + 等级加成
-  let defense = 5 + Math.floor(constitution * 2) + level * 0.5
+  // 基础物理攻击力 = 基础攻击 + 力量 * 2.5 * 攻击资质倍率 * 成长性 + 等级加成 * 成长性
+  let attack = (10 + strength * 2.5 * attackAptitude * growth + level * 1 * growth)
   
-  // 基础速度 = 基础速度 + 敏捷 * 2 + 等级加成
-  let speed = 5 + Math.floor(agility * 2) + level * 0.5
+  // 基础防御力 = 基础防御 + 体质 * 2 * 防御资质倍率 * 成长性 + 等级加成 * 成长性
+  let defense = (5 + Math.floor(constitution * 2 * defenseAptitude * growth) + level * 0.5 * growth)
   
-  // 基础生命值（气血）= 基础生命 + 体质 * 12 + 等级 * 20
-  let maxHp = 100 + constitution * 12 + level * 20
+  // 基础速度 = 基础速度 + 敏捷 * 2 * 成长性 + 等级加成 * 成长性
+  let speed = (5 + Math.floor(agility * 2 * growth) + level * 0.5 * growth)
   
-  // 基础法力值 = 基础法力 + 灵力 * 3 + 等级 * 10
-  let maxMp = 50 + spirit * 3 + level * 10
+  // 基础生命值（气血）= 基础生命 + 体质 * 12 * 成长性 + 等级 * 20 * 成长性
+  let maxHp = (100 + constitution * 12 * growth + level * 20 * growth)
+  
+  // 基础法力值 = 基础法力 + 灵力 * 3 * 法力资质倍率 * 成长性 + 等级 * 10 * 成长性
+  let maxMp = (50 + spirit * 3 * magicAptitude * growth + level * 10 * growth)
   
   // 基础命中率 = 基础命中 + 力量 * 0.5（百分比）
   let hitRate = 80 + strength * 0.5
   
-  // 基础法术伤害加成 = 基础 + 灵力 * 1.5%
-  let magicDamage = 1.0 + spirit * 0.015
+  // 基础法术伤害加成 = 基础 + 灵力 * 1.5% * 法力资质倍率
+  let magicDamage = 1.0 + spirit * 0.015 * magicAptitude
   
   // 加上装备属性
   attack += (equipmentStats.attack || 0) + (equipmentStats.strength || 0) * 2.5
@@ -54,7 +62,7 @@ export function calculateBattleStats(baseAttrs, level = 1, elementPoints = null,
     const elementBonus = calculateElementBonus(elementPoints)
     
     // 相性点对属性的影响
-    attack += elementBonus.attackBonus
+    attack *= elementBonus.attackPercentBonus || 1
     defense += elementBonus.defenseBonus
     speed += elementBonus.speedBonus
     maxHp += elementBonus.hpBonus
@@ -94,6 +102,15 @@ export function updatePlayerBattleStats(player, elementPoints = null, equipmentS
     equipmentStats
   )
   
+  // 保留当前HP/MP，确保不超过最大值
+  // 如果hp/mp不存在，则使用最大值；如果存在（包括0），则保持原值但不超过最大值
+  const currentHp = (player.hp !== undefined && player.hp !== null)
+    ? Math.min(Math.max(0, player.hp), battleStats.maxHp)  // 保持当前值（包括0），但不超过最大值
+    : battleStats.maxHp  // 只有不存在时才使用最大值
+  const currentMp = (player.mp !== undefined && player.mp !== null)
+    ? Math.min(Math.max(0, player.mp), battleStats.maxMp)  // 保持当前值（包括0），但不超过最大值
+    : battleStats.maxMp  // 只有不存在时才使用最大值
+  
   return {
     ...player,
     attack: battleStats.attack,
@@ -105,8 +122,8 @@ export function updatePlayerBattleStats(player, elementPoints = null, equipmentS
     magicDamage: battleStats.magicDamage,
     spellDamageBonus: battleStats.spellDamageBonus,
     spellResistance: battleStats.spellResistance,
-    // 确保当前HP/MP不超过最大值
-    hp: Math.min(player.hp || battleStats.maxHp, battleStats.maxHp),
-    mp: Math.min(player.mp || battleStats.maxMp, battleStats.maxMp),
+    // 保留当前HP/MP，确保不超过最大值
+    hp: currentHp,
+    mp: currentMp,
   }
 }

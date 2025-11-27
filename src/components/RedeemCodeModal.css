@@ -1,0 +1,41 @@
+.redeem-modal {
+  max-width: 420px;
+}
+
+.redeem-form {
+  display: flex;
+  gap: 10px;
+  margin: 15px 0;
+}
+
+.redeem-form input {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 2px solid #667eea;
+  font-size: 1em;
+  outline: none;
+}
+
+.redeem-message {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.95em;
+}
+
+.redeem-message.success {
+  color: #1b5e20;
+  background: #c8e6c9;
+}
+
+.redeem-message.error {
+  color: #b71c1c;
+  background: #ffcdd2;
+}
+
+.redeem-message.info {
+  color: #0d47a1;
+  background: #bbdefb;
+}
+

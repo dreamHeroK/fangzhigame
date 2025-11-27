@@ -49,6 +49,10 @@ export function saveGameData(gameData) {
       elementPoints: gameData.elementPoints || { gold: 0, wood: 0, water: 0, fire: 0, earth: 0 },
       equipmentInventory: gameData.equipmentInventory || [],
       equippedItems: gameData.equippedItems || {},
+      autoSettings: gameData.autoSettings || null,
+      redeemStatus: gameData.redeemStatus || { godMode: false, tripleSpeed: false },
+      beginnerRewardClaimed: !!gameData.beginnerRewardClaimed,
+      activePet: gameData.activePet || null,
       version: '1.0.0', // 数据版本号
       saveTime: new Date().toISOString(),
     }
@@ -114,6 +118,10 @@ export function exportGameData(gameData) {
       elementPoints: gameData.elementPoints || { gold: 0, wood: 0, water: 0, fire: 0, earth: 0 },
       equipmentInventory: gameData.equipmentInventory || [],
       equippedItems: gameData.equippedItems || {},
+      autoSettings: gameData.autoSettings || null,
+      redeemStatus: gameData.redeemStatus || { godMode: false, tripleSpeed: false },
+      beginnerRewardClaimed: !!gameData.beginnerRewardClaimed,
+      activePet: gameData.activePet || null,
       version: '1.0.0',
       exportTime: new Date().toISOString(),
     }

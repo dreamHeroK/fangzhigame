@@ -6,6 +6,8 @@ const defaultAutoSettings = {
   autoBattle: false,
   autoSkillId: null,
   autoCapture: false,
+  autoChainBattle: false,
+  autoPetSkillId: null,
 }
 
 export function GameProvider({ children }) {
@@ -25,6 +27,9 @@ export function GameProvider({ children }) {
   const [isLoaded, setIsLoaded] = useState(false) // 是否已加载存档
   const [saveVersion, setSaveVersion] = useState(0) // 用于触发hasSavedGame重新计算
   const [autoSettings, setAutoSettings] = useState({ ...defaultAutoSettings })
+  const [redeemStatus, setRedeemStatus] = useState({ godMode: false, tripleSpeed: false })
+  const [beginnerRewardClaimed, setBeginnerRewardClaimed] = useState(false)
+  const [activePet, setActivePet] = useState(null) // 当前上阵的宠物
 
   const addLog = (message) => {
     const timestamp = new Date().toLocaleTimeString()
@@ -44,9 +49,13 @@ export function GameProvider({ children }) {
       elementPoints,
       equipmentInventory,
       equippedItems,
+      autoSettings,
+      redeemStatus,
+      beginnerRewardClaimed,
+      activePet,
     })
     setSaveVersion(v => v + 1) // 更新版本号，触发hasSavedGame重新计算
-  }, [player, pets, currentMap, money, inventory, elementPoints, equipmentInventory, equippedItems])
+  }, [player, pets, currentMap, money, inventory, elementPoints, equipmentInventory, equippedItems, autoSettings, redeemStatus, beginnerRewardClaimed, activePet])
 
   // 加载游戏数据
   const loadGame = useCallback(() => {
@@ -60,7 +69,10 @@ export function GameProvider({ children }) {
       setElementPoints(savedData.elementPoints || { gold: 0, wood: 0, water: 0, fire: 0, earth: 0 })
       setEquipmentInventory(savedData.equipmentInventory || [])
       setEquippedItems(savedData.equippedItems || {})
-      setAutoSettings({ ...defaultAutoSettings })
+      setAutoSettings(savedData.autoSettings || { ...defaultAutoSettings })
+      setRedeemStatus(savedData.redeemStatus || { godMode: false, tripleSpeed: false })
+      setBeginnerRewardClaimed(!!savedData.beginnerRewardClaimed)
+      setActivePet(savedData.activePet || null)
       setSaveVersion(v => v + 1) // 更新版本号
       return true
     }
@@ -84,6 +96,9 @@ export function GameProvider({ children }) {
     setEquipmentInventory([])
     setEquippedItems({})
     setAutoSettings({ ...defaultAutoSettings })
+    setRedeemStatus({ godMode: false, tripleSpeed: false })
+    setBeginnerRewardClaimed(false)
+    setActivePet(null)
     
     // 清除本地存储
     clearGameData()
@@ -97,6 +112,17 @@ export function GameProvider({ children }) {
       setIsLoaded(true)
     }
   }, [isLoaded, loadGame])
+
+  // 每5分钟清理一次战斗日志
+  useEffect(() => {
+    const clearLogInterval = setInterval(() => {
+      setBattleLog([])
+    }, 5 * 60 * 1000) // 5分钟 = 300000毫秒
+
+    return () => {
+      clearInterval(clearLogInterval)
+    }
+  }, [])
 
   // 当关键数据变化时自动保存（延迟保存，避免频繁写入）
   useEffect(() => {
@@ -142,6 +168,12 @@ export function GameProvider({ children }) {
         loadGame,
         autoSettings,
         setAutoSettings,
+        redeemStatus,
+        setRedeemStatus,
+        beginnerRewardClaimed,
+        setBeginnerRewardClaimed,
+        activePet,
+        setActivePet,
         resetGame,
         hasSavedGame: useMemo(() => checkHasSavedGame(), [saveVersion]),
       }}

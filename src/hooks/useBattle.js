@@ -27,6 +27,7 @@ export function useBattle() {
     setMoney,
     elementPoints,
     equippedItems,
+    redeemStatus,
   } = useGame()
 
   const startBattle = () => {
@@ -47,13 +48,21 @@ export function useBattle() {
     setPlayerTurn(true)
     setSelectedMonster(null)
 
-    // 恢复玩家生命和法力，并重新计算属性（包含相性点和装备）
+    // 先更新属性（包含相性点和装备），这会重新计算 maxHp 和 maxMp
     const equipmentStats = getAllEquipmentStats(equippedItems)
     const updatedPlayer = updatePlayerBattleStats(
-      { ...player, hp: player.maxHp, mp: player.maxMp },
+      { ...player },
       elementPoints,
       equipmentStats
     )
+    
+    // 只有领取了兑换码的用户才在战斗开始前补满血蓝，否则保持之前的血量和法力值
+    if (redeemStatus?.godMode) {
+      updatedPlayer.hp = updatedPlayer.maxHp
+      updatedPlayer.mp = updatedPlayer.maxMp
+    }
+    // 否则保持当前的血量和法力值（不修改 updatedPlayer.hp 和 updatedPlayer.mp）
+    
     setPlayer(updatedPlayer)
 
     addLog('战斗开始！')
@@ -66,7 +75,13 @@ export function useBattle() {
       return
     }
 
-    const monster = selectedMonster
+    // 从 monsters 数组中获取最新的怪物数据，而不是使用 selectedMonster（可能是旧引用）
+    const monster = monsters.find(m => m.id === selectedMonster.id)
+    if (!monster || monster.hp <= 0) {
+      addLog('目标怪物不存在或已死亡！')
+      return
+    }
+
     let damage = player.attack
 
     // 属性相克：普通攻击使用玩家系别
@@ -83,6 +98,14 @@ export function useBattle() {
     )
     setMonsters(updatedMonsters)
 
+    // 更新 selectedMonster 以保持同步
+    const updatedSelectedMonster = updatedMonsters.find(m => m.id === monster.id)
+    if (updatedSelectedMonster && updatedSelectedMonster.hp > 0) {
+      setSelectedMonster(updatedSelectedMonster)
+    } else {
+      setSelectedMonster(null)
+    }
+
     addLog(`${player.name} 攻击 ${monster.name}，造成 ${damage} 点伤害！`)
 
     let finalPlayer = player
@@ -98,8 +121,8 @@ export function useBattle() {
       checkLevelUp(finalPlayer)
     }
 
-    checkBattleEnd(updatedMonsters)
-    if (inBattle) {
+    const battleEnded = checkBattleEnd(updatedMonsters)
+    if (!battleEnded && inBattle) {
       setPlayerTurn(false)
       setTimeout(() => monstersTurn(updatedMonsters, finalPlayer), 1000)
     }
@@ -134,7 +157,13 @@ export function useBattle() {
       return
     }
 
-    const monster = selectedMonster
+    // 从 monsters 数组中获取最新的怪物数据，而不是使用 selectedMonster（可能是旧引用）
+    const monster = monsters.find(m => m.id === selectedMonster.id)
+    if (!monster || monster.hp <= 0) {
+      addLog('目标怪物不存在或已死亡！')
+      return
+    }
+
     const updatedPlayer = { ...player, mp: player.mp - skill.mpCost }
     setPlayer(updatedPlayer)
 
@@ -168,6 +197,14 @@ export function useBattle() {
     )
     setMonsters(updatedMonsters)
 
+    // 更新 selectedMonster 以保持同步
+    const updatedSelectedMonster = updatedMonsters.find(m => m.id === monster.id)
+    if (updatedSelectedMonster && updatedSelectedMonster.hp > 0) {
+      setSelectedMonster(updatedSelectedMonster)
+    } else {
+      setSelectedMonster(null)
+    }
+
     addLog(`${player.name} 使用 ${skill.name} 攻击 ${monster.name}，造成 ${damage} 点伤害！`)
 
     let finalPlayer = updatedPlayer
@@ -183,8 +220,8 @@ export function useBattle() {
       checkLevelUp(finalPlayer)
     }
 
-    checkBattleEnd(updatedMonsters)
-    if (inBattle) {
+    const battleEnded = checkBattleEnd(updatedMonsters)
+    if (!battleEnded && inBattle) {
       setPlayerTurn(false)
       setTimeout(() => monstersTurn(updatedMonsters, finalPlayer), 1000)
     }
@@ -196,7 +233,12 @@ export function useBattle() {
       return
     }
 
-    const monster = selectedMonster
+    // 从 monsters 数组中获取最新的怪物数据，而不是使用 selectedMonster（可能是旧引用）
+    const monster = monsters.find(m => m.id === selectedMonster.id)
+    if (!monster) {
+      addLog('目标怪物不存在！')
+      return
+    }
 
     if (monster.hp <= 0) {
       addLog('无法捕捉已死亡的怪物！')
@@ -327,7 +369,9 @@ export function useBattle() {
 
     if (aliveMonsters.length === 0) {
       endBattle(true)
+      return true // 返回 true 表示战斗已结束
     }
+    return false // 返回 false 表示战斗未结束
   }
 
   const endBattle = (victory) => {

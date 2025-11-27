@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useGame } from '../context/GameContext'
+import { updatePlayerBattleStats } from '../utils/attributeCalc'
+import { getAllEquipmentStats } from '../utils/equipment'
 import './ElementPanel.css'
 
 const elementNames = {
@@ -19,7 +21,7 @@ const elementIcons = {
 }
 
 function ElementPanel({ onClose, embedded = false }) {
-  const { player, elementPoints, setElementPoints } = useGame()
+  const { player, setPlayer, elementPoints, setElementPoints, equippedItems } = useGame()
   const [tempPoints, setTempPoints] = useState(null)
 
   useEffect(() => {
@@ -51,6 +53,13 @@ function ElementPanel({ onClose, embedded = false }) {
 
   const saveElementPoints = () => {
     setElementPoints(tempPoints)
+
+    if (player) {
+      const equipmentStats = getAllEquipmentStats(equippedItems)
+      const updatedPlayer = updatePlayerBattleStats(player, tempPoints, equipmentStats)
+      setPlayer(updatedPlayer)
+    }
+
     if (!embedded) {
       onClose()
     }
@@ -99,11 +108,11 @@ function ElementPanel({ onClose, embedded = false }) {
           <div className="element-bonus">
             <h4>相性点总加成:</h4>
             <div className="bonus-list">
-              <div>物理攻击: +{totalPoints * 0.5}</div>
+              <div>物理攻击: +{(totalPoints * 0.5).toFixed(1)}%</div>
               <div>防御: +{totalPoints * 0.3}</div>
               <div>速度: +{totalPoints * 0.2}</div>
               <div>气血: +{totalPoints * 10}</div>
-              <div>法术攻击: +{Math.floor(totalPoints * 0.5)}%</div>
+              <div>法术攻击: +{(totalPoints * 0.5).toFixed(1)}%</div>
             </div>
           </div>
           <button className="btn btn-primary" onClick={saveElementPoints}>

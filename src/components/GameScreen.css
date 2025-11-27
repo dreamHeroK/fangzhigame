@@ -80,6 +80,26 @@
   box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
 
+.btn-bag {
+  background: linear-gradient(135deg, #36d1dc, #5b86e5);
+  color: #fff;
+}
+
+.btn-bag:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(91, 134, 229, 0.4);
+}
+
+.btn-code {
+  background: linear-gradient(135deg, #a18cd1, #fbc2eb);
+  color: #fff;
+}
+
+.btn-code:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(161, 140, 209, 0.4);
+}
+
 .btn-save {
   background: linear-gradient(135deg, #43e97b, #38f9d7);
   color: white;

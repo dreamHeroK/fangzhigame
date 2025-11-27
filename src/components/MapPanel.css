@@ -82,3 +82,20 @@
   background: #43a047;
 }
 
+.safe-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.map-button.npc-button {
+  margin-top: 0;
+  background: linear-gradient(135deg, #ffb347, #ffcc33);
+  color: #fff;
+}
+
+.map-button.npc-button:hover:not(:disabled) {
+  background: #ff9800;
+}
+

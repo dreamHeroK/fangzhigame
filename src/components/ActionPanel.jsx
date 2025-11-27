@@ -25,6 +25,8 @@ function ActionPanel() {
     setAutoSettings,
     currentMap,
     monsters,
+    activePet,
+    pets,
   } = useGame()
   const { startBattle, playerAttack, playerDefend, playerSkill, captureMonster, useMedicine } = useBattle()
   const [selectedSkill, setSelectedSkill] = useState(null)
@@ -226,6 +228,14 @@ function ActionPanel() {
         <label className="auto-checkbox">
           <input
             type="checkbox"
+            checked={autoSettings.autoChainBattle}
+            onChange={(e) => handleAutoSettingsChange('autoChainBattle', e.target.checked)}
+          />
+          连续战斗（每场结束后自动开战）
+        </label>
+        <label className="auto-checkbox">
+          <input
+            type="checkbox"
             checked={autoSettings.autoCapture}
             onChange={(e) => handleAutoSettingsChange('autoCapture', e.target.checked)}
           />
@@ -253,6 +263,19 @@ function ActionPanel() {
           </select>
         </div>
         <div className="auto-tip">若法力不足，自动改用物理攻击。</div>
+        {activePet && (() => {
+          // 从 pets 数组中获取最新的宠物数据
+          const latestActivePet = pets.find(p => p.id === activePet.id) || activePet
+          return (
+            <div className="auto-pet-info">
+              <div className="auto-pet-label">上阵宠物:</div>
+              <div className="auto-pet-name">
+                {elementIcons[latestActivePet.element]} {latestActivePet.name}
+                {latestActivePet.isDivine && <span className="divine-badge" style={{ fontSize: '0.6em', marginLeft: '5px' }}>神兽</span>}
+              </div>
+            </div>
+          )
+        })()}
       </div>
     </div>
   )
