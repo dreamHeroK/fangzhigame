@@ -28,7 +28,7 @@ function ActionPanel() {
     activePet,
     pets,
   } = useGame()
-  const { startBattle, playerAttack, playerDefend, playerSkill, captureMonster, useMedicine } = useBattle()
+  const { startBattle, stopBattle, playerAttack, playerDefend, playerSkill, captureMonster, useMedicine } = useBattle()
   const [selectedSkill, setSelectedSkill] = useState(null)
   const [selectedMedicine, setSelectedMedicine] = useState(null)
   const playerAttackRef = useRef(playerAttack)
@@ -109,14 +109,16 @@ function ActionPanel() {
     <div className="action-panel">
       {!inBattle ? (
         <div className="pre-battle-actions">
-          <button
-            className="btn btn-primary"
-            onClick={startBattle}
-            disabled={isSafeZone}
-            title={isSafeZone ? '安全区无法战斗' : ''}
-          >
-            开始战斗
-          </button>
+          <div className="battle-buttons">
+            <button
+              className="btn btn-primary"
+              onClick={startBattle}
+              disabled={isSafeZone}
+              title={isSafeZone ? '安全区无法战斗' : ''}
+            >
+              开始战斗
+            </button>
+          </div>
           {isSafeZone && (
             <div className="safe-hint">
               安全区无法战斗，请前往野外地图。
@@ -125,6 +127,15 @@ function ActionPanel() {
         </div>
       ) : (
         <>
+          <div className="battle-control-buttons">
+            <button
+              className="btn btn-danger"
+              onClick={stopBattle}
+              title="停止战斗"
+            >
+              停止战斗
+            </button>
+          </div>
           <button
             className="btn btn-attack"
             onClick={playerAttack}
@@ -266,14 +277,39 @@ function ActionPanel() {
         {activePet && (() => {
           // 从 pets 数组中获取最新的宠物数据
           const latestActivePet = pets.find(p => p.id === activePet.id) || activePet
+          const petSkills = latestActivePet.skills || []
           return (
-            <div className="auto-pet-info">
-              <div className="auto-pet-label">上阵宠物:</div>
-              <div className="auto-pet-name">
-                {elementIcons[latestActivePet.element]} {latestActivePet.name}
-                {latestActivePet.isDivine && <span className="divine-badge" style={{ fontSize: '0.6em', marginLeft: '5px' }}>神兽</span>}
+            <>
+              <div className="auto-pet-info">
+                <div className="auto-pet-label">上阵宠物:</div>
+                <div className="auto-pet-name">
+                  {elementIcons[latestActivePet.element]} {latestActivePet.name}
+                  {latestActivePet.isDivine && <span className="divine-badge" style={{ fontSize: '0.6em', marginLeft: '5px' }}>神兽</span>}
+                </div>
               </div>
-            </div>
+              {petSkills.length > 0 && (
+                <div className="auto-skill-selector">
+                  <span>宠物优先技能:</span>
+                  <select
+                    className="skill-select"
+                    value={autoSettings.autoPetSkillId ?? ''}
+                    onChange={(e) =>
+                      handleAutoSettingsChange(
+                        'autoPetSkillId',
+                        e.target.value ? parseInt(e.target.value, 10) : null
+                      )
+                    }
+                  >
+                    <option value="">普通攻击</option>
+                    {petSkills.map(skill => (
+                      <option key={skill.id} value={skill.id}>
+                        {elementIcons[skill.element]} {skill.name} ({skill.mpCost}MP)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </>
           )
         })()}
       </div>

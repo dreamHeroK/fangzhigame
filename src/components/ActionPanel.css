@@ -15,6 +15,19 @@
   gap: 8px;
 }
 
+.battle-buttons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.battle-control-buttons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
 .safe-hint {
   font-size: 0.9em;
   color: #ffeb3b;
@@ -106,6 +119,11 @@
   color: white;
 }
 
+.btn-danger {
+  background: linear-gradient(135deg, #f44336, #d32f2f);
+  color: white;
+}
+
 .btn:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0,0,0,0.3);
@@ -157,6 +175,24 @@
   grid-column: 1 / -1;
   font-size: 0.85em;
   color: #666;
+}
+
+.auto-pet-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95em;
+  color: #333;
+}
+
+.auto-pet-label {
+  font-weight: bold;
+}
+
+.auto-pet-name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 @media (max-width: 768px) {

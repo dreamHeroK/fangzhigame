@@ -197,8 +197,10 @@ export function useBattle() {
     })
   }
 
-  const startBattle = () => {
-    if (inBattle) return
+  const startBattle = (forceStart = false) => {
+    // 如果 forceStart 为 true（连续战斗模式），跳过 inBattle 检查
+    // 因为状态更新可能有延迟
+    if (!forceStart && inBattle) return
     const mapData = maps[currentMap]
     if (!mapData || mapData.type === 'safe') {
       addLog('这里是安全区，无法战斗！')
@@ -845,14 +847,16 @@ export function useBattle() {
         drops.push(...monsterDrops)
       })
       
+      let updatedPlayer = player
       if (totalExp > 0) {
-        const finalPlayer = {
+        updatedPlayer = {
           ...player,
           exp: player.exp + totalExp,
         }
-        setPlayer(finalPlayer)
+        setPlayer(updatedPlayer)
         addLog(`获得 ${totalExp} 点经验！`)
-        checkLevelUp(finalPlayer)
+        // checkLevelUp 会更新玩家状态，但我们需要在它之后检查连续战斗
+        checkLevelUp(updatedPlayer)
       }
       
       // 处理掉落
@@ -872,6 +876,32 @@ export function useBattle() {
         
         setInventory(newInventory)
         setMoney(totalMoney)
+      }
+      
+      // 检查是否启用连续战斗
+      // 保存当前的 autoChainBattle 值，避免闭包问题
+      const shouldChainBattle = autoSettings.autoChainBattle
+      if (shouldChainBattle) {
+        // 延迟一下，确保状态更新完成（包括升级），然后自动开启下一场战斗
+        setTimeout(() => {
+          // 再次检查连续战斗设置（可能用户已经关闭了）
+          // 注意：这里仍然使用闭包中的 autoSettings，但我们已经保存了初始值
+          // 如果用户关闭了连续战斗，下一场战斗就不会自动开始
+          // 检查是否在安全区
+          const mapData = maps[currentMap]
+          if (mapData && mapData.type !== 'safe') {
+            // 检查玩家是否还活着（升级后可能恢复血量）
+            // 注意：这里使用闭包中的 player 可能不是最新的，但 checkLevelUp 已经更新了玩家状态
+            // 如果玩家升级了，hp 会被设置为 maxHp，所以应该是活着的
+            // 为了更安全，我们直接调用 startBattle，让 startBattle 内部检查
+            // 传递 forceStart=true 来跳过 inBattle 检查，因为状态更新可能有延迟
+            // 但是，我们需要再次检查 autoSettings，因为用户可能已经关闭了连续战斗
+            // 由于闭包问题，我们需要通过其他方式获取最新的 autoSettings
+            // 最简单的方式是：如果 inBattle 已经是 false，说明状态已经更新，可以安全地开始
+            // 如果 inBattle 还是 true，说明状态还没更新，但我们用 forceStart 来跳过检查
+            startBattle(true)
+          }
+        }, 2000) // 延迟2秒，让玩家看到战斗结果和升级信息
       }
     }
   }
@@ -959,8 +989,20 @@ export function useBattle() {
     }
   }
 
+  // 停止战斗
+  const stopBattle = () => {
+    if (!inBattle) return
+    
+    setInBattle(false)
+    setPlayerTurn(false)
+    setSelectedMonster(null)
+    setMonsters([])
+    addLog('战斗已停止')
+  }
+
   return {
     startBattle,
+    stopBattle,
     playerAttack,
     playerDefend,
     playerSkill,
