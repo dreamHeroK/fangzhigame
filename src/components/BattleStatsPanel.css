@@ -109,6 +109,33 @@
   font-size: 1.1em;
 }
 
+.unit-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.unit-name {
+  font-weight: bold;
+  font-size: 1em;
+  color: #333;
+  text-align: center;
+  padding: 5px;
+  background: #f0f0f0;
+  border-radius: 5px;
+}
+
+.pet-stats {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 2px solid #e0e0e0;
+}
+
+.pet-stats .unit-name {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
 @media (max-width: 768px) {
   .battle-attributes {
     grid-template-columns: repeat(2, 1fr);
