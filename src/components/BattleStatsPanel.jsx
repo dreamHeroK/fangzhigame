@@ -14,13 +14,15 @@ function BattleStatsPanel() {
 
   if (!player) return null
 
-  const hpPercent = (player.hp / player.maxHp) * 100
-  const mpPercent = (player.mp / player.maxMp) * 100
+  const hpPercent = player.maxHp > 0 ? (player.hp / player.maxHp) * 100 : 0
+  const mpPercent = player.maxMp > 0 ? (player.mp / player.maxMp) * 100 : 0
+  const expPercent = (player.expMax && player.expMax > 0) ? (player.exp / player.expMax) * 100 : 0
 
   // 获取最新的宠物数据
   const currentPet = activePet ? pets.find(p => p.id === activePet.id) || activePet : null
   const petHpPercent = currentPet ? (currentPet.hp / currentPet.maxHp) * 100 : 0
   const petMpPercent = currentPet ? (currentPet.mp / currentPet.maxMp) * 100 : 0
+  const petExpPercent = currentPet ? (currentPet.exp / currentPet.expMax) * 100 : 0
 
   return (
     <div className="battle-stats-panel">
@@ -30,7 +32,10 @@ function BattleStatsPanel() {
       <div className="battle-stats-content">
         {/* 玩家属性 */}
         <div className="unit-stats">
-          <div className="unit-name">{player.name}</div>
+          <div className="unit-name">
+            <span className="unit-name-text">{player.name || '玩家'}</span>
+            <span className="unit-level">Lv.{player.level !== undefined ? player.level : 1}</span>
+          </div>
           <div className="stat-bars">
             <div className="stat-bar-item">
               <span className="stat-label">生命:</span>
@@ -50,23 +55,14 @@ function BattleStatsPanel() {
                 </div>
               </div>
             </div>
-          </div>
-          <div className="battle-attributes">
-            <div className="battle-attr-item">
-              <span className="attr-label">攻击:</span>
-              <span className="attr-value">{player.attack}</span>
-            </div>
-            <div className="battle-attr-item">
-              <span className="attr-label">防御:</span>
-              <span className="attr-value">{player.defense}</span>
-            </div>
-            <div className="battle-attr-item">
-              <span className="attr-label">速度:</span>
-              <span className="attr-value">{player.speed}</span>
-            </div>
-            <div className="battle-attr-item">
-              <span className="attr-label">命中:</span>
-              <span className="attr-value">{player.hitRate}%</span>
+            <div className="stat-bar-item">
+              <span className="stat-label">经验:</span>
+              <div className="stat-bar-container">
+                <div className="stat-bar">
+                  <div className="stat-fill exp" style={{ width: `${expPercent}%` }}></div>
+                  <span className="stat-value">{player.exp !== undefined ? player.exp : 0}/{player.expMax !== undefined ? player.expMax : 0}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -75,7 +71,10 @@ function BattleStatsPanel() {
         {currentPet && (
           <div className="unit-stats pet-stats">
             <div className="unit-name">
-              {elementIcons[currentPet.element]} {currentPet.name}
+              <span className="unit-name-text">
+                {elementIcons[currentPet.element]} {currentPet.name}
+              </span>
+              <span className="unit-level">Lv.{currentPet.level}</span>
             </div>
             <div className="stat-bars">
               <div className="stat-bar-item">
@@ -96,23 +95,14 @@ function BattleStatsPanel() {
                   </div>
                 </div>
               </div>
-            </div>
-            <div className="battle-attributes">
-              <div className="battle-attr-item">
-                <span className="attr-label">攻击:</span>
-                <span className="attr-value">{currentPet.attack}</span>
-              </div>
-              <div className="battle-attr-item">
-                <span className="attr-label">防御:</span>
-                <span className="attr-value">{currentPet.defense}</span>
-              </div>
-              <div className="battle-attr-item">
-                <span className="attr-label">速度:</span>
-                <span className="attr-value">{currentPet.speed}</span>
-              </div>
-              <div className="battle-attr-item">
-                <span className="attr-label">命中:</span>
-                <span className="attr-value">{currentPet.hitRate}%</span>
+              <div className="stat-bar-item">
+                <span className="stat-label">经验:</span>
+                <div className="stat-bar-container">
+                  <div className="stat-bar">
+                    <div className="stat-fill exp" style={{ width: `${petExpPercent}%` }}></div>
+                    <span className="stat-value">{currentPet.exp}/{currentPet.expMax}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

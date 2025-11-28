@@ -105,19 +105,41 @@ function ActionPanel() {
     }))
   }
 
+  const handleStopAutoBattle = () => {
+    // 设置连续战斗为 false
+    setAutoSettings(prev => ({
+      ...prev,
+      autoChainBattle: false,
+    }))
+    // 如果正在战斗中，停止战斗
+    if (inBattle) {
+      stopBattle()
+    }
+  }
+
   return (
     <div className="action-panel">
       {!inBattle ? (
         <div className="pre-battle-actions">
           <div className="battle-buttons">
-            <button
-              className="btn btn-primary"
-              onClick={startBattle}
-              disabled={isSafeZone}
-              title={isSafeZone ? '安全区无法战斗' : ''}
-            >
-              开始战斗
-            </button>
+            {autoSettings.autoChainBattle ? (
+              <button
+                className="btn btn-danger"
+                onClick={handleStopAutoBattle}
+                title="停止自动战斗"
+              >
+                停止自动战斗
+              </button>
+            ) : (
+              <button
+                className="btn btn-primary"
+                onClick={startBattle}
+                disabled={isSafeZone}
+                title={isSafeZone ? '安全区无法战斗' : ''}
+              >
+                开始战斗
+              </button>
+            )}
           </div>
           {isSafeZone && (
             <div className="safe-hint">

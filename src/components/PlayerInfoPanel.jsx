@@ -126,6 +126,7 @@ function PlayerInfoPanel({ onClose, onOpenSectPanel, onOpenEquipmentPanel, onOpe
   const statBars = [
     { key: 'hp', label: '气血', current: player.hp || 0, max: player.maxHp || 0, percent: getPercent(player.hp, player.maxHp), tone: 'hp' },
     { key: 'mp', label: '法力', current: player.mp || 0, max: player.maxMp || 0, percent: getPercent(player.mp, player.maxMp), tone: 'mp' },
+    { key: 'exp', label: '经验', current: player.exp || 0, max: player.expMax || 0, percent: getPercent(player.exp, player.expMax), tone: 'exp' },
   ]
 
   const basicInfoRows = [
@@ -137,15 +138,6 @@ function PlayerInfoPanel({ onClose, onOpenSectPanel, onOpenEquipmentPanel, onOpe
     { label: '门派', value: player.sect || '未拜入' },
     { label: '金钱', value: `${money} 文` },
     { label: '宠物', value: `${pets.length} 只` },
-  ]
-
-  const combatStats = [
-    { label: '物理攻击', value: player.attack || 0 },
-    { label: '法术增伤', value: `+${Math.max(0, Math.floor(((player.magicDamage || 1) - 1) * 100))}%` },
-    { label: '速度', value: player.speed || 0 },
-    { label: '防御', value: player.defense || 0 },
-    { label: '命中', value: `${player.hitRate || 0}%` },
-    { label: '相性总点', value: totalElementPoints },
   ]
 
   const elementDetails = elementConfig.map(({ key, label, icon }) => ({
@@ -314,6 +306,10 @@ function PlayerInfoPanel({ onClose, onOpenSectPanel, onOpenEquipmentPanel, onOpe
           </div>
           <div className="status-right">
             <div className="stat-bars-card">
+              <div className="level-display">
+                <span className="level-label">等级</span>
+                <span className="level-value">{player.level}</span>
+              </div>
               {statBars.map((bar) => (
                 <div key={bar.key} className="stat-bar">
                   <div className={`stat-bar-track ${bar.tone}`}>
@@ -324,14 +320,6 @@ function PlayerInfoPanel({ onClose, onOpenSectPanel, onOpenEquipmentPanel, onOpe
                   </div>
                 </div>
               ))}
-              <div className="combat-stats-grid">
-                {combatStats.map(({ label, value }) => (
-                  <div key={label} className="combat-stat">
-                    <span className="combat-label">{label}</span>
-                    <span className="combat-value">{value}</span>
-                  </div>
-                ))}
-              </div>
             </div>
             <div className="detail-box">
               <div className="detail-tabs">
