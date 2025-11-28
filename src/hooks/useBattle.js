@@ -333,73 +333,82 @@ export function useBattle() {
     // 如果 forceStart 为 true（连续战斗模式），跳过 inBattle 检查
     // 因为状态更新可能有延迟
     if (!forceStart && inBattle) return
+    
     const mapData = maps[currentMap]
     if (!mapData || mapData.type === 'safe') {
       addLog('这里是安全区，无法战斗！')
       return
     }
 
-    const newMonsters = generateMonsters(player, currentMap)
-    if (!newMonsters.length) {
-      addLog('这里没有怪物可以挑战。')
-      return
-    }
-    setMonsters(newMonsters)
-    setSelectedMonster(null)
-    // 先设置 inBattle，确保状态已更新
-    setInBattle(true)
-    setPlayerTurn(false) // 初始设置为 false，由 startTurn 根据速度顺序决定
+    // 使用函数式更新获取最新的 player 数据并更新
+    setPlayer(prevPlayer => {
+      const newMonsters = generateMonsters(prevPlayer, currentMap)
+      if (!newMonsters.length) {
+        addLog('这里没有怪物可以挑战。')
+        return prevPlayer
+      }
+      
+      setMonsters(() => newMonsters)
+      setSelectedMonster(() => null)
+      // 先设置 inBattle，确保状态已更新
+      setInBattle(() => true)
+      setPlayerTurn(() => false) // 初始设置为 false，由 startTurn 根据速度顺序决定
 
-    // 先更新属性（包含相性点和装备），这会重新计算 maxHp 和 maxMp
-    const equipmentStats = getAllEquipmentStats(equippedItems)
-    const updatedPlayer = updatePlayerBattleStats(
-      { ...player },
-      elementPoints,
-      equipmentStats
-    )
-    
-    // 只有领取了兑换码的用户才在战斗开始前补满血蓝，否则保持之前的血量和法力值
-    if (redeemStatus?.godMode) {
-      updatedPlayer.hp = updatedPlayer.maxHp
-      updatedPlayer.mp = updatedPlayer.maxMp
-    }
-    // 否则保持当前的血量和法力值（不修改 updatedPlayer.hp 和 updatedPlayer.mp）
-    
-    setPlayer(updatedPlayer)
+      // 先更新属性（包含相性点和装备），这会重新计算 maxHp 和 maxMp
+      const equipmentStats = getAllEquipmentStats(equippedItems)
+      const updatedPlayer = updatePlayerBattleStats(
+        { ...prevPlayer },
+        elementPoints,
+        equipmentStats
+      )
+      
+      // 只有领取了兑换码的用户才在战斗开始前补满血蓝，否则保持之前的血量和法力值
+      if (redeemStatus?.godMode) {
+        updatedPlayer.hp = updatedPlayer.maxHp
+        updatedPlayer.mp = updatedPlayer.maxMp
+      }
+      // 否则保持当前的血量和法力值（不修改 updatedPlayer.hp 和 updatedPlayer.mp）
 
-    // 更新参战宠物的属性（如果有）
-    let updatedPetsList = pets
-    if (activePet) {
-      const petIndex = pets.findIndex(p => p.id === activePet.id)
-      if (petIndex >= 0) {
-        let updatedPet = recalcPetStats(pets[petIndex])
-        if (redeemStatus?.godMode) {
-          updatedPet.hp = updatedPet.maxHp
-          updatedPet.mp = updatedPet.maxMp
+      // 更新参战宠物的属性（如果有）- 使用函数式更新获取最新的 pets
+      setPets(prevPets => {
+        let updatedPetsList = prevPets
+        if (activePet) {
+          const petIndex = prevPets.findIndex(p => p.id === activePet.id)
+          if (petIndex >= 0) {
+            let updatedPet = recalcPetStats(prevPets[petIndex])
+            if (redeemStatus?.godMode) {
+              updatedPet.hp = updatedPet.maxHp
+              updatedPet.mp = updatedPet.maxMp
+            }
+            updatedPetsList = prevPets.map((pet, idx) => idx === petIndex ? updatedPet : pet)
+            setActivePet(() => updatedPet)
+          }
         }
-        updatedPetsList = pets.map((pet, idx) => idx === petIndex ? updatedPet : pet)
-        setPets(updatedPetsList)
-        setActivePet(updatedPet)
-      }
-    }
 
-    addLog('战斗开始！')
-    addLog(`出现了 ${newMonsters.length} 只怪物！`)
-    
-    // 先获取出手顺序并输出（使用更新后的数据）
-    const battleUnits = getBattleUnits(updatedPlayer, newMonsters, updatedPetsList)
-    if (battleUnits.length > 0) {
-      const orderInfo = battleUnits.map((u, i) => `${i + 1}. ${u.name || u.data.name} (速度: ${u.speed})`).join(', ')
-      addLog(`行动顺序: ${orderInfo}`)
-    }
-    
-    // 直接开始第一回合（使用更新后的数据）
-    // 使用 setTimeout 确保 React 状态已更新
-    setTimeout(() => {
-      if (battleUnits.length > 0) {
-        processTurn(battleUnits, 0, newMonsters)
-      }
-    }, 300)
+        // 在 setTimeout 中处理需要同时使用更新后的 player 和 pets 的逻辑
+        setTimeout(() => {
+          addLog('战斗开始！')
+          addLog(`出现了 ${newMonsters.length} 只怪物！`)
+          
+          // 先获取出手顺序并输出（使用更新后的数据）
+          // 注意：这里需要在 setTimeout 中重新获取最新的状态，或者直接使用计算好的值
+          const battleUnits = getBattleUnits(updatedPlayer, newMonsters, updatedPetsList)
+          if (battleUnits.length > 0) {
+            const orderInfo = battleUnits.map((u, i) => `${i + 1}. ${u.name || u.data.name} (速度: ${u.speed})`).join(', ')
+            addLog(`行动顺序: ${orderInfo}`)
+          }
+          
+          // 直接开始第一回合（使用更新后的数据）
+          if (battleUnits.length > 0) {
+            processTurn(battleUnits, 0, newMonsters)
+          }
+        }, 300)
+
+        return updatedPetsList
+      })
+
+      return updatedPlayer
+    })
   }
 
   // 开始新回合
@@ -992,21 +1001,8 @@ export function useBattle() {
       if (shouldChainBattle) {
         // 延迟一下，确保状态更新完成（包括升级），然后自动开启下一场战斗
         setTimeout(() => {
-          // 再次检查连续战斗设置（可能用户已经关闭了）
-          // 注意：这里仍然使用闭包中的 autoSettings，但我们已经保存了初始值
-          // 如果用户关闭了连续战斗，下一场战斗就不会自动开始
-          // 检查是否在安全区
           const mapData = maps[currentMap]
           if (mapData && mapData.type !== 'safe') {
-            // 检查玩家是否还活着（升级后可能恢复血量）
-            // 注意：这里使用闭包中的 player 可能不是最新的，但 checkLevelUp 已经更新了玩家状态
-            // 如果玩家升级了，hp 会被设置为 maxHp，所以应该是活着的
-            // 为了更安全，我们直接调用 startBattle，让 startBattle 内部检查
-            // 传递 forceStart=true 来跳过 inBattle 检查，因为状态更新可能有延迟
-            // 但是，我们需要再次检查 autoSettings，因为用户可能已经关闭了连续战斗
-            // 由于闭包问题，我们需要通过其他方式获取最新的 autoSettings
-            // 最简单的方式是：如果 inBattle 已经是 false，说明状态已经更新，可以安全地开始
-            // 如果 inBattle 还是 true，说明状态还没更新，但我们用 forceStart 来跳过检查
             startBattle(true)
           }
         }, 2000) // 延迟2秒，让玩家看到战斗结果和升级信息
