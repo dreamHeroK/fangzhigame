@@ -5,7 +5,7 @@ import { getAllEquipmentStats } from '../utils/equipment'
 import './AttributePanel.css'
 
 function AttributePanel({ onClose, embedded = false }) {
-  const { player, setPlayer, elementPoints, equippedItems } = useGame()
+  const { player, setPlayer, elementPoints, equippedItems, playerRef } = useGame()
   const [tempAttributes, setTempAttributes] = useState(null)
   const [assignStep, setAssignStep] = useState(1)
 
@@ -67,45 +67,51 @@ function AttributePanel({ onClose, embedded = false }) {
   }
 
   const saveAttributes = () => {
-    // 更新基础属性
-    const updatedPlayer = {
-      ...player,
-      strength: tempAttributes.strength,
-      constitution: tempAttributes.constitution,
-      spirit: tempAttributes.spirit,
-      agility: tempAttributes.agility,
-      points: tempAttributes.points,
-    }
-
-    // 重新计算战斗属性（包含相性点和装备）
-    const equipmentStats = getAllEquipmentStats(equippedItems)
-    const battleStats = calculateBattleStats(
-      {
+    // 使用 playerRef 作为最新数据源，避免覆盖战斗中更新的经验/等级
+    setPlayer(prev => {
+      const base = playerRef?.current || prev
+      if (!base) return base
+      
+      // 更新基础属性
+      const updatedPlayer = {
+        ...base,
         strength: tempAttributes.strength,
         constitution: tempAttributes.constitution,
         spirit: tempAttributes.spirit,
         agility: tempAttributes.agility,
-      },
-      player.level,
-      elementPoints,
-      equipmentStats
-    )
+        points: tempAttributes.points,
+      }
 
-    updatedPlayer.attack = battleStats.attack
-    updatedPlayer.defense = battleStats.defense
-    updatedPlayer.speed = battleStats.speed
-    updatedPlayer.maxHp = battleStats.maxHp
-    updatedPlayer.maxMp = battleStats.maxMp
+      // 重新计算战斗属性（包含相性点和装备）
+      const equipmentStats = getAllEquipmentStats(equippedItems)
+      const battleStats = calculateBattleStats(
+        {
+          strength: tempAttributes.strength,
+          constitution: tempAttributes.constitution,
+          spirit: tempAttributes.spirit,
+          agility: tempAttributes.agility,
+        },
+        base.level,
+        elementPoints,
+        equipmentStats
+      )
 
-    // 确保当前HP/MP不超过最大值
-    if (updatedPlayer.hp > updatedPlayer.maxHp) {
-      updatedPlayer.hp = updatedPlayer.maxHp
-    }
-    if (updatedPlayer.mp > updatedPlayer.maxMp) {
-      updatedPlayer.mp = updatedPlayer.maxMp
-    }
+      updatedPlayer.attack = battleStats.attack
+      updatedPlayer.defense = battleStats.defense
+      updatedPlayer.speed = battleStats.speed
+      updatedPlayer.maxHp = battleStats.maxHp
+      updatedPlayer.maxMp = battleStats.maxMp
 
-    setPlayer(updatedPlayer)
+      // 确保当前HP/MP不超过最大值
+      if (updatedPlayer.hp > updatedPlayer.maxHp) {
+        updatedPlayer.hp = updatedPlayer.maxHp
+      }
+      if (updatedPlayer.mp > updatedPlayer.maxMp) {
+        updatedPlayer.mp = updatedPlayer.maxMp
+      }
+
+      return updatedPlayer
+    })
     if (!embedded) {
       onClose()
     }

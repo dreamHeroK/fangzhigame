@@ -7,6 +7,7 @@ import ActionPanel from './ActionPanel'
 import BattleLog from './BattleLog'
 import PlayerInfoPanel from './PlayerInfoPanel'
 import PetPanel from './PetPanel'
+import PetDexPanel from './PetDexPanel'
 import SectPanel from './SectPanel'
 import MedicineShop from './MedicineShop'
 import EquipmentPanel from './EquipmentPanel'
@@ -20,6 +21,7 @@ function GameScreen() {
   const { resetGame } = useGame()
   const [showPlayerInfoPanel, setShowPlayerInfoPanel] = useState(false)
   const [showPetPanel, setShowPetPanel] = useState(false)
+  const [showPetDexPanel, setShowPetDexPanel] = useState(false)
   const [showSectPanel, setShowSectPanel] = useState(false)
   const [showMedicineShop, setShowMedicineShop] = useState(false)
   const [showEquipmentPanel, setShowEquipmentPanel] = useState(false)
@@ -60,6 +62,9 @@ function GameScreen() {
         <button className="btn btn-bag" onClick={() => setShowBagPanel(true)}>
           背包
         </button>
+        <button className="btn btn-bag" onClick={() => setShowPetDexPanel(true)}>
+          宠物图鉴
+        </button>
         <button className="btn btn-shop" onClick={() => setShowMedicineShop(true)}>
           药品商店
         </button>
@@ -97,6 +102,10 @@ function GameScreen() {
 
       {showPetPanel && (
         <PetPanel onClose={() => setShowPetPanel(false)} />
+      )}
+
+      {showPetDexPanel && (
+        <PetDexPanel onClose={() => setShowPetDexPanel(false)} />
       )}
 
       {showSectPanel && (

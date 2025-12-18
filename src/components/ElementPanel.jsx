@@ -21,7 +21,7 @@ const elementIcons = {
 }
 
 function ElementPanel({ onClose, embedded = false }) {
-  const { player, setPlayer, elementPoints, setElementPoints, equippedItems } = useGame()
+  const { player, setPlayer, elementPoints, setElementPoints, equippedItems, playerRef } = useGame()
   const [tempPoints, setTempPoints] = useState(null)
 
   useEffect(() => {
@@ -54,11 +54,13 @@ function ElementPanel({ onClose, embedded = false }) {
   const saveElementPoints = () => {
     setElementPoints(tempPoints)
 
-    if (player) {
+    // 更新玩家属性（使用函数式更新确保使用最新状态）
+    setPlayer(prev => {
+      const base = playerRef?.current || prev
+      if (!base) return base
       const equipmentStats = getAllEquipmentStats(equippedItems)
-      const updatedPlayer = updatePlayerBattleStats(player, tempPoints, equipmentStats)
-      setPlayer(updatedPlayer)
-    }
+      return updatePlayerBattleStats(base, tempPoints, equipmentStats)
+    })
 
     if (!embedded) {
       onClose()

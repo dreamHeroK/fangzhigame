@@ -1,5 +1,8 @@
 .pet-panel-content {
   margin-top: 20px;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 20px;
 }
 
 .pet-list {
@@ -17,6 +20,16 @@
   cursor: pointer;
   transition: all 0.3s ease;
   border: 2px solid transparent;
+}
+
+.active-tag {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 2px 6px;
+  font-size: 0.75em;
+  border-radius: 999px;
+  background: #38a169;
+  color: #fff;
 }
 
 .pet-item:hover {
@@ -37,6 +50,11 @@
 .pet-item-element {
   font-size: 0.8em;
   color: #666;
+}
+
+.pet-exp-brief {
+  margin-left: 4px;
+  color: #999;
 }
 
 .divine-badge {
@@ -68,9 +86,11 @@
 }
 
 .pet-detail {
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 2px solid #e0e0e0;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+  max-height: 420px;
+  overflow-y: auto;
 }
 
 .pet-stats {
@@ -79,5 +99,26 @@
 
 .pet-attr-controls {
   margin-top: 15px;
+}
+
+.pet-actions {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pet-ai-mode-row {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9em;
+}
+
+.ai-mode-select {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #cbd5e0;
 }
 

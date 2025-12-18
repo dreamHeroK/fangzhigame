@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useGame } from '../context/GameContext'
 import { calculateBattleStats } from '../utils/attributeCalc'
+import { getMedicineById } from '../utils/items'
 import './PetPanel.css'
 
 const elementIcons = {
@@ -12,9 +13,32 @@ const elementIcons = {
 }
 
 function PetPanel({ onClose }) {
-  const { pets, setPets, activePet, setActivePet, autoSettings, setAutoSettings } = useGame()
+  const { pets, setPets, activePet, setActivePet, autoSettings, setAutoSettings, inventory, setInventory, addLog } = useGame()
   const [selectedPet, setSelectedPet] = useState(null)
   const [tempAttributes, setTempAttributes] = useState(null)
+  const [petAiMode, setPetAiMode] = useState('balanced')
+
+  // 打开面板时，优先选中当前上阵宠物，其次选中等级最高的宠物
+  useEffect(() => {
+    if (!pets || pets.length === 0) {
+      setSelectedPet(null)
+      setTempAttributes(null)
+      return
+    }
+
+    if (!selectedPet) {
+      if (activePet) {
+        const latestActive = pets.find(p => p.id === activePet.id)
+        if (latestActive) {
+          setSelectedPet(latestActive)
+          return
+        }
+      }
+      // 默认选中等级最高的宠物
+      const highestLevelPet = [...pets].sort((a, b) => (b.level || 1) - (a.level || 1))[0]
+      setSelectedPet(highestLevelPet)
+    }
+  }, [pets, activePet, selectedPet])
 
   useEffect(() => {
     if (selectedPet) {
@@ -25,6 +49,7 @@ function PetPanel({ onClose }) {
         agility: selectedPet.agility || 0,
         points: selectedPet.points || 0,
       })
+      setPetAiMode(selectedPet.aiMode || 'balanced')
     }
   }, [selectedPet])
 
@@ -68,6 +93,7 @@ function PetPanel({ onClose }) {
           spirit: tempAttributes.spirit,
           agility: tempAttributes.agility,
           points: tempAttributes.points,
+          aiMode: petAiMode,
         }
         
         // 重新计算战斗属性（考虑宠物资质和成长性）
@@ -140,6 +166,36 @@ function PetPanel({ onClose }) {
     )
   })() : null
 
+  // 使用成长丹（示例：id 为 'pet_growth_pill' 的道具）提升成长性
+  const handleUseGrowthPill = () => {
+    if (!selectedPet) return
+    const pillId = 'pet_growth_pill'
+    const count = (inventory && inventory[pillId]) || 0
+    if (count <= 0) {
+      addLog('没有可用的成长丹')
+      return
+    }
+
+    const updatedPets = pets.map(pet => {
+      if (pet.id !== selectedPet.id) return pet
+      const currentGrowth = pet.growth || 1000
+      return {
+        ...pet,
+        growth: currentGrowth + 50, // 每颗成长丹 +50 成长
+      }
+    })
+
+    setPets(updatedPets)
+    setInventory(prev => ({
+      ...(prev || {}),
+      [pillId]: Math.max(0, ((prev || {})[pillId] || 0) - 1),
+    }))
+    const med = getMedicineById(pillId) || { name: '成长丹' }
+    addLog(`为 ${selectedPet.name} 使用了 ${med.name}，成长性提升`)
+    const updatedPet = updatedPets.find(p => p.id === selectedPet.id)
+    setSelectedPet(updatedPet || selectedPet)
+  }
+
   return (
     <div className="modal active" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -152,17 +208,34 @@ function PetPanel({ onClose }) {
             {pets.length === 0 ? (
               <p>暂无宠物</p>
             ) : (
-              pets.map(pet => (
+              [...pets]
+                .slice()
+                .sort((a, b) => {
+                  // 先按是否上阵排序（当前上阵的排最前）
+                  if (activePet?.id === a.id && activePet?.id !== b.id) return -1
+                  if (activePet?.id === b.id && activePet?.id !== a.id) return 1
+                  // 再按等级从高到低
+                  return (b.level || 1) - (a.level || 1)
+                })
+                .map(pet => (
                 <div
                   key={pet.id}
                   className={`pet-item ${selectedPet?.id === pet.id ? 'selected' : ''}`}
                   onClick={() => setSelectedPet(pet)}
                 >
                   <div className="pet-item-name">
+                    {activePet?.id === pet.id && <span className="active-tag">上阵</span>}
                     {elementIcons[pet.element]} {pet.name}
                     {pet.isDivine && <span className="divine-badge">神兽</span>}
                   </div>
-                  <div className="pet-item-element">等级: {pet.level}</div>
+                  <div className="pet-item-element">
+                    等级: {pet.level}
+                    {typeof pet.exp === 'number' && typeof pet.expMax === 'number' && (
+                      <span className="pet-exp-brief">
+                        （{pet.exp}/{pet.expMax}）
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))
             )}
@@ -195,6 +268,17 @@ function PetPanel({ onClose }) {
                   <span>
                     {selectedPet.hp}/{selectedPet.maxHp}
                   </span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">经验:</span>
+                  <span>
+                    {(selectedPet.exp || 0) + (selectedPet.storedExp || 0)}/
+                    {selectedPet.expMax}
+                  </span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">成长性:</span>
+                  <span>{selectedPet.growth || 1000}</span>
                 </div>
               </div>
               <div className="attributes">
@@ -317,10 +401,29 @@ function PetPanel({ onClose }) {
                 >
                   {activePet?.id === selectedPet.id ? '下阵' : '上阵'}
                 </button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={handleUseGrowthPill}
+                  title="消耗成长丹提升成长性（需要背包中有成长丹道具）"
+                >
+                  使用成长丹
+                </button>
               </div>
               {activePet?.id === selectedPet.id && (
                 <div className="pet-skill-config">
                   <h4>自动战斗技能配置</h4>
+                  <div className="pet-ai-mode-row">
+                    <span>宠物战斗风格:</span>
+                    <select
+                      className="ai-mode-select"
+                      value={petAiMode}
+                      onChange={(e) => setPetAiMode(e.target.value)}
+                    >
+                      <option value="aggressive">偏进攻</option>
+                      <option value="balanced">均衡</option>
+                      <option value="defensive">偏保守</option>
+                    </select>
+                  </div>
                   <div className="auto-skill-selector">
                     <span>宠物优先技能:</span>
                     <select

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { saveGameData, loadGameData, clearGameData, hasSavedGame as checkHasSavedGame } from '../utils/storage'
 
 const GameContext = createContext()
@@ -30,49 +30,140 @@ export function GameProvider({ children }) {
   const [redeemStatus, setRedeemStatus] = useState({ godMode: false, tripleSpeed: false })
   const [beginnerRewardClaimed, setBeginnerRewardClaimed] = useState(false)
   const [activePet, setActivePet] = useState(null) // 当前上阵的宠物
+  const [isHealing, setIsHealing] = useState(false) // 是否在接受治疗（期间禁止其他行动）
 
+  // 使用 ref 作为“单一数据源”，state 只用于触发 UI 刷新
+  const playerRef = useRef(player)
+  const monstersRef = useRef(monsters)
+  const petsRef = useRef(pets)
+  const currentMapRef = useRef(currentMap)
+  const moneyRef = useRef(money)
+  const inventoryRef = useRef(inventory)
+  const elementPointsRef = useRef(elementPoints)
+  const equipmentInventoryRef = useRef(equipmentInventory)
+  const equippedItemsRef = useRef(equippedItems)
+  const autoSettingsRef = useRef(autoSettings)
+  const redeemStatusRef = useRef(redeemStatus)
+  const beginnerRewardClaimedRef = useRef(beginnerRewardClaimed)
+  const activePetRef = useRef(activePet)
+  const isHealingRef = useRef(isHealing)
+
+  // 统一封装 setter：先更新 ref，再更新 state（用于触发渲染）
+  const wrapStateWithRef = (ref, setState) =>
+    (updater) => {
+      if (typeof updater === 'function') {
+        setState((prev) => {
+          const next = updater(prev)
+          ref.current = next
+          return next
+        })
+      } else {
+        ref.current = updater
+        setState(updater)
+      }
+    }
+
+  // 带 ref 同步的 setter（除 player 外统一使用）
+  const setMonstersWithRef = useCallback(wrapStateWithRef(monstersRef, setMonsters), [])
+  const setPetsWithRef = useCallback(wrapStateWithRef(petsRef, setPets), [])
+  const setCurrentMapWithRef = useCallback(wrapStateWithRef(currentMapRef, setCurrentMap), [])
+  const setMoneyWithRef = useCallback(wrapStateWithRef(moneyRef, setMoney), [])
+  const setInventoryWithRef = useCallback(wrapStateWithRef(inventoryRef, setInventory), [])
+  const setElementPointsWithRef = useCallback(wrapStateWithRef(elementPointsRef, setElementPoints), [])
+  const setEquipmentInventoryWithRef = useCallback(wrapStateWithRef(equipmentInventoryRef, setEquipmentInventory), [])
+  const setEquippedItemsWithRef = useCallback(wrapStateWithRef(equippedItemsRef, setEquippedItems), [])
+  const setAutoSettingsWithRef = useCallback(wrapStateWithRef(autoSettingsRef, setAutoSettings), [])
+  const setRedeemStatusWithRef = useCallback(wrapStateWithRef(redeemStatusRef, setRedeemStatus), [])
+  const setBeginnerRewardClaimedWithRef = useCallback(wrapStateWithRef(beginnerRewardClaimedRef, setBeginnerRewardClaimed), [])
+  const setActivePetWithRef = useCallback(wrapStateWithRef(activePetRef, setActivePet), [])
+
+  // 统一包装 setPlayer，便于排查是谁在改 player（尤其是覆盖 exp 的情况）
+  const loggedSetPlayer = useCallback(
+    (updater) => {
+      if (typeof updater === 'function') {
+        setPlayer((prev) => {
+          const next = updater(prev)
+          console.log('loggedSetPlayer: updater returned, next=', next, 'next.exp=', next?.exp)
+          // 同步更新 ref，确保 autoSave 等地方拿到的是最新的值
+          if (next) {
+            const oldExp = playerRef.current?.exp
+            playerRef.current = next
+            console.log('loggedSetPlayer: updated playerRef.current.exp from', oldExp, 'to', next.exp, 'playerRef.current=', playerRef.current)
+          } else {
+            console.log('loggedSetPlayer: WARNING - next is null/undefined!')
+            playerRef.current = null
+          }
+          // 只在 exp 变化时打印，避免刷屏
+          if (prev?.exp !== next?.exp) {
+            console.log('setPlayer (functional) called, exp change:', {
+              prevExp: prev?.exp,
+              nextExp: next?.exp,
+              playerRefExp: playerRef.current?.exp,
+            })
+          }
+          return next
+        })
+      } else {
+        // 直接赋值的情况（例如从存档载入 / 导入存档）
+        console.log('setPlayer (direct) called:', {
+          prevExp: playerRef.current?.exp,
+          nextExp: updater?.exp,
+        })
+        playerRef.current = updater || null
+        setPlayer(updater || null)
+      }
+    },
+    []
+  )
+
+  // 为了避免调试时看到旧的 state 快照，这里统一打印 playerRef.current（如果有）
+  console.log(playerRef.current || player, 'player')
   const addLog = (message) => {
     const timestamp = new Date().toLocaleTimeString()
     setBattleLog(prev => [...prev, `[${timestamp}] ${message}`])
   }
 
-  // 自动保存游戏数据
+  // 自动保存游戏数据（使用 ref 确保使用最新状态）
   const autoSave = useCallback(() => {
-    if (!player) return // 如果没有玩家，不保存
-    
+    const currentPlayer = playerRef.current
+    if (!currentPlayer) return // 如果没有玩家，不保存
+    console.log('autoSave, playerRef.current.exp=', currentPlayer.exp, 'player state.exp=', player?.exp)
     saveGameData({
-      player,
-      pets,
-      currentMap,
-      money,
-      inventory,
-      elementPoints,
-      equipmentInventory,
-      equippedItems,
-      autoSettings,
-      redeemStatus,
-      beginnerRewardClaimed,
-      activePet,
+      player: currentPlayer,
+      pets: petsRef.current,
+      currentMap: currentMapRef.current,
+      money: moneyRef.current,
+      inventory: inventoryRef.current,
+      elementPoints: elementPointsRef.current,
+      equipmentInventory: equipmentInventoryRef.current,
+      equippedItems: equippedItemsRef.current,
+      autoSettings: autoSettingsRef.current,
+      redeemStatus: redeemStatusRef.current,
+      beginnerRewardClaimed: beginnerRewardClaimedRef.current,
+      activePet: activePetRef.current,
+      isHealing: isHealingRef.current,
     })
     setSaveVersion(v => v + 1) // 更新版本号，触发hasSavedGame重新计算
-  }, [player, pets, currentMap, money, inventory, elementPoints, equipmentInventory, equippedItems, autoSettings, redeemStatus, beginnerRewardClaimed, activePet])
+  }, [])
 
   // 加载游戏数据
   const loadGame = useCallback(() => {
+    console.log('loadGame')
     const savedData = loadGameData()
     if (savedData) {
-      setPlayer(savedData.player)
-      setPets(savedData.pets || [])
-      setCurrentMap(savedData.currentMap || '揽仙镇')
-      setMoney(savedData.money || 1000)
-      setInventory(savedData.inventory || {})
-      setElementPoints(savedData.elementPoints || { gold: 0, wood: 0, water: 0, fire: 0, earth: 0 })
-      setEquipmentInventory(savedData.equipmentInventory || [])
-      setEquippedItems(savedData.equippedItems || {})
-      setAutoSettings(savedData.autoSettings || { ...defaultAutoSettings })
-      setRedeemStatus(savedData.redeemStatus || { godMode: false, tripleSpeed: false })
-      setBeginnerRewardClaimed(!!savedData.beginnerRewardClaimed)
-      setActivePet(savedData.activePet || null)
+      loggedSetPlayer(savedData.player)
+      setPetsWithRef(savedData.pets || [])
+      setCurrentMapWithRef(savedData.currentMap || '揽仙镇')
+      setMoneyWithRef(savedData.money || 1000)
+      setInventoryWithRef(savedData.inventory || {})
+      setElementPointsWithRef(savedData.elementPoints || { gold: 0, wood: 0, water: 0, fire: 0, earth: 0 })
+      setEquipmentInventoryWithRef(savedData.equipmentInventory || [])
+      setEquippedItemsWithRef(savedData.equippedItems || {})
+      setAutoSettingsWithRef(savedData.autoSettings || { ...defaultAutoSettings })
+      setRedeemStatusWithRef(savedData.redeemStatus || { godMode: false, tripleSpeed: false })
+      setBeginnerRewardClaimedWithRef(!!savedData.beginnerRewardClaimed)
+      setActivePetWithRef(savedData.activePet || null)
+      setIsHealing(false)
       setSaveVersion(v => v + 1) // 更新版本号
       return true
     }
@@ -82,23 +173,23 @@ export function GameProvider({ children }) {
   // 重置游戏（注销功能）
   const resetGame = useCallback(() => {
     // 清除所有状态
-    setPlayer(null)
-    setPets([])
-    setMonsters([])
+    loggedSetPlayer(null)
+    setPetsWithRef([])
+    setMonstersWithRef([])
     setInBattle(false)
     setPlayerTurn(true)
     setSelectedMonster(null)
     setBattleLog([])
-    setCurrentMap('揽仙镇')
-    setMoney(1000)
-    setInventory({})
-    setElementPoints({ gold: 0, wood: 0, water: 0, fire: 0, earth: 0 })
-    setEquipmentInventory([])
-    setEquippedItems({})
-    setAutoSettings({ ...defaultAutoSettings })
-    setRedeemStatus({ godMode: false, tripleSpeed: false })
-    setBeginnerRewardClaimed(false)
-    setActivePet(null)
+    setCurrentMapWithRef('揽仙镇')
+    setMoneyWithRef(1000)
+    setInventoryWithRef({})
+    setElementPointsWithRef({ gold: 0, wood: 0, water: 0, fire: 0, earth: 0 })
+    setEquipmentInventoryWithRef([])
+    setEquippedItemsWithRef({})
+    setAutoSettingsWithRef({ ...defaultAutoSettings })
+    setRedeemStatusWithRef({ godMode: false, tripleSpeed: false })
+    setBeginnerRewardClaimedWithRef(false)
+    setActivePetWithRef(null)
     
     // 清除本地存储
     clearGameData()
@@ -135,15 +226,46 @@ export function GameProvider({ children }) {
     return () => clearTimeout(timer)
   }, [player, pets, currentMap, money, inventory, elementPoints, equipmentInventory, equippedItems, autoSave, isLoaded])
 
+  // 对外暴露的 player 始终以 ref 为主（如果有），避免因为异步状态导致读取到旧的 player
+  const exposedPlayer = playerRef.current || player
+
+  // 接受治疗：20 秒内禁止行动，结束时回满血/法力
+  const startHealing = useCallback(() => {
+    if (!exposedPlayer || isHealingRef.current) return
+    isHealingRef.current = true
+    setIsHealing(true)
+
+    setTimeout(() => {
+      const current = playerRef.current || exposedPlayer
+      if (!current) {
+        isHealingRef.current = false
+        setIsHealing(false)
+        return
+      }
+      loggedSetPlayer(prev => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          hp: prev.maxHp,
+          mp: prev.maxMp,
+        }
+      })
+      isHealingRef.current = false
+      setIsHealing(false)
+    }, 20000)
+  }, [exposedPlayer, loggedSetPlayer])
+
   return (
     <GameContext.Provider
       value={{
-        player,
-        setPlayer,
+        // 对外暴露的实体：仍然提供 state 版本用于触发组件重渲染
+        player: exposedPlayer,
+        // 对外暴露带日志的 setPlayer，方便定位覆盖来源
+        setPlayer: loggedSetPlayer,
         monsters,
-        setMonsters,
+        setMonsters: setMonstersWithRef,
         pets,
-        setPets,
+        setPets: setPetsWithRef,
         inBattle,
         setInBattle,
         playerTurn,
@@ -153,29 +275,47 @@ export function GameProvider({ children }) {
         battleLog,
         addLog,
         currentMap,
-        setCurrentMap,
+        setCurrentMap: setCurrentMapWithRef,
         money,
-        setMoney,
+        setMoney: setMoneyWithRef,
         inventory,
-        setInventory,
+        setInventory: setInventoryWithRef,
         elementPoints,
-        setElementPoints,
+        setElementPoints: setElementPointsWithRef,
         equipmentInventory,
-        setEquipmentInventory,
+        setEquipmentInventory: setEquipmentInventoryWithRef,
         equippedItems,
-        setEquippedItems,
+        setEquippedItems: setEquippedItemsWithRef,
         autoSave,
         loadGame,
         autoSettings,
-        setAutoSettings,
+        setAutoSettings: setAutoSettingsWithRef,
         redeemStatus,
-        setRedeemStatus,
+        setRedeemStatus: setRedeemStatusWithRef,
         beginnerRewardClaimed,
-        setBeginnerRewardClaimed,
+        setBeginnerRewardClaimed: setBeginnerRewardClaimedWithRef,
         activePet,
-        setActivePet,
+        setActivePet: setActivePetWithRef,
+        isHealing,
+        startHealing,
         resetGame,
         hasSavedGame: useMemo(() => checkHasSavedGame(), [saveVersion]),
+
+        // 同时暴露 ref，便于需要“最新值”（长生命周期回调 / 定时器等）的逻辑使用
+        playerRef,
+        monstersRef,
+        petsRef,
+        currentMapRef,
+        moneyRef,
+        inventoryRef,
+        elementPointsRef,
+        equipmentInventoryRef,
+        equippedItemsRef,
+        autoSettingsRef,
+        redeemStatusRef,
+        beginnerRewardClaimedRef,
+        activePetRef,
+        isHealingRef,
       }}
     >
       {children}

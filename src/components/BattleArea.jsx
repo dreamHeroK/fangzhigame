@@ -16,6 +16,7 @@ function getMonsterIcon(monster) {
 
 function BattleArea() {
   const { monsters, selectedMonster, setSelectedMonster, inBattle, playerTurn } = useGame()
+  const monsterList = Array.isArray(monsters) ? monsters : []
 
   const handleMonsterClick = (monster) => {
     if (inBattle && playerTurn && monster.hp > 0) {
@@ -26,10 +27,10 @@ function BattleArea() {
   return (
     <div className="battle-area">
       <div className="monsters-container">
-        {monsters.length === 0 ? (
+        {monsterList.length === 0 ? (
           <div className="no-monsters">点击"开始战斗"开始游戏</div>
         ) : (
-          monsters.map(monster => {
+          monsterList.map(monster => {
             if (monster.hp <= 0) return null
             
             const hpPercent = (monster.hp / monster.maxHp) * 100

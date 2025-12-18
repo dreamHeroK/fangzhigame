@@ -29,6 +29,7 @@ function BagPanel({ onClose }) {
     equippedItems,
     setEquippedItems,
     elementPoints,
+    playerRef,
   } = useGame()
   const [activePage, setActivePage] = useState(0)
 
@@ -66,11 +67,13 @@ function BagPanel({ onClose }) {
     setEquippedItems(newEquipped)
     setEquipmentInventory(newInventory)
 
-    if (player) {
+    // 更新玩家属性（使用最新的 playerRef，避免经验被旧 state 覆盖）
+    setPlayer(prev => {
+      const base = playerRef?.current || prev
+      if (!base) return base
       const equipmentStats = getAllEquipmentStats(newEquipped)
-      const updatedPlayer = updatePlayerBattleStats(player, elementPoints, equipmentStats)
-      setPlayer(updatedPlayer)
-    }
+      return updatePlayerBattleStats(base, elementPoints, equipmentStats)
+    })
   }
 
   const renderSlotContent = (entry) => {

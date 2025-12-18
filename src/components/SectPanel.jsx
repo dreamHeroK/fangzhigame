@@ -11,7 +11,7 @@ const elementIcons = {
 }
 
 function SectPanel({ onClose }) {
-  const { player, setPlayer } = useGame()
+  const { player, setPlayer, playerRef } = useGame()
 
   if (!player) return null
 
@@ -30,9 +30,16 @@ function SectPanel({ onClose }) {
         alert(`需要等级 ${skill.level} 才能学习此技能！`)
         return
       }
-      setPlayer({
-        ...player,
-        skills: [...learnedSkills, skill]
+      // 基于最新的 playerRef 更新，避免用旧快照覆盖经验/等级
+      setPlayer(prev => {
+        const base = playerRef?.current || prev
+        if (!base) return base
+        const currentSkills = base.skills || []
+        if (currentSkills.find(s => s.id === skill.id)) return base
+        return {
+          ...base,
+          skills: [...currentSkills, skill],
+        }
       })
     }
 
@@ -113,10 +120,15 @@ function SectPanel({ onClose }) {
   const sect = sects[player.element]
 
   const joinSect = () => {
-    setPlayer({
-      ...player,
-      sect: sect.name,
-      skills: []
+    // 同样基于最新 playerRef，避免覆盖经验
+    setPlayer(prev => {
+      const base = playerRef?.current || prev
+      if (!base) return base
+      return {
+        ...base,
+        sect: sect.name,
+        skills: [],
+      }
     })
     alert(`恭喜拜入 ${sect.name}！`)
   }

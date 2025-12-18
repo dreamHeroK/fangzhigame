@@ -1,0 +1,55 @@
+.petdex-modal {
+  max-width: 800px;
+  max-height: 520px;
+}
+
+.petdex-summary {
+  display: flex;
+  gap: 16px;
+  margin: 10px 0 16px;
+  font-size: 0.9em;
+  color: #4a5568;
+}
+
+.petdex-empty {
+  padding: 40px 0;
+  text-align: center;
+  color: #718096;
+}
+
+.petdex-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.petdex-card {
+  background: #f7fafc;
+  border-radius: 10px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.petdex-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.petdex-icon {
+  font-size: 1.4em;
+}
+
+.petdex-name {
+  font-weight: 600;
+}
+
+.petdex-body {
+  font-size: 0.85em;
+  color: #4a5568;
+  display: grid;
+  row-gap: 2px;
+}
+
+

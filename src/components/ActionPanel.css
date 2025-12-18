@@ -124,6 +124,10 @@
   color: white;
 }
 
+.btn-success {
+  background: linear-gradient(135deg, #4caf50, #8bc34a);
+  color: white;
+}
 .btn:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0,0,0,0.3);

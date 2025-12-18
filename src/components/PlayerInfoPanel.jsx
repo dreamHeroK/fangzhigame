@@ -14,7 +14,17 @@ const elementIcons = {
 }
 
 function PlayerInfoPanel({ onClose, onOpenSectPanel, onOpenEquipmentPanel, onOpenPetPanel }) {
-  const { player, setPlayer, money, pets, elementPoints, setElementPoints, equippedItems, resetGame } = useGame()
+  const {
+    player,
+    setPlayer,
+    money,
+    pets,
+    elementPoints,
+    setElementPoints,
+    equippedItems,
+    resetGame,
+    playerRef,
+  } = useGame()
   const [allocatingAttr, setAllocatingAttr] = useState(null)
   const [allocatingElement, setAllocatingElement] = useState(null)
   const [attrAssignStep, setAttrAssignStep] = useState(1)
@@ -47,14 +57,16 @@ function PlayerInfoPanel({ onClose, onOpenSectPanel, onOpenEquipmentPanel, onOpe
     const pointsToUse = Math.min(normalizeAmount(amount), player.points)
     if (pointsToUse <= 0) return
 
-    const newPlayer = { ...player }
-    newPlayer[attr] = (newPlayer[attr] || 0) + pointsToUse
-    newPlayer.points = (newPlayer.points || 0) - pointsToUse
-
-    const equipmentStats = getAllEquipmentStats(equippedItems)
-    const updatedPlayer = updatePlayerBattleStats(newPlayer, elementPoints, equipmentStats)
-
-    setPlayer(updatedPlayer)
+    // 使用 playerRef 作为最新数据源，避免覆盖战斗中更新的经验值
+    setPlayer(prev => {
+      const base = playerRef?.current || prev
+      if (!base) return base
+      const newPlayer = { ...base }
+      newPlayer[attr] = (newPlayer[attr] || 0) + pointsToUse
+      newPlayer.points = (newPlayer.points || 0) - pointsToUse
+      const equipmentStats = getAllEquipmentStats(equippedItems)
+      return updatePlayerBattleStats(newPlayer, elementPoints, equipmentStats)
+    })
     setAllocatingAttr(attr)
     setTimeout(() => setAllocatingAttr(null), 500)
   }
@@ -76,9 +88,13 @@ function PlayerInfoPanel({ onClose, onOpenSectPanel, onOpenEquipmentPanel, onOpe
     newElementPoints[element] = (newElementPoints[element] || 0) + pointsToUse
     setElementPoints(newElementPoints)
 
-    const equipmentStats = getAllEquipmentStats(equippedItems)
-    const updatedPlayer = updatePlayerBattleStats(player, newElementPoints, equipmentStats)
-    setPlayer(updatedPlayer)
+    // 同样基于最新的 playerRef 更新，避免旧 state 覆盖经验
+    setPlayer(prev => {
+      const base = playerRef?.current || prev
+      if (!base) return base
+      const equipmentStats = getAllEquipmentStats(equippedItems)
+      return updatePlayerBattleStats(base, newElementPoints, equipmentStats)
+    })
 
     setAllocatingElement(element)
     setTimeout(() => setAllocatingElement(null), 500)

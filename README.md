@@ -45,6 +45,39 @@ npm run build
 npm run preview
 ```
 
+## UI 单元测试
+
+项目使用 **Vitest + React Testing Library** 进行前端 UI 测试。
+
+### 运行测试
+
+```bash
+# 运行全部测试
+npm test
+
+# 监听模式
+npm run test:watch
+```
+
+### 编写新的 UI 测试用例
+
+1. 在组件同目录下创建 `*.test.jsx` 文件，例如：`GameScreen.test.jsx`  
+2. 使用 `GameProvider` 包裹组件，提供游戏上下文：
+
+```jsx
+import { render, screen } from '@testing-library/react'
+import { GameProvider } from '../context/GameContext'
+import GameScreen from './GameScreen'
+
+render(
+  <GameProvider>
+    <GameScreen />
+  </GameProvider>
+)
+```
+
+3. 使用 `screen.getByRole` / `screen.getByText` 等方法断言按钮、文本和交互是否按预期工作。
+
 ## 游戏玩法
 
 1. **选择角色**：游戏开始时选择你的角色属性

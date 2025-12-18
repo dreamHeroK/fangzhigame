@@ -1,21 +1,22 @@
-import { useEffect, useRef, useState } from 'react'
-import { useGame } from '../context/GameContext'
-import { useBattle } from '../hooks/useBattle'
-import { getAllMedicines } from '../utils/items'
-import { maps } from '../utils/maps'
-import './ActionPanel.css'
+import { useState } from "react";
+import { useGame } from "../context/GameContext";
+import { useBattle } from "../hooks/useBattle";
+import { getAllMedicines } from "../utils/items";
+import { maps } from "../utils/maps";
+import "./ActionPanel.css";
 
 const elementIcons = {
-  '金': '⚡',
-  '木': '🌲',
-  '水': '💧',
-  '火': '🔥',
-  '土': '⛰️'
-}
+  金: "⚡",
+  木: "🌲",
+  水: "💧",
+  火: "🔥",
+  土: "⛰️",
+};
 
 function ActionPanel() {
   const {
     inBattle,
+    isHealing,
     playerTurn,
     selectedMonster,
     setSelectedMonster,
@@ -27,102 +28,75 @@ function ActionPanel() {
     monsters,
     activePet,
     pets,
-  } = useGame()
-  const { startBattle, stopBattle, playerAttack, playerDefend, playerSkill, captureMonster, useMedicine } = useBattle()
-  const [selectedSkill, setSelectedSkill] = useState(null)
-  const [selectedMedicine, setSelectedMedicine] = useState(null)
-  const playerAttackRef = useRef(playerAttack)
-  const playerSkillRef = useRef(playerSkill)
-  const captureMonsterRef = useRef(captureMonster)
-
-  useEffect(() => {
-    playerAttackRef.current = playerAttack
-  }, [playerAttack])
-
-  useEffect(() => {
-    playerSkillRef.current = playerSkill
-  }, [playerSkill])
-
-  useEffect(() => {
-    captureMonsterRef.current = captureMonster
-  }, [captureMonster])
+  } = useGame();
+  const {
+    startBattle,
+    stopBattle,
+    playerAttack,
+    playerDefend,
+    playerSkill,
+    captureMonster,
+    useMedicine,
+  } = useBattle();
+  const [selectedSkill, setSelectedSkill] = useState(null);
+  const [selectedMedicine, setSelectedMedicine] = useState(null);
+  // 自动战斗逻辑已移至 useBattle.js 中，不再需要这些 ref
 
   const handleSkillClick = () => {
     if (!selectedSkill && player?.skills && player.skills.length > 0) {
-      setSelectedSkill(player.skills[0])
+      setSelectedSkill(player.skills[0]);
     }
     if (selectedSkill) {
-      playerSkill(selectedSkill)
+      playerSkill(selectedSkill);
     }
-  }
+  };
 
-  const learnedSkills = player?.skills || []
-  const availableMedicines = getAllMedicines().filter(med => (inventory[med.id] || 0) > 0)
-  const isSafeZone = maps[currentMap]?.type === 'safe'
+  const learnedSkills = player?.skills || [];
+  const availableMedicines = getAllMedicines().filter(
+    (med) => (inventory[med.id] || 0) > 0
+  );
+  const isSafeZone = maps[currentMap]?.type === "safe";
 
-  useEffect(() => {
-    if (!autoSettings.autoBattle || !inBattle || !playerTurn || !player) return
-
-    const aliveMonsters = (monsters || []).filter(m => m.hp > 0)
-    if (!aliveMonsters.length) return
-
-    if (!selectedMonster || selectedMonster.hp <= 0) {
-      setSelectedMonster(aliveMonsters[0])
-      return
-    }
-
-    if (
-      autoSettings.autoCapture &&
-      selectedMonster.hp > 0 &&
-      selectedMonster.maxHp > 0 &&
-      selectedMonster.hp / selectedMonster.maxHp <= 0.3
-    ) {
-      captureMonsterRef.current()
-      return
-    }
-
-    const autoSkill = learnedSkills.find(skill => skill.id === autoSettings.autoSkillId)
-    if (autoSkill && player.mp >= autoSkill.mpCost) {
-      playerSkillRef.current(autoSkill)
-    } else {
-      playerAttackRef.current()
-    }
-  }, [
-    autoSettings,
-    inBattle,
-    playerTurn,
-    selectedMonster,
-    monsters,
-    learnedSkills,
-    player,
-    setSelectedMonster,
-  ])
+  // 自动战斗逻辑已移至 useBattle.js 中处理
 
   const handleAutoSettingsChange = (key, value) => {
-    setAutoSettings(prev => ({
+    setAutoSettings((prev) => ({
       ...prev,
       [key]: value,
-    }))
-  }
+    }));
+  };
 
   const handleStopAutoBattle = () => {
     // 设置连续战斗为 false
-    setAutoSettings(prev => ({
+    setAutoSettings((prev) => ({
       ...prev,
       autoChainBattle: false,
-    }))
+    }));
     // 如果正在战斗中，停止战斗
     if (inBattle) {
-      stopBattle()
+      stopBattle();
     }
-  }
+  };
+
+  const startChainBattle = () => {
+    setAutoSettings((prev) => {
+      console.log("startChainBattle", prev);
+      return {
+        ...prev,
+        autoChainBattle: true,
+      };
+    });
+    startBattle(true);
+  };
 
   return (
     <div className="action-panel">
       {!inBattle ? (
         <div className="pre-battle-actions">
           <div className="battle-buttons">
-            {autoSettings.autoChainBattle ? (
+            {isHealing ? (
+              <div className="healing-hint">正在接受治疗，暂时无法战斗...</div>
+            ) : autoSettings.autoChainBattle ? (
               <button
                 className="btn btn-danger"
                 onClick={handleStopAutoBattle}
@@ -131,20 +105,28 @@ function ActionPanel() {
                 停止自动战斗
               </button>
             ) : (
-              <button
-                className="btn btn-primary"
-                onClick={startBattle}
-                disabled={isSafeZone}
-                title={isSafeZone ? '安全区无法战斗' : ''}
-              >
-                开始战斗
-              </button>
+              <>
+                <button
+                  className="btn btn-primary"
+                  onClick={startBattle}
+                  disabled={isSafeZone}
+                  title={isSafeZone ? "安全区无法战斗" : ""}
+                >
+                  开始战斗
+                </button>
+                <button
+                  className="btn btn-success"
+                  onClick={startChainBattle}
+                  disabled={isSafeZone}
+                  title={isSafeZone ? "安全区无法战斗" : ""}
+                >
+                  开始连续战斗
+                </button>
+              </>
             )}
           </div>
           {isSafeZone && (
-            <div className="safe-hint">
-              安全区无法战斗，请前往野外地图。
-            </div>
+            <div className="safe-hint">安全区无法战斗，请前往野外地图。</div>
           )}
         </div>
       ) : (
@@ -176,34 +158,38 @@ function ActionPanel() {
             <div className="skill-selector">
               <select
                 className="skill-select"
-                value={selectedSkill?.id || ''}
+                value={selectedSkill?.id || ""}
                 onChange={(e) => {
-                  const skill = learnedSkills.find(s => s.id === parseInt(e.target.value))
-                  setSelectedSkill(skill)
+                  const skill = learnedSkills.find(
+                    (s) => s.id === parseInt(e.target.value)
+                  );
+                  setSelectedSkill(skill);
                 }}
                 disabled={!playerTurn}
               >
                 <option value="">选择技能</option>
-                {learnedSkills.map(skill => (
+                {learnedSkills.map((skill) => (
                   <option key={skill.id} value={skill.id}>
-                    {elementIcons[skill.element]} {skill.name} ({skill.mpCost}MP)
+                    {elementIcons[skill.element]} {skill.name} ({skill.mpCost}
+                    MP)
                   </option>
                 ))}
               </select>
               <button
                 className="btn btn-skill"
                 onClick={handleSkillClick}
-                disabled={!playerTurn || !selectedMonster || !selectedSkill || player.mp < (selectedSkill?.mpCost || 0)}
+                disabled={
+                  !playerTurn ||
+                  !selectedMonster ||
+                  !selectedSkill ||
+                  player.mp < (selectedSkill?.mpCost || 0)
+                }
               >
                 使用技能
               </button>
             </div>
           ) : (
-            <button
-              className="btn btn-skill"
-              disabled
-              title="未学习技能"
-            >
+            <button className="btn btn-skill" disabled title="未学习技能">
               技能(未学习)
             </button>
           )}
@@ -218,15 +204,17 @@ function ActionPanel() {
             <div className="medicine-selector">
               <select
                 className="medicine-select"
-                value={selectedMedicine?.id || ''}
+                value={selectedMedicine?.id || ""}
                 onChange={(e) => {
-                  const med = availableMedicines.find(m => m.id === e.target.value)
-                  setSelectedMedicine(med)
+                  const med = availableMedicines.find(
+                    (m) => m.id === e.target.value
+                  );
+                  setSelectedMedicine(med);
                 }}
                 disabled={!playerTurn}
               >
                 <option value="">选择药品</option>
-                {availableMedicines.map(med => (
+                {availableMedicines.map((med) => (
                   <option key={med.id} value={med.id}>
                     {med.icon} {med.name} (拥有: {inventory[med.id]})
                   </option>
@@ -236,8 +224,8 @@ function ActionPanel() {
                 className="btn btn-medicine"
                 onClick={() => {
                   if (selectedMedicine) {
-                    useMedicine(selectedMedicine)
-                    setSelectedMedicine(null)
+                    useMedicine(selectedMedicine);
+                    setSelectedMedicine(null);
                   }
                 }}
                 disabled={!playerTurn || !selectedMedicine}
@@ -254,23 +242,19 @@ function ActionPanel() {
           <input
             type="checkbox"
             checked={autoSettings.autoBattle}
-            onChange={(e) => handleAutoSettingsChange('autoBattle', e.target.checked)}
+            onChange={(e) =>
+              handleAutoSettingsChange("autoBattle", e.target.checked)
+            }
           />
           启用自动战斗
         </label>
         <label className="auto-checkbox">
           <input
             type="checkbox"
-            checked={autoSettings.autoChainBattle}
-            onChange={(e) => handleAutoSettingsChange('autoChainBattle', e.target.checked)}
-          />
-          连续战斗（每场结束后自动开战）
-        </label>
-        <label className="auto-checkbox">
-          <input
-            type="checkbox"
             checked={autoSettings.autoCapture}
-            onChange={(e) => handleAutoSettingsChange('autoCapture', e.target.checked)}
+            onChange={(e) =>
+              handleAutoSettingsChange("autoCapture", e.target.checked)
+            }
           />
           自动捕捉（血量≤30%）
         </label>
@@ -278,17 +262,17 @@ function ActionPanel() {
           <span>优先技能:</span>
           <select
             className="skill-select"
-            value={autoSettings.autoSkillId ?? ''}
+            value={autoSettings.autoSkillId ?? ""}
             onChange={(e) =>
               handleAutoSettingsChange(
-                'autoSkillId',
+                "autoSkillId",
                 e.target.value ? parseInt(e.target.value, 10) : null
               )
             }
             disabled={learnedSkills.length === 0}
           >
             <option value="">普通攻击</option>
-            {learnedSkills.map(skill => (
+            {learnedSkills.map((skill) => (
               <option key={skill.id} value={skill.id}>
                 {elementIcons[skill.element]} {skill.name} ({skill.mpCost}MP)
               </option>
@@ -296,48 +280,58 @@ function ActionPanel() {
           </select>
         </div>
         <div className="auto-tip">若法力不足，自动改用物理攻击。</div>
-        {activePet && (() => {
-          // 从 pets 数组中获取最新的宠物数据
-          const latestActivePet = pets.find(p => p.id === activePet.id) || activePet
-          const petSkills = latestActivePet.skills || []
-          return (
-            <>
-              <div className="auto-pet-info">
-                <div className="auto-pet-label">上阵宠物:</div>
-                <div className="auto-pet-name">
-                  {elementIcons[latestActivePet.element]} {latestActivePet.name}
-                  {latestActivePet.isDivine && <span className="divine-badge" style={{ fontSize: '0.6em', marginLeft: '5px' }}>神兽</span>}
+        {activePet &&
+          (() => {
+            // 从 pets 数组中获取最新的宠物数据
+            const latestActivePet =
+              pets.find((p) => p.id === activePet.id) || activePet;
+            const petSkills = latestActivePet.skills || [];
+            return (
+              <>
+                <div className="auto-pet-info">
+                  <div className="auto-pet-label">上阵宠物:</div>
+                  <div className="auto-pet-name">
+                    {elementIcons[latestActivePet.element]}{" "}
+                    {latestActivePet.name}
+                    {latestActivePet.isDivine && (
+                      <span
+                        className="divine-badge"
+                        style={{ fontSize: "0.6em", marginLeft: "5px" }}
+                      >
+                        神兽
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-              {petSkills.length > 0 && (
-                <div className="auto-skill-selector">
-                  <span>宠物优先技能:</span>
-                  <select
-                    className="skill-select"
-                    value={autoSettings.autoPetSkillId ?? ''}
-                    onChange={(e) =>
-                      handleAutoSettingsChange(
-                        'autoPetSkillId',
-                        e.target.value ? parseInt(e.target.value, 10) : null
-                      )
-                    }
-                  >
-                    <option value="">普通攻击</option>
-                    {petSkills.map(skill => (
-                      <option key={skill.id} value={skill.id}>
-                        {elementIcons[skill.element]} {skill.name} ({skill.mpCost}MP)
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </>
-          )
-        })()}
+                {petSkills.length > 0 && (
+                  <div className="auto-skill-selector">
+                    <span>宠物优先技能:</span>
+                    <select
+                      className="skill-select"
+                      value={autoSettings.autoPetSkillId ?? ""}
+                      onChange={(e) =>
+                        handleAutoSettingsChange(
+                          "autoPetSkillId",
+                          e.target.value ? parseInt(e.target.value, 10) : null
+                        )
+                      }
+                    >
+                      <option value="">普通攻击</option>
+                      {petSkills.map((skill) => (
+                        <option key={skill.id} value={skill.id}>
+                          {elementIcons[skill.element]} {skill.name} (
+                          {skill.mpCost}MP)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </>
+            );
+          })()}
       </div>
     </div>
-  )
+  );
 }
 
-export default ActionPanel
-
+export default ActionPanel;

@@ -54,6 +54,16 @@ export const medicines = {
     description: '完全恢复法力值',
     icon: '🌟'
   },
+  // 宠物成长类道具（示例）：用于在宠物面板中提升成长性
+  '成长丹': {
+    id: 'pet_growth_pill',
+    name: '成长丹',
+    type: 'pet',
+    value: 0,
+    price: 800,
+    description: '提升宠物成长性',
+    icon: '🟣'
+  },
 }
 
 // 获取所有药品列表

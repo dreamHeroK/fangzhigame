@@ -13,6 +13,7 @@ function EquipmentPanel({ onClose }) {
     equippedItems,
     setEquippedItems,
     elementPoints,
+    playerRef,
   } = useGame()
 
   if (!player) return null
@@ -27,10 +28,13 @@ function EquipmentPanel({ onClose }) {
     setEquippedItems(newEquipped)
     setEquipmentInventory([...equipmentInventory, equipment])
     
-    // 更新玩家属性
-    const equipmentStats = getAllEquipmentStats(newEquipped)
-    const updatedPlayer = updatePlayerBattleStats(player, elementPoints, equipmentStats)
-    setPlayer(updatedPlayer)
+    // 更新玩家属性（使用最新的 playerRef，避免覆盖战斗更新的经验/等级）
+    setPlayer(prev => {
+      const base = playerRef?.current || prev
+      if (!base) return base
+      const equipmentStats = getAllEquipmentStats(newEquipped)
+      return updatePlayerBattleStats(base, elementPoints, equipmentStats)
+    })
   }
 
   const getSlotEquipment = (slot) => {
