@@ -16,6 +16,9 @@ import {
   getMapById,
 } from './monsters.js'
 import { computeCaptureProbability, createWildPetFromFoe } from './pets.js'
+import { getConsumable } from '../items/catalog.js'
+import { formatLootLine, mergeLootStacks, rollBattleDrops, rollDropsForFoe } from '../items/drops.js'
+import { applyConsumableToUnit } from './itemEffects.js'
 
 function clamp(n, lo, hi) {
   return Math.max(lo, Math.min(hi, n))
@@ -24,6 +27,23 @@ function clamp(n, lo, hi) {
 function pushLog(state, line) {
   const log = [...state.log, line].slice(-80)
   return { ...state, log }
+}
+
+/** @param {Array<{ itemId: string, qty: number }>} [extraLoot] 例如捕捉最后一只时补上已从场上移除的怪 */
+function finalizeVictory(s, rng, extraLoot = []) {
+  const foes = s.units.filter((u) => u.side === 'foe')
+  const fromField = rollBattleDrops(foes, rng)
+  const lastVictoryLoot = mergeLootStacks([...fromField, ...extraLoot])
+  const lootMsg = formatLootLine(lastVictoryLoot)
+  return {
+    ...s,
+    phase: 'end',
+    outcome: 'victory',
+    awaitingActorId: null,
+    lastVictoryLoot,
+    victoryLootNonce: `${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
+    log: [...s.log, '战斗胜利。', lootMsg].slice(-80),
+  }
 }
 
 function living(state, side) {
@@ -61,13 +81,14 @@ function baseDamage(attacker, defender, skillId, rng = Math.random) {
   const sk = getSkill(skillId)
   const atkTemp = attacker.side === 'ally' ? (attacker.innateTempAtkMul ?? 1) : 1
   const defTemp = defender.side === 'ally' ? 1 + (defender.innateTempDefBonus ?? 0) : 1
-  const atk = attacker.atk * (attacker.passiveAtkMul ?? 1) * atkTemp
+  const physAtk = attacker.atk * (attacker.passiveAtkMul ?? 1) * atkTemp
+  const magAtk = (attacker.mAtk ?? attacker.atk) * (attacker.passiveAtkMul ?? 1) * atkTemp
   const def = Math.max(1, defender.def * (defender.passiveDefMul ?? 1) * defTemp)
   let raw
   if (sk.kind === 'magic') {
-    raw = (atk * 0.55 + 18) * sk.power - def * 0.35
+    raw = (magAtk * 0.55 + 18) * sk.power - def * 0.35
   } else {
-    raw = atk * sk.power - def * 0.45
+    raw = physAtk * sk.power - def * 0.45
   }
   const roll = 0.92 + rng() * 0.16
   raw *= elementDamageFactor(sk.element ?? null, defender.affinity ?? null)
@@ -232,7 +253,8 @@ export function tickUntilInputOrEnd(state, rng = Math.random) {
   for (let guard = 0; guard < 400; guard++) {
     const out = battleOutcome(s)
     if (out) {
-      const msg = out === 'victory' ? '战斗胜利。' : '我方溃败。'
+      if (out === 'victory') return finalizeVictory(s, rng)
+      const msg = '我方溃败。'
       return { ...s, phase: 'end', outcome: out, awaitingActorId: null, log: [...s.log, msg].slice(-80) }
     }
     const idx = nextActorIndex(s)
@@ -288,6 +310,28 @@ export function getActor(state, id) {
 
 export function getLegalTargets(state, side) {
   return state.units.filter((u) => u.side === side && u.hp > 0)
+}
+
+/**
+ * 本回合使用背包药品（不扣背包，由 UI 在成功后扣减）。
+ * @returns {{ state: typeof state, ok: boolean }}
+ */
+export function submitUseConsumable(state, { actorId, targetId, itemId }, rng = Math.random) {
+  if (state.phase === 'end') return { state, ok: false }
+  if (state.awaitingActorId !== actorId) return { state, ok: false }
+  const actor = getActor(state, actorId)
+  const target = getActor(state, targetId)
+  if (!actor || actor.side !== 'ally' || !target || target.side !== 'ally' || target.hp <= 0) {
+    return { state, ok: false }
+  }
+  if (!getConsumable(itemId)) return { state, ok: false }
+
+  const applied = applyConsumableToUnit(state, targetId, itemId, patchUnit, pushLog)
+  if (!applied.ok) return { state, ok: false }
+  let s = { ...applied.state, awaitingActorId: null }
+  s = advanceRoundPointer(s)
+  s = tickUntilInputOrEnd(s, rng)
+  return { state: s, ok: true }
 }
 
 /**
@@ -350,13 +394,8 @@ export function submitCapture(state, { actorId, foeId }, rng = Math.random) {
       `${actor.name} 捕捉成功！获得「${pet.displayName}」。当次成功率 ${(p * 100).toFixed(0)}%。`
     )
     if (living(s, 'foe').length === 0) {
-      s = {
-        ...s,
-        phase: 'end',
-        outcome: 'victory',
-        awaitingActorId: null,
-        log: [...s.log, '战斗胜利。'].slice(-80),
-      }
+      const captureLoot = rollDropsForFoe(foe, rng)
+      s = finalizeVictory(s, rng, captureLoot)
       return { state: s, pet }
     }
     s = rebuildRoundQueue(s)

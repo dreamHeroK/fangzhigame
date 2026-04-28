@@ -182,6 +182,7 @@ export function createAllyUnit(name, stats, skillIds) {
     maxMp: stats.maxMp,
     mp: stats.maxMp,
     atk: stats.atk,
+    mAtk: stats.mAtk ?? stats.atk,
     def: stats.def,
     speed: stats.speed,
     skillPool: skillIds ?? allySkillPoolDefault(),
