@@ -1,25 +1,5 @@
-import { useState } from 'react'
-import CharacterSelect from './components/CharacterSelect'
-import GameScreen from './components/GameScreen'
-import { GameProvider, useGame } from './context/GameContext'
+import { TextBattle } from './components/TextBattle.jsx'
 
-function AppContent() {
-  const { player } = useGame()
-
-  return !player ? (
-    <CharacterSelect />
-  ) : (
-    <GameScreen />
-  )
+export default function App() {
+  return <TextBattle />
 }
-
-function App() {
-  return (
-    <GameProvider>
-      <AppContent />
-    </GameProvider>
-  )
-}
-
-export default App
-

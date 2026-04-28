@@ -1,64 +1,10 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-@layer base {
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
-
-  body {
-    font-family: 'Microsoft YaHei', Arial, sans-serif;
-    color: #333;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-
-  #root {
-    min-height: 100vh;
-  }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #0f1419;
+  color: #e8eaed;
+  font-family: ui-sans-serif, system-ui, "Segoe UI", "PingFang SC", "Microsoft YaHei",
+    sans-serif;
 }
-
-.modal {
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  background: rgba(0, 0, 0, 0.55);
-  z-index: 1000;
-}
-
-.modal.active {
-  display: flex;
-}
-
-.modal .modal-content {
-  position: relative;
-  max-height: 90vh;
-  overflow-y: auto;
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
-}
-
-.modal .close {
-  position: absolute;
-  top: 14px;
-  right: 18px;
-  font-size: 1.75rem;
-  color: #8c8c8c;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.modal .close:hover {
-  color: #333333;
-}
-

@@ -1,0 +1,118 @@
+/**
+ * 技能定义（问道风格命名，数值为文字版简化）
+ * kind: physical | magic | heal | buff
+ */
+export const SKILLS = {
+  normal_attack: {
+    id: 'normal_attack',
+    name: '普通攻击',
+    kind: 'physical',
+    mpCost: 0,
+    power: 1,
+    element: null,
+    desc: '单体物理伤害',
+  },
+  liehuo: {
+    id: 'liehuo',
+    name: '烈火咒',
+    kind: 'magic',
+    mpCost: 8,
+    power: 1.35,
+    element: '火',
+    desc: '单体火系法术',
+  },
+  bingdong: {
+    id: 'bingdong',
+    name: '冰冻术',
+    kind: 'magic',
+    mpCost: 10,
+    power: 1.15,
+    element: '水',
+    desc: '单体水系法术，略减目标出手（文字版合并为伤害）',
+  },
+  duci: {
+    id: 'duci',
+    name: '毒刺',
+    kind: 'magic',
+    mpCost: 6,
+    power: 0.95,
+    element: '土',
+    desc: '带毒系表现的法术伤害',
+  },
+  lipojun: {
+    id: 'lipojun',
+    name: '力破千钧',
+    kind: 'physical',
+    mpCost: 15,
+    power: 1.55,
+    element: null,
+    desc: '强力单体物理',
+  },
+  yaofeng: {
+    id: 'yaofeng',
+    name: '妖风',
+    kind: 'magic',
+    mpCost: 12,
+    power: 1.2,
+    element: '木',
+    desc: '木系法术',
+  },
+  leiji: {
+    id: 'leiji',
+    name: '天雷咒',
+    kind: 'magic',
+    mpCost: 14,
+    power: 1.3,
+    element: '金',
+    desc: '金系法术',
+  },
+  shuiyan: {
+    id: 'shuiyan',
+    name: '水之波澜',
+    kind: 'magic',
+    mpCost: 11,
+    power: 1.22,
+    element: '水',
+    desc: '水浪冲击',
+  },
+  chuangji: {
+    id: 'chuangji',
+    name: '野蛮冲撞',
+    kind: 'physical',
+    mpCost: 5,
+    power: 1.25,
+    element: null,
+    desc: '野兽系物理',
+  },
+  gutu: {
+    id: 'gutu',
+    name: '骨刺',
+    kind: 'physical',
+    mpCost: 4,
+    power: 1.12,
+    element: null,
+    desc: '亡灵系物理',
+  },
+  shixin: {
+    id: 'shixin',
+    name: '撕咬',
+    kind: 'physical',
+    mpCost: 0,
+    power: 1.08,
+    element: null,
+    desc: '犬狼系普攻强化',
+  },
+  shidu: {
+    id: 'shidu',
+    name: '尸毒',
+    kind: 'magic',
+    mpCost: 9,
+    power: 1.05,
+    element: '土',
+    desc: '阴腐伤害',
+  },
+}
+
+export function getSkill(id) {
+  return SKILLS[id] ?? SKILLS.normal_attack
+}
