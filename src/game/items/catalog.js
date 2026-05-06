@@ -5,7 +5,17 @@
 
 /** @typedef {'hp' | 'mp'} RestoreKind */
 /** @typedef {{ id: string, name: string, kind: RestoreKind, amount: number, tier: number, levelMin: number, levelMax: number, note?: string }} PotionDef */
-/** @typedef {{ id: string, name: string, kind: RestoreKind, mode: 'full', tier?: number, note?: string }} SpecialOrbDef */
+/** 玲珑：背包每颗占一格、额度独立；每次使用将目标气血/法力补满，实际回复 = min(补满所需量, 该颗剩余额度)。 */
+/** @typedef {{ id: string, name: string, kind: RestoreKind, mode: 'quota', tier?: number, note?: string }} QuotaOrbDef */
+
+/** 新获得的一颗玲珑的初始额度 */
+export const LINGLONG_DEFAULT_QUOTA = 20_000_000
+
+export const QUOTA_ORB_IDS = /** @type {const} */ (['xuelinglong', 'falinglong'])
+
+export function isQuotaOrbItemId(id) {
+  return QUOTA_ORB_IDS.includes(/** @type {(typeof QUOTA_ORB_IDS)[number]} */ (id))
+}
 
 /** 等级段 1–30：新手期（表列 100–200 / 80–150 → 第一味 min、第二味 max） */
 const T1_HP = [
@@ -87,7 +97,7 @@ function potionRows(tier, levelMin, levelMax, hpArr, mpArr, note) {
   return out
 }
 
-/** @type {Record<string, PotionDef | SpecialOrbDef>} */
+/** @type {Record<string, PotionDef | QuotaOrbDef>} */
 export const CONSUMABLE_BY_ID = {
   ...potionRows(1, 1, 30, T1_HP, T1_MP, '新手期，药店最便宜的药即可'),
   ...potionRows(2, 30, 60, T2_HP, T2_MP, '群秒期，单口药尽量回满一次技能耗蓝'),
@@ -98,17 +108,17 @@ export const CONSUMABLE_BY_ID = {
     id: 'xuelinglong',
     name: '血玲珑',
     kind: 'hp',
-    mode: 'full',
+    mode: 'quota',
     tier: 6,
-    note: '瞬间回满当前气血',
+    note: '不可叠加，每颗独立额度与一格；每次使用可将目标气血补满，实际回复不超过缺失量与当前额度，扣等额额度。',
   },
   falinglong: {
     id: 'falinglong',
     name: '法玲珑',
     kind: 'mp',
-    mode: 'full',
+    mode: 'quota',
     tier: 6,
-    note: '瞬间回满当前法力',
+    note: '不可叠加，每颗独立额度与一格；每次使用可将目标法力补满，实际回复不超过缺失量与当前额度，扣等额额度。',
   },
 }
 
@@ -133,17 +143,18 @@ export function getConsumable(id) {
   return CONSUMABLE_BY_ID[id] ?? null
 }
 
-export function isFullRestoreOrb(def) {
-  return def && 'mode' in def && def.mode === 'full'
+/** @param {PotionDef | QuotaOrbDef | null | undefined} def */
+export function isQuotaOrb(def) {
+  return !!(def && typeof def === 'object' && 'mode' in def && def.mode === 'quota')
 }
 
 /**
- * 固定恢复量：普通药为配置的 amount；玲珑为满血/满蓝（用 Infinity 表示由战斗逻辑封顶）。
- * @param {PotionDef | SpecialOrbDef} def
+ * 固定恢复量：普通药为配置的 amount；玲珑表示「至多补满」（真实数值由战斗/背包层按额度与缺失量计算）。
+ * @param {PotionDef | QuotaOrbDef | null | undefined} def
  */
 export function getRestoreAmount(def) {
   if (!def) return 0
-  if ('mode' in def && def.mode === 'full') return Number.POSITIVE_INFINITY
+  if (isQuotaOrb(def)) return Number.POSITIVE_INFINITY
   return Math.max(0, Math.floor(/** @type {PotionDef} */ (def).amount))
 }
 

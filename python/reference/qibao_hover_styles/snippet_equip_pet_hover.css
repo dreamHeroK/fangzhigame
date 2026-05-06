@@ -1,0 +1,145 @@
+/* Auto-filtered from XmlShowDetailInfo.css — equip (#templateString_equip) & pet (#templateString_pet) hover panel */
+
+.daojuShowDetailInfo,
+.daojuShowDetailInfos { z-index: 99; text-align: left; background: #152326; padding: 1px; color: #f5f5f5; line-height: 22px; position: absolute; left: 80px; *left: 110px; top: 0px;}
+
+.daojuShowDetailInfo .templateString-border,
+.daojuShowDetailInfos .templateString-border { white-space: nowrap; border: 2px solid #cbbf47; min-height: 120px; _height: 120px; position: relative; padding: 20px 20px 20px 160px;}
+
+.cwgodbookdetail .templateString-border{padding: 20px 20px 20px 139px;}
+
+.daojuShowDetailInfo #templateString_pet,
+.daojuShowDetailInfos #templateString_pet { padding-left: 20px; white-space: normal;}
+
+.daojuShowDetailInfo #templateString_wendaoMoney,
+.daojuShowDetailInfos #templateString_wendaoMoney,
+.daojuShowDetailInfo #templateString_role,
+.daojuShowDetailInfos #templateString_role { padding-left: 110px;}
+
+.daojuShowDetailInfo .textcenter,
+.daojuShowDetailInfos .textcenter { text-align: center;}
+
+.daojuShowDetailInfo .textcenter img,
+.daojuShowDetailInfos .textcenter img { display: inline; padding: 0 5px 0 0;}
+
+.daojuShowDetailInfo .textcenter .evolvelevel img,
+.daojuShowDetailInfos .textcenter .evolvelevel img { padding: 0;}
+
+.daojuShowDetailInfo #templateString_wendaoMoney .imgright,
+.daojuShowDetailInfos #templateString_wendaoMoney .imgright { margin-top: 40px;}
+
+#templateString_role .cwgodbookdetail .imgleft{left: 6px;}
+
+#templateString_role .daojuShowDetailInfos .imgleft { *left: -130px;}
+
+#templateString_daoju .imgleft,
+#templateString_equip .imgleft,
+#templateString_daojuother .imgleft { _left: -130px;}
+
+#templateString_daoju .iptimgs { height: 20px; left: 99px; position: absolute; top: -20px; width: 22px;}
+
+#templateString_daojuother .iptimgs { height: 20px; left: 99px; position: absolute; top: -20px; width: 22px;}
+
+#templateString_equip .iptimgs { height: 20px; left: 99px; position: absolute; top: -20px; width: 22px;}
+
+#templateString_pet .petiptimg { left: 130px; top: 15px; width: 22px; height: 20px; position: absolute;}
+
+#templateString_pet .petzlimg { height: 28px; left: 105px; position: absolute; top: 35px; width: 45px; text-align: right;}
+
+.templateString_pet_attr_up { width: 400px;}
+
+.templateString_pet_attr_up dl { width: 200px; float: left;}
+
+.templateString_pet_attr_up dl.label_pic{ display: inline-block;height: 22px;margin-top: 4px;width: 55px;}
+
+.templateString_pet_attr_up dl.pet_polar,.templateString_pet_attr_up dl.pet_eclosion,.templateString_pet_attr_up dl.pet_enchant,.templateString_pet_attr_up dl.pet_qianghua,
+.templateString_pet_attr_up dl.pet_huanhua,.templateString_pet_attr_up dl.pet_mounttype,.templateString_pet_attr_up dl.pet_primarypro ,.templateString_pet_attr_up dl.pet_rebirth{
+    display: inline-block;
+    width: 33px;
+    height: 22px;
+    margin-top: 4px;
+    margin-right: 2px;}
+
+.templateString_pet_attr_up dt { float: left;}
+
+.templateString_pet_attr_up dd { float: left;}
+
+.templateString_pet_attr_up dl,
+.templateString_pet_attr_up dt,
+.templateString_pet_attr_up dd,
+.templateString_pet_attr_down dl,
+.templateString_pet_attr_down dt,
+.templateString_pet_attr_down dd,
+.templateString_pet_attr_down p,
+.templateString_pet_attr_down > div { float: left;}
+
+.templateString_pet_attr_down dd { width: 450px; float: left;}
+
+.templateString_pet_attr_down div dl { width: 150px;}
+
+.templateString_pet_attr_down div dl dd { width: auto;}
+
+.templateString_pet_attr_down p { width: 100%;}
+
+.templateString_pet_attr_down dt { white-space: nowrap; float: left;}
+
+.templateString-color-blue { color: #63e9ff;}
+
+.templateString-color-green { color: #00ff00;}
+
+.templateString-color-white { color: #f5f5f5;}
+
+.templateString_pet_attr_down > div { margin-left: 70px;}
+
+.templateString_pet_attr > div dt { color: #63e9ff;}
+
+.templateString_pet_attr_down > dl { width: 100%;}
+
+.templateString_pet_attr_down dl span,
+.templateString_pet_attr_down div > span { margin-right: 10px;}
+
+.templateString_pet_attr_down dl.attrib_point dd span,
+.templateString_pet_attr_down dl.resist_point dd span,
+.templateString_pet_attr_down .medicine_used span span,
+.templateString_pet_attr_down .dunwu_left_times span,
+.templateString_pet_attr_down .pet_godbooks span,
+.templateString_pet_attr_down .illusion span span,
+.templateString_pet_attr_down .strengthen span span,
+.templateString_pet_attr_down .capacity_level dd span { margin-right: 0px;}
+
+#templateString_daoju dl { width: 150px; white-space: nowrap;}
+
+#templateString_daoju dt, #templateString_daoju dd { float: left;}
+
+#templateString_daoju .attrib { min-width: 250px; white-space: normal;}
+
+#templateString_daojuother .attrib, .daojuShowDetailInfos .attrib { min-width: 227px; white-space: normal;}
+
+#templateString_daoju .source,#templateString_daoju .min_equip_lv,#templateString_daoju .no_min_equip_lv{ white-space: normal; width: 230px;}
+
+.daojuShowDetailInfo .templateString-noborder,
+.daojuShowDetailInfos .templateString-noborder { white-space: nowrap; border: 0px solid #cbbf47; position: relative; padding: 20px 20px 20px 160px;}
+
+#menu_con .daojuShowDetailInfos { font-size: 14px;}
+
+/*宠物天书*/
+.cwgodbookdetail{
+    left: -97px;
+    position: absolute;
+    top: 237px;
+    width: 400px;
+    text-align: left;
+    z-index: 44;
+    background: #000;
+    display: none;
+    font-size: 14px;}
+
+.cwgodbookdetail .godimgleft{
+    position: absolute;
+    left: 0;
+    top: 18%;
+    height: 155px;
+    width: 125px;
+    padding: 0;}
+
+#templateString_suit .daojuShowDetailInfos, #templateString_jewelrySuit .daojuShowDetailInfos { top: 50px; left: 52px;}

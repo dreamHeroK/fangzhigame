@@ -1,0 +1,54 @@
+{
+  "page_url": "http://qibao.gyyx.cn/Buy/Index/",
+  "assets": [
+    {
+      "url": "http://g.gyyxcdn.cn/qibao/Content/css/common.css",
+      "path": "D:\\learning\\wendao\\python\\reference\\qibao_hover_styles\\common.css",
+      "bytes": 76303,
+      "sha256": "d5e72d81192aba0f6487d3c1bb4f7477231808b3588e2157d3f681c265856f42"
+    },
+    {
+      "url": "http://g.gyyxcdn.cn/qibao/Content/css/XmlShowDetailInfo.css",
+      "path": "D:\\learning\\wendao\\python\\reference\\qibao_hover_styles\\XmlShowDetailInfo.css",
+      "bytes": 90403,
+      "sha256": "138fc20af2bb14b90c6927f7d81203e6c5fdff48f3f1ab97ee628b85ef63a07e"
+    },
+    {
+      "url": "http://g.gyyxcdn.cn/qibao/Content/js/XmlShowDetailInfo.js",
+      "path": "D:\\learning\\wendao\\python\\reference\\qibao_hover_styles\\XmlShowDetailInfo.js",
+      "bytes": 37934,
+      "sha256": "9b10257e3d486fd5a8145a639f8f9ad587592972c2ff99a664f2d990ba7fe103"
+    },
+    {
+      "url": "http://g.gyyxcdn.cn/qibao/Content/js/Xmlequip.js",
+      "path": "D:\\learning\\wendao\\python\\reference\\qibao_hover_styles\\Xmlequip.js",
+      "bytes": 40504,
+      "sha256": "bd1c9be5e40c9f70740c57664e505a2177ca9e44a3291efa5fd162bab9bd1074"
+    },
+    {
+      "url": "http://g.gyyxcdn.cn/qibao/Content/js/XmlPet.js",
+      "path": "D:\\learning\\wendao\\python\\reference\\qibao_hover_styles\\XmlPet.js",
+      "bytes": 73889,
+      "sha256": "9afe7bd627b527e99b439d7608c69eba1aee53b99106bde6dad3d50c9ec81b7f"
+    },
+    {
+      "url": "http://g.gyyxcdn.cn/qibao/Content/js/Xmlcommon.js",
+      "path": "D:\\learning\\wendao\\python\\reference\\qibao_hover_styles\\Xmlcommon.js",
+      "bytes": 77477,
+      "sha256": "01fd6c0ea046e9d5eef1dc3cd9ff94b084a23825ab2bf1e1ef9311068329b854"
+    },
+    {
+      "url": "http://g.gyyxcdn.cn/qibao/Content/js/Xmltemplate.js",
+      "path": "D:\\learning\\wendao\\python\\reference\\qibao_hover_styles\\Xmltemplate.js",
+      "bytes": 89489,
+      "sha256": "2ca5866ec70406e0c456e8d6204d62343eb9845ed5b066186fa9b73e5874c446"
+    }
+  ],
+  "notes": {
+    "shell": ".daojuShowDetailInfo / .daojuShowDetailInfos — 浮层外壳（深色底 + 金边）",
+    "equip": "#templateString_equip — 装备详情模板区域",
+    "pet": "#templateString_pet — 宠物详情模板区域",
+    "table_cell": ".goods_tab_con td .iframep / td.postd — 列表内图标格与占位（见 common.css）"
+  },
+  "snippet_equip_pet_hover": "snippet_equip_pet_hover.css"
+}

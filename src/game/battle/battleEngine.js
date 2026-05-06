@@ -316,22 +316,28 @@ export function getLegalTargets(state, side) {
  * 本回合使用背包药品（不扣背包，由 UI 在成功后扣减）。
  * @returns {{ state: typeof state, ok: boolean }}
  */
-export function submitUseConsumable(state, { actorId, targetId, itemId }, rng = Math.random) {
-  if (state.phase === 'end') return { state, ok: false }
-  if (state.awaitingActorId !== actorId) return { state, ok: false }
+export function submitUseConsumable(
+  state,
+  { actorId, targetId, itemId, restoreHp, restoreMp },
+  rng = Math.random
+) {
+  if (state.phase === 'end') return { state, ok: false, hpDelta: 0, mpDelta: 0 }
+  if (state.awaitingActorId !== actorId) return { state, ok: false, hpDelta: 0, mpDelta: 0 }
   const actor = getActor(state, actorId)
   const target = getActor(state, targetId)
   if (!actor || actor.side !== 'ally' || !target || target.side !== 'ally' || target.hp <= 0) {
-    return { state, ok: false }
+    return { state, ok: false, hpDelta: 0, mpDelta: 0 }
   }
-  if (!getConsumable(itemId)) return { state, ok: false }
+  if (!getConsumable(itemId)) return { state, ok: false, hpDelta: 0, mpDelta: 0 }
 
-  const applied = applyConsumableToUnit(state, targetId, itemId, patchUnit, pushLog)
-  if (!applied.ok) return { state, ok: false }
+  const opts =
+    restoreHp != null ? { restoreHp } : restoreMp != null ? { restoreMp } : /** @type {undefined} */ (undefined)
+  const applied = applyConsumableToUnit(state, targetId, itemId, patchUnit, pushLog, opts)
+  if (!applied.ok) return { state, ok: false, hpDelta: 0, mpDelta: 0 }
   let s = { ...applied.state, awaitingActorId: null }
   s = advanceRoundPointer(s)
   s = tickUntilInputOrEnd(s, rng)
-  return { state: s, ok: true }
+  return { state: s, ok: true, hpDelta: applied.hpDelta, mpDelta: applied.mpDelta }
 }
 
 /**

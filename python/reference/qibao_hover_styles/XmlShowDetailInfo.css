@@ -1,0 +1,1364 @@
+img { border: none; display: inline-block; }
+.makeup_imgDiv img{display:block;}
+.clearfix:after { content: ""; display: block; height: 0; visibility: hidden; clear: both; }
+* { margin: 0; padding: 0; font-family: "微软雅黑"; line-height: 18px; }
+.daojuShowDetailInfo,
+.daojuShowDetailInfos { z-index: 99; text-align: left; background: #152326; padding: 1px; color: #f5f5f5; line-height: 22px; position: absolute; left: 80px; *left: 110px; top: 0px;}
+.daojuShowDetailInfo .templateString-border,
+.daojuShowDetailInfos .templateString-border { white-space: nowrap; border: 2px solid #cbbf47; min-height: 120px; _height: 120px; position: relative; padding: 20px 20px 20px 160px; }
+.cwgodbookdetail .templateString-border{padding: 20px 20px 20px 139px; }
+.templateString-border .imgleft { position: absolute; top: 50%; margin-top: -60px; left: 20px; _margin-left: 150px; *left: -150px; }
+.daojuShowDetailInfo #templateString_pet,
+.daojuShowDetailInfos #templateString_pet { padding-left: 20px; white-space: normal; }
+.daojuShowDetailInfo #templateString_wendaoMoney,
+.daojuShowDetailInfos #templateString_wendaoMoney,
+.daojuShowDetailInfo #templateString_role,
+.daojuShowDetailInfos #templateString_role { padding-left: 110px; }
+.daojuShowDetailInfo .textcenter,
+.daojuShowDetailInfos .textcenter { text-align: center; }
+.daojuShowDetailInfo .textcenter img,
+.daojuShowDetailInfos .textcenter img { display: inline; padding: 0 5px 0 0; }
+.daojuShowDetailInfo .textcenter .evolvelevel img,
+.daojuShowDetailInfos .textcenter .evolvelevel img { padding: 0; }
+.daojuShowDetailInfo #templateString_wendaoMoney .imgright,
+.daojuShowDetailInfos #templateString_wendaoMoney .imgright { margin-top: 40px; }
+#templateString_wendaoMoney .imgleft { top: 50%; margin-top: -25px; left: 30px; }
+#templateString_role .imgleft { top: 50%; margin-top: -60px; left: 30px; *left: -130px;  *margin-left: 150px;}
+#templateString_role .cwgodbookdetail .imgleft{left: 6px;}
+#templateString_role .daojuShowDetailInfos .imgleft { *left: -130px; }
+#templateString_daoju .imgleft,
+#templateString_equip .imgleft,
+#templateString_daojuother .imgleft { _left: -130px; }
+#templateString_daoju .iptimgs { height: 20px; left: 99px; position: absolute; top: -20px; width: 22px; }
+#templateString_daojuother .iptimgs { height: 20px; left: 99px; position: absolute; top: -20px; width: 22px; }
+#templateString_equip .iptimgs { height: 20px; left: 99px; position: absolute; top: -20px; width: 22px; }
+#templateString_pet .petiptimg { left: 130px; top: 15px; width: 22px; height: 20px; position: absolute; }
+#templateString_pet .petzlimg { height: 28px; left: 105px; position: absolute; top: 35px; width: 45px; text-align: right; }
+#templateString_role .imgleft,
+#templateString_wendaoMoney .imgleft { *left: 30px; }
+.templateString_pet_attr_up { width: 400px; }
+.templateString_pet_attr_up dl { width: 200px; float: left; }
+.templateStringAttriPic{width:400px;float:left;}
+.templateString_pet_attr_up dl.label_pic{ display: inline-block;height: 22px;margin-top: 4px;width: 55px;}
+.templateString_pet_attr_up dl.pet_polar,.templateString_pet_attr_up dl.pet_eclosion,.templateString_pet_attr_up dl.pet_enchant,.templateString_pet_attr_up dl.pet_qianghua,
+.templateString_pet_attr_up dl.pet_huanhua,.templateString_pet_attr_up dl.pet_mounttype,.templateString_pet_attr_up dl.pet_primarypro ,.templateString_pet_attr_up dl.pet_rebirth{
+    display: inline-block;
+    width: 33px;
+    height: 22px;
+    margin-top: 4px;
+    margin-right: 2px;
+}
+.templateString_pet_attr_up dt { float: left; }
+.templateString_pet_attr_up dd { float: left; }
+.templateString_pet_attr_up dl,
+.templateString_pet_attr_up dt,
+.templateString_pet_attr_up dd,
+.templateString_pet_attr_down dl,
+.templateString_pet_attr_down dt,
+.templateString_pet_attr_down dd,
+.templateString_pet_attr_down p,
+.templateString_pet_attr_down > div { float: left; }
+.templateString_pet_attr_down dd { width: 450px; float: left;  }
+.templateString_pet_attr_down div dl { width: 150px; }
+.templateString_pet_attr_down div dl dd { width: auto; }
+.templateString_pet_attr_down p { width: 100%; }
+.templateString_pet_attr_down dt { white-space: nowrap; float: left; }
+.templateString-color-blue { color: #63e9ff; }
+.templateString-color-green { color: #00ff00; }
+.templateString-color-white { color: #f5f5f5; }
+.templateString_pet_attr_down > div { margin-left: 70px; }
+.templateString_pet_attr > div dt { color: #63e9ff; }
+.templateString_pet_attr_down > dl { width: 100%; }
+.templateString_pet_attr_down dl span,
+.templateString_pet_attr_down div > span { margin-right: 10px; }
+.templateString_pet_attr_down dl.attrib_point dd span,
+.templateString_pet_attr_down dl.resist_point dd span,
+.templateString_pet_attr_down .medicine_used span span,
+.templateString_pet_attr_down .dunwu_left_times span,
+.templateString_pet_attr_down .pet_godbooks span,
+.templateString_pet_attr_down .illusion span span,
+.templateString_pet_attr_down .strengthen span span,
+.templateString_pet_attr_down .capacity_level dd span { margin-right: 0px; }
+#templateString_daoju dl { width: 150px; white-space: nowrap; }
+#templateString_daoju dt, #templateString_daoju dd { float: left; }
+#templateString_daoju .attrib { min-width: 250px; white-space: normal; }
+#templateString_daojuother .attrib, .daojuShowDetailInfos .attrib { min-width: 227px; white-space: normal; }
+#templateString_daoju .source,#templateString_daoju .min_equip_lv,#templateString_daoju .no_min_equip_lv{ white-space: normal; width: 230px; }
+
+/*角色属性面板*/
+.js_showitem { width: 980px; min-height: 180px; margin: 20px 0 0 0; position: relative; }
+.daojuShowDetailInfo .templateString-noborder,
+.daojuShowDetailInfos .templateString-noborder { white-space: nowrap; border: 0px solid #cbbf47; position: relative; padding: 20px 20px 20px 160px; }
+.templateString-noborder #roleleftbg { z-index: 1; position: relative; top: 5px; margin: 0px; left: 20px; width: 332px; height: 518px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png?v=2.1) no-repeat; }
+.templateString-noborder #roleleftbg.roleleftbg { background-position: 0 0; }
+.templateString-noborder #roleleftbg.roleleftbg.roleleftbg_dianka { background-position: -3255px 0; }
+.templateString-noborder #roleleftbg.roleleftbg.roleleftbg_super { background-position: -3587px 0; }
+.templateString-noborder #roleleftbg.roleleftbg.roleleftbg_normal { background-position: -3919px 0; }
+.templateString-noborder #roleleftbg.petleftbg { background-position: -332px 0; }
+.templateString-noborder #roleleftbg.guardleftbg { background-position: -664px 0; }
+.templateString-noborder #roleleftbg.equipleftbg { background-position: -996px 0; }
+.templateString-noborder #roleleftbg.equipleftbg.class_equipbg { background-position: -2923px 0; }
+.templateString-noborder #roleleftbg.equipleftbg.class_qhuipbg { 
+    background: url(//img.gyyxcdn.cn/old-qibao/role_qhbg.png) no-repeat;
+    background-position: 0 0;
+}
+.templateString-noborder #roleleftbg.dollleftbg { background-position: -1328px 0; }
+.templateString-noborder #roleleftbg.yyleftbg { background-position: -2111px 0; }
+*.petleftbg { background-position: -332px 0!important; }
+*.guardleftbg { background-position: -664px 0!important; }
+*.equipleftbg { background-position: -996px 0; }
+*.dollleftbg { background-position: -1328px 0!important; }
+*.yyleftbg { background-position: -2111px 0!important; }
+.templateString-noborder .rolelef_tablist { width: 317px; height: 23px; list-style: none; padding: 0; margin: 14px 0 0 15px; float: left; }
+.templateString-noborder .rolelef_tablist li { width: 39px; height: 23px; list-style: none; padding: 0; margin: 0; float: left; }
+.templateString-noborder .rolelef_tablist li a { width: 39px; height: 23px; list-style: none; padding: 0; margin: 0; display: block; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat; }
+.templateString-noborder .rolelef_tablist li.roletab a { background-position: -39px -518px; }
+.templateString-noborder .rolelef_tablist li.roletab a.on { background-position: 0 -518px; }
+.templateString-noborder .rolelef_tablist li.pettab a { background-position: -116px -518px; }
+.templateString-noborder .rolelef_tablist li.pettab a.on { background-position: -78px -518px; }
+.templateString-noborder .rolelef_tablist li.guardtab a { background-position: -194px -518px; }
+.templateString-noborder .rolelef_tablist li.guardtab a.on { background-position: -155px -518px; }
+.templateString-noborder .rolelef_tablist li.yytab a { background-position: -272px -518px; }
+.templateString-noborder .rolelef_tablist li.yytab a.on { background-position: -233px -518px; }
+.templateString-noborder .rolelef_tablist li.equiptab a { background-position: -350px -518px; }
+.templateString-noborder .rolelef_tablist li.equiptab a.on { background-position: -311px -518px; }
+.templateString-noborder .rolelef_tablist li.dolltab a { background-position: -428px -518px; }
+.templateString-noborder .rolelef_tablist li.dolltab a.on { background-position: -389px -518px; }
+#menu_con { float: left; font-size: 12px; }
+#menu_con .tag { width: 332px; float: left; }
+#menu_con .tag .rd1 { float: left; height: 155px; width: 100%; display: block; }
+#menu_con .tag .rd1 .rd1icon { width: 100px; height: 125px; margin: 20px 0 0 26px; _margin: 20px 0 0 13px; display: block; float: left; position: relative; }
+#menu_con .tag .rd1 .rd1icon .rd1attr { border: 1px solid #beac56; height: 228px; left: 0px; position: absolute; top: 28px; width: 307px; z-index: 4; background: #000; display: none; }
+.rd1attr .rd1smallimg { width: 125px; height: 126px; float: left; }
+.rd1attr .rd1smallimg img { width: 100px; }
+.rd1attr .rd1smallimg .widic { width: 150px; }
+.rd1attr .rd1attrlist { float: left; font-size: 14px; height: 101px; padding: 25px 0 0; width: 182px; }
+.rd1attrlist dt { width: 100%; color: #00ff00; }
+#menu_con .tag .rd1 .firstrd { margin-top: 13px; _margin-top: 16px; }
+#menu_con .tag .rd1 .rd1sp { margin-left: 50px; margin-bottom: 5px; float: left; width: 130px; height: 18px; }
+#menu_con .tag .rd1 .rd1sp.appellations{
+    position: relative;
+}
+#menu_con .tag .rd1 .rd1sp.appellations .sixstar{
+    background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat;
+    width: 71px;
+    height: 25px;
+    background-position: -961px -541px;
+    position: absolute;
+    right: -4px;
+    top: -4px;
+    cursor: pointer;
+    display: none;
+}
+/* #menu_con .tag .rd1 .classicpotential{width: 34px;height: 22px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat;background-position: -863px -541px;position: absolute;left: 135px;top: 70px;display: none;} */
+#menu_con .tag .rd1 .classicpotential {    width: 34px;
+    height: 23px;
+    background: #242b35;
+    position: absolute;
+    left: 138px;
+    top: 70px;
+    display: none;
+    color: #f1e88d;
+    font-size: 14px;
+    font-family: monospace;
+    line-height: 23px;}
+#menu_con .tag .rd1 .card_point {   
+    position: absolute;
+    left:230px;
+    top: 72px;
+    width: 80px;
+}
+#menu_con .tag .rd1 #month_card_type, #menu_con .tag .rd1 #month_card_time {   
+    display: none;
+}
+#menu_con .tag .rd1 .card_point .sprit{display: none; 
+    border: 1px solid #beac56;
+    height: 28px;
+    position: absolute;
+    width: 82px;
+    z-index: 4;
+    background: #000;
+    text-align: left;
+    line-height: 28px;
+    right: -18px;
+    bottom: 22px;
+}
+#menu_con .tag .rd1 .rdhalf { width: 45px; }
+#menu_con .tag .rd1 .mtop { margin: 1px 0 0 49px; }
+#menu_con .tag .rd1 .mtop5 { margin: 3px 0 0 49px; }
+#menu_con .tag .rd2 { float: left; height: 205px; width: 100%; display: block; position: relative; }
+#menu_con .tag .rd2 .firstrd { margin: 9px 0 2px 74px!important; }
+#menu_con .tag .rd2 .firstrds { margin: 7px 6px 2px 74px !important; }
+#menu_con .tag .rd2 .lifehp { display: block; float: left; left: 65px; padding: 0 0 0 15px; position: absolute; top: 7px; width: 87px; }
+#menu_con .tag .rd2 .lifemn { display: block; float: left; left: 65px; padding: 0 0 0 15px; position: absolute; top: 32px; width: 87px; }
+#menu_con .tag .rd2 .rd2sp { margin: 5px 0 4px 80px; float: left; width: 93px; height: 16px; }
+#menu_con .tag .rd2 .rd2sp.rigt { margin: 5px 0 4px 93px; width: 74px; }
+#menu_con .tag .rd2 .rd2sp.rigts { margin: 5px 0 4px 64px; width: 74px; }
+#menu_con .tag .rd2 .rd2sp.rd2ab { position: absolute; bottom: 7px; left: 74px; z-index: 1; margin: 0; text-align: center; }
+#menu_con .tag .rd2 .rd2sp.rd2pt { position: absolute; bottom: 7px; _bottom: 6px; left: 74px; z-index: 0; }
+#menu_con .tag .rd2 .rd2sp.rd2pt #perrd { background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -755px -949px; float: left; }
+#menu_con .tag .rd2 .rd2sp.rd2pt #perrds { background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -755px -949px; float: left; }
+.yyleftbg #menu_con .tag .rd2 { display: block; float: left; height: 195px; overflow: hidden; position: relative; width: 100%; }
+.yyleftbg #menu_con .tag .rd2 .firstrd { margin: 24px 0 1px 67px !important; }
+.yyleftbg #menu_con .tag .rd2 .rd2sp { float: left; height: 15px; margin-bottom: 2px; margin-left: 67px; width: 90px; }
+.yyleftbg #menu_con .tag .rd2 .rd2sp.rd2pt { position: absolute; bottom: 7px; _bottom: 6px; left: 74px; z-index: 0; }
+.yyleftbg #menu_con .tag .rd2 .rightrd { margin-left: 44px; }
+.yyleftbg #menu_con .tag .rd2 .rightrd2 { margin-left: 60px; }
+.yyleftbg #menu_con .tag .rd2 .rd2sp.rd2ab { bottom: 25px; left: 65px; margin: 0; position: absolute; text-align: center; z-index: 1; }
+#menu_con .tag .rd2 .rightrd { margin-left: 45px; }
+#menu_con .tag .rd2 .rightrd2 { margin-left: 45px; }
+#menu_con .tag .rd2 .rd2zllv { left: 68px; position: absolute; text-align: right; top: -140px; width: 58px; }
+#menu_con .tag .rd2 .cw_zhuanhuatimes { left: -2px; position: absolute; text-align: right; top: -34px; width: 58px;height:51px;}
+#menu_con .tag .rd2 .generalboundary{left: 69px; position: absolute; text-align: right; top: -40px; width: 58px;height:51px;display:none;}
+#menu_con .tag .rd2 .nogeneralboundary{left: 69px; position: absolute; text-align: right; top: -40px; width: 58px;height:51px;display:none;}
+#menu_con .tag .rd2 .generalboundary .generalboundary_details{border: 1px solid #beac56;height: auto;left: -25px;position: absolute;top: 34px;width: 282px;z-index: 99;background: #000;text-align: left;line-height:28px;display: none;padding-left: 10px;}
+#menu_con .tag .rd2 .generalboundary .generalboundary_details ul li{line-height: 28px;}
+#menu_con .tag .rd2 .cw_zhuanhuatimes .zhuanhuatimes_details{border: 1px solid #beac56;height: 58px;left: -25px;position: absolute;bottom: 55px;width: 182px;z-index: 4;background: #000;text-align: left;display: none;}
+#menu_con .tag .rd2 .rd2zlscore { right: 41px; position: absolute; top: -121px; width: 116px; }
+#menu_con .tag .rd2 .classicpot{right: 41px; position: absolute; top: -121px; width: 116px;display:none; }
+#menu_con .tag #backuprd2 { display: none; }
+#menu_con .tag #backuprd3 { display: none; }
+#menu_con .tag #curattrplan1 { display: block; position: absolute; left: 5px; top: 195px; width: 23px; height: 84px; text-align: center; cursor: pointer; z-index: 1; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat; background-position: -752px -1049px; }
+#menu_con .tag #curattrplan1.on { background-position: -777px -1049px; }
+#menu_con .tag #curattrplan2 { display: none; position: absolute; left: 5px; top: 279px; width: 23px; height: 84px; text-align: center; cursor: pointer; z-index: 1; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat; background-position: -801px -1049px; }
+#menu_con .tag #curattrplan2.on { background-position: -825px -1049px; }
+#menu_con .tag .rd3 { float: left; height: 61px; width: 100%; display: block; overflow: hidden; }
+#menu_con .tag .rd3 .rd3sp { margin-left: 8px; margin-top: 33px; float: left; width: 39px; height: 18px; }
+#menu_con .tag .rd3 .firstrd { margin-left: 30px;}
+#menu_con .tag .rd3 .rd3splone { float: left; margin-left: 138px; margin-top: 3px; width: 39px; }
+#menu_con .tag .rd4 { float: left; width: 100%; display: block; overflow: hidden; }
+#menu_con .tag .rd4 .rd4sp { margin-left: 13px; margin-top: 5px; float: left; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png?v=1.96) no-repeat; width: 64px; height: 25px; }
+#menu_con .tag .rd4 .rd4sp.skill { background-position: -467px -518px; }
+#menu_con .tag .rd4 .rd4sp.yyskill { background-position: -467px -518px; }
+#menu_con .tag .rd4 .rd4sp.lwbom { background-position: -531px -518px; }
+#menu_con .tag .rd4 .rd4sp.understand {background-position: -799px -541px;}
+#menu_con .tag .rd4 .rd4sp.understand.on {background-position: -595px -518px;}
+#menu_con .tag .rd4 .rd4sp.lifeRecord {background-position: -897px -541px;}
+
+/*阵型*/
+#menu_con .tag .rd4 .rd4sp.formation { background-position: -595px -543px; }
+#menu_con .tag .rd4 .rd4sp a { display: block; width: 64px; height: 25px; text-decoration: none; }
+#menu_con .tag .rd4 .firstrd { margin-left: 20px; }
+#menu_con .tag .rd4 .yysk { margin-left: 132px; }
+.yyleftbg #menu_con .tag .rd3 { display: block; float: left; height: 92px; overflow: hidden; width: 100%; }
+.yyleftbg #menu_con .tag .rd3 .rd3sp { float: left; height: 18px; margin-left: 12px; margin-top: 33px; width: 39px; }
+.yyleftbg #menu_con .tag .rd3 .firstrd { margin-left: 46px; }
+/*角色技能面板*/
+.skillcenterbg { height: 367px; left: 360px; margin: 0; overflow: hidden; position: absolute; top: 75px; width: 304px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -751px -582px; z-index: 1; }
+.skillclose { height: 23px; left: 279px; margin: 0; position: absolute; top: 4px; width: 21px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -994px -949px; cursor: pointer; }
+.templateString-noborder .skillleft_tablist { height: 25px; list-style: outside none none; margin: 25px 0 0 12px; padding: 0; width: 283px; }
+.templateString-noborder .skillleft_tablist li { width: 70px; height: 25px; list-style: none; padding: 0; margin: 0; float: left; }
+.templateString-noborder .skillleft_tablist li a { width: 69px; height: 25px; list-style: none; padding: 0; margin: 0; display: block; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat; }
+.templateString-noborder .skillleft_tablist li.divisiontab a { background-position: -730px -518px; }
+.templateString-noborder .skillleft_tablist li.divisiontab a.on { background-position: -660px -518px; }
+.templateString-noborder .skillleft_tablist li.lifetab a { background-position: -870px -518px; }
+.templateString-noborder .skillleft_tablist li.lifetab a.on { background-position: -800px -518px; }
+.templateString-noborder .skillleft_tablist li.othertab a { background-position: -1010px -518px; }
+.templateString-noborder .skillleft_tablist li.othertab a.on { background-position: -940px -518px; }
+/*伏羲阵型*/
+.templateString-noborder .skillleft_tablist li.fuxizhenxing a { background-position:  -730px -541px; }
+.templateString-noborder .skillleft_tablist li.fuxizhenxing a.on { background-position: -660px -541px;  }
+
+.templateString-noborder .skillleft_tablist li.othertabyy a { background-position: -1010px -518px; }
+.templateString-noborder .skillleft_tablist li.othertabyy a.on { background-position: -940px -518px; }
+#skill_con .skill_list { float: left; _list-style: none; margin: 6px 0 0 19px; _margin: 9px 0 0 18px; padding: 0; width: 267px;height:145px; overflow: hidden; position: absolute;overflow-y:auto}
+#skill_con .skill_list li { list-style: none; padding: 0px; margin: 0px; width: 100%; float: left; height: 24px; }
+#skill_con .skill_list li a { color: #fff; display: block; height: 22px; padding: 2px 0 0 0px; _padding: 2px 0 0 0px; text-decoration: none; }
+#skill_con .skill_list li a .kname { float: left; padding: 0; text-align: center; width: 120px; }
+#skill_con .skill_list li a .klv { float: left; padding: 0; text-align: center; width: 130px; }
+/*伏羲阵型*/
+#skill_con .skill_list li a .FXklv {width:60px}
+#skill_con .skill_list li a .FXnum {display:block;width:60px;float:left;text-align:center;}
+#skill_con .fuxijianjie {position:absolute;width:90%;height:110px;left:5%;top:237px;overflow-y:auto;overflow-x:auto}
+#skill_con .fuxijianjie p{width:94%;text-align:center;margin-left:3%}
+#skill_con .fuxijianjie p.firText{text-align:left}
+#skill_con .fuxi_exp{ width: 100%;height: 12px;line-height: 12px;position: absolute;top: 275px;font-size: 12px;padding-left: 24px;}
+#skill_con .fuxi_durability{ width: 100%;height: 12px;line-height: 12px;position: absolute;top: 292px;font-size: 12px;padding-left: 24px;}
+#skill_con .skill_list li a.on { background: #06117d; }
+.skilltitle { color: #ecf73b; padding: 1px 0 0 0px; _padding: 3px 0 0 0px; float: left; width: 132px; text-align: center; margin: 0 0 0 19px; font-size: 14px; }
+.skilltitle.sed { padding: 1px 0 0 0px; _padding: 3px 0 0 0px; margin: 0;width:132px; }
+.skilltitle.srd{margin: 0}
+.skilltitle.keyongzx { padding: 1px 0 0 0px; _padding: 3px 0 0 0px; margin: 0;width:70px }
+.scollsp { display: block; float: left; height: 145px; overflow: hidden; margin: 10px 0 0; width: 305px; }
+/*滚动条样式*/
+.scolldiv { display: block; height: 150px; overflow: hidden; position: absolute; top: 74px; left: 0px; width: 100%; }
+.scrollBar { height: 150px; position: absolute; right: 18px; top: 0; width: 18px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -1343px -720px; }
+.scrollBar.long { background-position: -2088px -720px; }
+.tip { cursor: pointer; left: 3px; min-height: 20px; position: absolute; top: 0; width: 11px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -1328px -720px; }
+.scrtop { position: absolute; top: -3px; left: 0px; z-index: 1; width: 19px; height: 14px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -1325px -868px; }
+.scrbottom { position: absolute; bottom: -1px; left: 0px; z-index: 1; width: 19px; height: 14px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -1344px -871px; }
+.blooddetails ul{height:110px;overflow-y: scroll !important;}
+.blooddetails ul::-webkit-scrollbar{width: 7px;}
+.blooddetails ul::-webkit-scrollbar-thumb{background-color: #caf470; border-radius: 5px;}
+.blooddetails ul li{white-space: break-spaces;display: flex;justify-content: start;height: auto!important;font-size: 14px;}
+.blooddetails ul li span{min-width: 48px;}
+/*悟道属性面板*/
+.templateString-noborder #wudaoleftbg { height: 255px; left: 32px; margin: 0; overflow: hidden; position: absolute; top: 132px; width: 306px; z-index: 3; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -1055px -885px; }
+.wudaoleftbg .wudaotitle { width: 100%; text-align: center; color: #ebdb70; display: block; margin: 0; float: left; }
+.wudaoclose { cursor: pointer; height: 23px; margin: 7px 0 0 275px; width: 21px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -994px -949px; display: block; }
+.wudaoleftbg .wudaoattr_list { list-style: none; margin: 7px 0 0 15px; padding: 0px; float: left; width: 285px; height: 217px; overflow-y: auto;}
+.wudaoleftbg .wudaoattr_list li { float: left; list-style: outside none none; margin: 0 0 9px; padding: 0; width: 286px; }
+.wudaoleftbg .wudaoattr_list li span {color: #ebdb70; }
+/*浮生录面板*/
+.templateString-noborder #lifeRecordbg,.templateString-noborder #appellationsbg,.templateString-noborder #danfurnacebg { height: 255px; left: 32px; margin: 0; overflow: hidden; position: absolute; top: 132px; width: 306px; z-index: 3; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -1055px -885px; }
+
+.lifeRecordbg .lifeRecordtitle,.appellationsbg .appellationstitle,.danfurnacebg .danfurnacetitle{ width: 100%; text-align: center; color: #ebdb70; display: block; margin: 0; float: left; }
+.lifeRecordclose,.appellationsclose,.danfurnacebgclose{ cursor: pointer; height: 23px; margin: 7px 0 0 275px; width: 21px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -994px -949px; display: block; }
+.lifeRecordbg .lifeRecordattr_list,.appellationsbg .appellationsattr_list,.danfurnacebg .danfurnaceattr_list{list-style: none;
+    margin: 5px 0 0 28px;
+    padding: 0px;
+    float: left;
+    height: 160px;
+    width: 270px;
+    overflow: hidden;
+    overflow-y: auto;
+}
+.lifeRecordbg .lifeRecordinstruct{
+    position: absolute;
+    width: 260px;
+    left: 20px;
+    bottom: 2px;
+    color: #F8FC00;
+    font-size: 12px;
+    white-space: normal;
+}
+.templateString-noborder .alternateAttrDesc{
+    display: none;
+    margin: 8px 0 0 30px;
+    color: red;
+}
+.lifeRecordbg .lifeRecordattr_list li ,.appellationsbg .appellationsattr_list li,.danfurnacebg .danfurnaceattr_list li{ float: left; list-style: outside none none; margin: 0 0 9px; padding: 0; width: 286px; }
+.lifeRecordbg .lifeRecordattr_list li em{font-style: normal;}
+.lifeRecordbg .lifeRecordattr_list li span {color: #ebdb70; }
+.lifeRecordbg .lifeRecordattr_list li b {color: #ebdb70; font-weight: normal;}
+.lifeRecordbg .lifeRecordattr_list li.fivestars{margin-top: 10px;}
+/*引灵幡属性面板*/
+.templateString-noborder #ylfleftbg { height: 496px; left: 184px; margin: 0; position: absolute; top: 41px; width: 726px; z-index: 3; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -1363px -571px; }
+.ylfclose { cursor: pointer; height: 23px; margin: 0; position: absolute; right: 20px; top: 18px; width: 21px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -994px -949px; }
+.ylfleftbg .ylficonlist { display: block; height: 322px; margin: 58px 0 0 23px; width: 682px; position: relative; }
+.ylficonlist .ylficon { width: 32px; height: 32px; position: absolute; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat; }
+.ylficonlist .ywsd { background-position: -1363px -1068px; left: 59px; top: 24px; }
+.ylficonlist .wxxs { background-position: -1394px -1068px; left: 130px; top: 24px; }
+.ylficonlist .tjsj { background-position: -1426px -1068px; left: 201px; top: 24px; }
+.ylficonlist .ylhy { background-position: -1458px -1068px; right: 205px; top: 24px; }
+.ylficonlist .wxxf { background-position: -1490px -1068px; right: 134px; top: 24px; }
+.ylficonlist .ldxj { background-position: -1522px -1068px; right: 63px; top: 24px; }
+.ylficonlist .yyhy { background-position: -1554px -1068px; left: 23px; top: 105px; }
+.ylficonlist .sbkd { background-position: -1586px -1068px; left: 95px; top: 105px; }
+.ylficonlist .ddlh { background-position: -1618px -1068px; left: 164px; top: 105px; }
+.ylficonlist .xlft { background-position: -1650px -1068px; left: 236px; top: 105px; }
+.ylficonlist .sxkl { background-position: -1682px -1068px; right: 241px; top: 105px; }
+.ylficonlist .flwb { background-position: -1714px -1068px; right: 170px; top: 105px; }
+.ylficonlist .rysz { background-position: -1746px -1068px; right: 99px; top: 105px; }
+.ylficonlist .llzf { background-position: -1778px -1068px; right: 28px; top: 105px; }
+.ylficonlist .dhck { background-position: -1810px -1068px; left: 23px; top: 186px; }
+.ylficonlist .ycbb { background-position: -1842px -1068px; left: 95px; top: 186px; }
+.ylficonlist .tjxf { background-position: -1874px -1068px; left: 164px; top: 186px; }
+.ylficonlist .sygy { background-position: -1906px -1068px; left: 236px; top: 186px; }
+.ylficonlist .tlxz { background-position: -1938px -1068px; right: 239px; top: 186px; }
+.ylficonlist .jgzq { background-position: -1970px -1068px; right: 135px; top: 186px; }
+.ylficonlist .hfzr { background-position: -2002px -1068px; right: 28px; top: 186px; }
+.ylficonlist .ggms { background-position: -2034px -1068px; left: 95px; top: 267px; }
+.ylficonlist .jsbm { background-position: -2066px -1068px; left: 164px; top: 267px; }
+.ylficonlist .hxqs { background-position: -1363px -1100px; right: 239px; top: 267px; }
+.ylficonlist .rhsm { background-position: -1394px -1100px; right: 136px; top: 267px; }
+.ylficonlist .njlz { background-position: -1426px -1100px; right: 28px; top: 267px; }
+.ylficonlist .ylftip { border: 2px solid #999036; background: #000; display: block; height: auto; padding: 32px 36px 32px 11px; width: 251px; position: absolute; z-index: 4; white-space: normal; }
+.ylficonlist .ylftip dt { color: #00ff00; }
+.ylficonlist .ylftip dt span { color: #fff; }
+.ylficonlist .ywsdtip { left: 103px; top: 36px; display: none; }
+.ylficonlist .wxxstip { left: 175px; top: 36px; display: none; }
+.ylficonlist .tjsjtip { left: 245px; top: 36px; display: none; }
+.ylficonlist .ylhytip { left: 132px; top: 36px; display: none; }
+.ylficonlist .wxxftip { left: 203px; top: 36px; display: none; }
+.ylficonlist .ldxjtip { left: 273px; top: 36px; display: none; }
+.ylficonlist .yyhytip { left: 66px; top: 118px; display: none; }
+.ylficonlist .sbkdtip { left: 137px; top: 118px; display: none; }
+.ylficonlist .ddlhtip { left: 206px; top: 118px; display: none; }
+.ylficonlist .xlfttip { left: 279px; top: 118px; display: none; }
+.ylficonlist .sxkltip { left: 96px; top: 118px; display: none; }
+.ylficonlist .flwbtip { left: 167px; top: 118px; display: none; }
+.ylficonlist .rysztip { left: 238px; top: 118px; display: none; }
+.ylficonlist .llzftip { left: 309px; top: 118px; display: none; }
+.ylficonlist .dhcktip { left: 66px; top: 198px; display: none; }
+.ylficonlist .ycbbtip { left: 138px; top: 198px; display: none; }
+.ylficonlist .tjxftip { left: 206px; top: 198px; display: none; }
+.ylficonlist .sygytip { left: 279px; top: 198px; display: none; }
+.ylficonlist .tlxztip { left: 98px; top: 198px; display: none; }
+.ylficonlist .jgzqtip { left: 201px; top: 198px; display: none; }
+.ylficonlist .hfzrtip { left: 309px; top: 198px; display: none; }
+.ylficonlist .ggmstip { left: 138px; top: 281px; display: none; }
+.ylficonlist .jsbmtip { left: 206px; top: 281px; display: none; }
+.ylficonlist .hxqstip { left: 98px; top: 281px; display: none; }
+.ylficonlist .rhsmtip { left: 202px; top: 281px; display: none; }
+.ylficonlist .njlztip { left: 309px; top: 281px; display: none; }
+.ylficonlist .ylfStageIcons {width: 50px; height: 50px; position: absolute;}
+.ylficonlist .ylf41 {left:314px;top:15px;}
+.ylficonlist .ylf42 {left:314px;top:96px;}
+.ylficonlist .ylf43 {left:314px;top:175px;}
+.ylficonlist .ylf44 {left:314px;top:257px;}
+/*角色阵型属性面板*/
+.templateString-noborder #formationleftbg {background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -2107px -571px ;z-index:3;width:420px;height:563px}
+.templateString-noborder .formationclose {cursor: pointer;height: 23px;margin: 0;position: absolute;right: 6px;top: 18px;width: 21px;background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -994px -949px;}
+.templateString-noborder #formationleftbg ul {display:block;position:absolute;top:68px;width:400px;height:324px;overflow-y:auto;}
+.templateString-noborder #formationleftbg li {width:88%;height:53px;display:block;margin:0 auto;position:relative}
+.templateString-noborder #formationleftbg li span{display:inline-block;}
+.templateString-noborder #formationleftbg li .formationImg {width:48px;height:48px;border-radius:4px;border:1px solid #98a699;margin-left:8px;margin-top:1.5px}
+.templateString-noborder #formationleftbg li .hunyuan {background:url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat;background-position:0px -1085px}
+.templateString-noborder #formationleftbg li .yinyang {background:url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat;background-position:-50px -1085px}
+.templateString-noborder #formationleftbg li .tiandi {background:url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat;background-position:-100px -1085px}
+.templateString-noborder #formationleftbg li .sixiang {background:url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat;background-position:-150px -1085px}
+.templateString-noborder #formationleftbg li .wuxing {background:url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat;background-position:-200px -1085px}
+.templateString-noborder #formationleftbg li .qiankun {background:url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat;background-position:-250px -1085px}
+.templateString-noborder #formationleftbg li .qiyao {background:url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat;background-position:-300px -1085px}
+.templateString-noborder #formationleftbg li .taiji {background:url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat;background-position:-350px -1085px}
+
+
+.templateString-noborder #formationleftbg li .formationAttr {margin-left:50px}
+.templateString-noborder #formationleftbg li .formationName {margin-left: 100px;margin-top: -35px;display: block;}
+.templateString-noborder #formationleftbg li p {width:130px;position:absolute;top:10px;left:215px;text-align:center}
+.templateString-noborder #formationleftbg li p span{width:100%;display:block;text-align:center}
+.templateString-noborder #formationleftbg .explain {width:100%;text-align:center;color:#ad2028;float:left;position:absolute;top:395px}
+.templateString-noborder #formationleftbg .zxdiv {width:44%;position:absolute;left:5%;top:450px}
+.templateString-noborder #formationleftbg .zxdivFir {left:200px}
+.templateString-noborder #formationleftbg .query{background:url(http://img.gyyxcdn.cn/qibao/Images/querybtn.png) no-repeat;display:block;position:absolute;width:84px;height:25px;top:507px;left:108px;border:none} 
+.templateString-noborder #formationleftbg .reset{background:url(http://img.gyyxcdn.cn/qibao/Images/resetOn_btn.png) no-repeat;display:block;position:absolute;width:84px;height:25px;top:507px;left:220px;border:none}
+.templateString-noborder #formationleftbg .zxdiv .zxSpan{display:block;cursor:pointer;float:left;width:104px;height:19px;border-radius:4px;border:1px solid #a0a470;color:#ffffff;margin-left:71px;text-indent:4px}
+.templateString-noborder #formationleftbg .zxdiv #js_zxSpanSec {margin-left:77px}
+.templateString-noborder #formationleftbg .zxdiv ul {display:none;z-index:1;position:absolute;width:104px;height:85px;overflow-y:auto;border-radius:3px;border:1px solid #f8d800;left:76px;top:21px;background:#000}
+.templateString-noborder #formationleftbg .zxdiv ul li{display:block;float:left;cursor:pointer;width:85px;list-style:none;line-height:17px;height:17px;color:#a8a8a8;text-indent:4px}
+.templateString-noborder #formationleftbg .zxdiv ul li:hover {background:#000038}
+.templateString-noborder #formationleftbg .zxdiv .zxUlSec li{color:#ffffff}
+.templateString-noborder #formationleftbg .zxdiv .downArrLef,.templateString-noborder #formationleftbg .zxdiv .downArrRig {width:16px;height:12px;cursor:pointer;display:block;position:absolute;top:6px}
+.templateString-noborder #formationleftbg .zxdiv .downArrLef {background:url(http://img.gyyxcdn.cn/qibao/Images/downArrow.png) no-repeat;left:157px;}
+.templateString-noborder #formationleftbg .zxdiv .downArrRig {background:url(http://img.gyyxcdn.cn/qibao/Images/downArrow.png) no-repeat;left:160px;}
+.templateString-noborder #formationleftbg .contrastRes {width:100%;height:20px;position:absolute;top:479px;left:5%;text-align:center}
+/*角色阵型浮窗*/
+#templateString_role .floatCon {width:215px;background:#000;position:absolute;z-index:10;left:88px;top:70px;border:1px solid #a28b2a;}
+#templateString_role .floatCon p, #templateString_role .floatCon ul {width:96%;display:block;float:left;margin-left:4%;position:relative;top:0px;left:0px;height:auto;text-align:left;}
+/*#templateString_role #js_zxUl .floatCon p {height:16px;line-height:14px}*/
+#templateString_role .floatCon ul li {display:block;float:left;width:100%;list-style:none;text-align:center;height:16px;line-height:14px}
+#templateString_role .floatCon p.floatFir{padding-top:5px}
+#templateString_role .floatCon p span {display:block;float:left;text-align:left;width:auto;height:16px;line-height:14px}
+#templateString_role .floatCon .floatThrFir {height:35px;color:#f8fc00}
+#templateString_role .floatCon .floatCol {color:#f8fc00}
+#templateString_role .floatCon .floatSix{color:#f82020;margin-bottom:2px}
+#templateString_role .floatCon .top_left{background:url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -2107px -1134px;width:6px;height:6px;position:absolute;top:0px;left:0px}
+#templateString_role .floatCon .top_right{background:url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -2113px -1134px;width:6px;height:6px;position:absolute;top:0px;right:0px}
+#templateString_role .floatCon .bottom_left{background:url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -2119px -1134px;width:6px;height:6px;position:absolute;bottom:-2px;left:0px}
+#templateString_role .floatCon .bottom_right{background:url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -2125px -1134px;width:6px;height:6px;position:absolute;bottom:-2px;right:-1px}
+
+
+/*元婴技能面板*/
+.yyskillcenterbg { height: 367px; left: 360px; margin: 0; overflow: hidden; position: absolute; top: 75px; width: 304px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -751px -582px; z-index: 1; }
+#yyskill_con .skill_list { float: left; _list-style: none; margin: 6px 0 0 19px; _margin: 9px 0 0 18px; padding: 0; width: 267px; overflow: hidden; position: absolute; }
+#yyskill_con .skill_list li { list-style: none; padding: 0px; margin: 0px; width: 100%; float: left; height: 24px; }
+#yyskill_con .skill_list li a { color: #fff; display: block; height: 22px; padding: 2px 0 0 0px; _padding: 2px 0 0 0px; text-decoration: none; }
+#yyskill_con .skill_list li a .kname { float: left; padding: 0; text-align: center; width: 132px; }
+#yyskill_con .skill_list li a .klv { float: left; padding: 0; text-align: center; width: 132px; }
+#yyskill_con .skill_list li a.on { background: #06117d; }
+#menu_con .tag .rd2 .rd2sp.rd2pt #perrdyy { background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -755px -949px; float: left; }
+
+/*守护技能面板*/
+#menu_con .shdiv { width: 285px; height: 335px; padding: 15px 0 0 25px; }
+.shdiv .shnav { width: 150px; list-style: none; margin: 0 0 25px; padding: 0px; display: block; float: left; height: 165px; overflow: hidden; position: relative; }
+.shdiv .shlef_tablist { width: 135px; list-style: none; margin: 0 0 25px; padding: 0px; display: block; float: left; height: auto; position: absolute; }
+.shlef_tablist li { padding: 0px; margin: 0px; }
+.shlef_tablist li a { color: #fff; float: left; font-size: 14px; padding: 5px 0 5px 10px; text-align: left; text-decoration: none; width: 125px; }
+.shlef_tablist li a.on { background: #43410e; }
+.pet_capictity{margin: 3px;}
+.petcap_tit{background: #27626a;color: #ecf73b;height: 21px;line-height: 21px; padding: 1px 0 0px 4px;display: inline-block;}
+.petcap_number{color: #00ff00;border:1px solid #a7a171;border-radius: 4px;display: inline-block;width: 54px;padding-left: 4px;}
+#menu_sh { float: left; height: 110px; padding: 18px 0 0; width: 283px; position: relative; }
+#menu_sh .lifehp { display: block; float: left; left: 33px; padding: 0 0 0 10px; position: absolute; width: 227px; }
+#menu_sh .lifeexphp { left: 39px; position: absolute; top: 20px; display: block; z-index: -1; }
+.lifeexphp #perrdshhp { background: #630a0c; display: block; height: 15px; _line-height: 5px; z-index: 1; }
+#menu_sh .lifevr { display: block; float: left; left: 33px; top: 40px; padding: 0 0 0 10px; position: absolute; width: 227px; }
+#menu_sh .lifeexpvr { left: 39px; position: absolute; top: 42px; display: block; z-index: -1; }
+.lifeexpvr #perrdshvr { background: #630a0c; display: block; height: 15px; _line-height: 5px; z-index: 1; }
+.shspan { display: block; width: 90px; position: absolute; }
+.shspan.shws { left: 43px; top: 62px; }
+.shspan.shwl { left: 177px; top: 62px; }
+.shspan.shfs { left: 43px; top: 84px; }
+.shspan.shxs { left: 177px; top: 84px; }
+.shspan.shsd { left: 43px; top: 106px; }
+.shspan.shsf { left: 177px; top: 106px; }
+.shspan.shfy { left: 43px; top: 128px; }
+.shspan.shfh { left: 177px; top: 128px; }
+.shspan.shic { left: 170px; top: -180px; width: 120px; }
+.shspan.shxx { left: 194px; top: -43px; }
+.scrollBarsh { height: 150px; position: absolute; right: 4px; top: 0; width: 18px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -1343px -720px; }
+
+/*宠物面板*/
+#menu_cw { float: left; height: 168px; padding: 18px 0 0; width: 283px; }
+#menu_cw .tag2 { position: absolute; top: 242px; left: 25px; }
+#menu_cw .lifehp { display: block; float: left; left: 31px; padding: 0 0 0 10px; position: absolute; width: 93px; top: 17px; }
+#menu_cw .petimgipt { left: 249px; position: absolute; top: -200px; }
+#menu_cw .petimgzl { left: 221px; position: absolute; text-align: left; top: -199px; width: 65px; }
+#menu_cw .petenchaipt { left: 220px; position: absolute; top: -67px; }
+#menu_cw .lifeexphp { left: 40px; position: absolute; top: 19px; display: block; z-index: -1; }
+.lifeexphp #perrdcwhp { background: #630a0c; display: block; height: 15px; _line-height: 5px; z-index: 1; }
+#menu_cw .lifemn { display: block; float: left; left: 31px; padding: 0 0 0 10px; position: absolute; width: 93px; top: 39px; }
+#menu_cw .lifeexpmn { left: 40px; position: absolute; top: 41px; display: block; z-index: -1; }
+.lifeexpmn #perrdcwmn { background: #020862; display: block; height: 15px; _line-height: 5px; z-index: 1; }
+#menu_cw .lifemax { display: block; float: left; left: 31px; padding: 0 0 0 10px; position: absolute; width: 238px; top: 149px; text-align: center; }
+#menu_cw .maxexpmn { left: 40px; position: absolute; top: 149px; display: block; z-index: -1; }
+.maxexpmn #perrdcwexp { background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -755px -949px; display: block; height: 15px; _line-height: 5px; z-index: 1; }
+
+#menu_cw .cwattrs { border: 1px solid #beac56; height: auto; left: -7px; position: absolute; padding: 0 0 0 125px; top: -30px; width: 265px; z-index: 44; background: #000; display: none; font-size: 14px; min-height: 155px; }
+
+
+#menu_cw .pet_lingpo_details { border: 1px solid #beac56; height: auto; right: 30px; position: absolute; top: 30px; width: 210px; z-index: 50; background: #000; font-size: 14px; min-height: 155px;text-align: center;padding:10px 0;line-height: 23px;display: none; }
+
+.samedetail{position: relative;*position:static;}
+.cwtongyuan_descriptions .tongyuantupo{
+    margin-left: 30px;
+}
+.cwpolarpic_descriptions{
+    border: 1px solid #beac56;
+    height: auto;
+    left: -221px;
+    position: absolute;
+    top: 0px;
+    width: 218px;
+    text-align: center;
+    padding: 16px 0 10px 0px;
+    z-index: 44;
+    background: #000;
+    display: none;
+    font-size: 14px;
+    min-height: 66px; }
+.cwenchant_descriptions{
+    border: 1px solid #beac56;
+    height: auto;
+    left: -239px;
+    position: absolute;
+    top: 0px;
+    width: 235px;
+    text-align: center;
+    padding: 16px 0 10px 0px;
+    z-index: 44;
+    background: #000;
+    display: none;
+    font-size: 14px;
+    min-height: 66px;
+}
+.cweclosion_descriptions{
+    border: 1px solid #beac56;
+    height: auto;
+    left: -256px;
+    position: absolute;
+    top: 0px;
+    width: 253px;
+    text-align: center;
+    padding: 16px 0 0 0px;
+    z-index: 44;
+    background: #000;
+    display: none;
+    font-size: 14px;
+    min-height: 66px;
+    padding-bottom: 10px;
+}
+.cwbaby_descriptions{
+     border: 1px solid #beac56;
+    height: auto;
+    left: -221px;
+    position: absolute;
+    top: 0px;
+    width: 218px;
+    text-align: center;
+    padding: 16px 0 0 0px;
+    z-index: 44;
+    background: #000;
+    display: none;
+    font-size: 14px;
+    min-height: 66px; }
+.cwghost_descriptions{
+    border: 1px solid #beac56;
+    height: auto;
+    left: -267px;
+    position: absolute;
+    top: 0px;
+    width: 263px;
+    text-align: center;
+    padding: 16px 0 0 0px;
+    z-index: 44;
+    background: #000;
+    display: none;
+    font-size: 14px;
+    min-height: 66px;
+}
+.cwjg_descriptions,.cwyl_descriptions{
+       border: 1px solid #beac56;
+    height: auto;
+    left: -266px;
+    position: absolute;
+    top: 0px;
+    width: 263px;
+    text-align: center;
+    padding: 16px 0 10px 0px;
+    z-index: 44;
+    background: #000;
+    display: none;
+    font-size: 14px;
+    min-height: 66px;
+}
+.cwtongyuan_descriptions{
+    border: 1px solid #beac56;
+    height: auto;
+    left: -266px;
+    position: absolute;
+    top: 0px;
+    width: 263px;
+    text-align: center;
+    padding: 16px 0 10px 0px;
+    z-index: 44;
+    background: #000;
+    display: none;
+    font-size: 14px;
+    min-height: 66px;
+}
+.cwqianghua_descriptions{
+     border: 1px solid #beac56;
+    height: auto;
+    left: -222px;
+    position: absolute;
+    top: 0px;
+    width: 218px;
+    text-align: center;
+    padding: 16px 0 10px 0px;
+    z-index: 44;
+    background: #000;
+    display: none;
+    font-size: 14px;
+    min-height: 66px;
+}
+.cwhuanhua_descriptions{
+     border: 1px solid #beac56;
+    height: auto;
+    left: -293px;
+    position: absolute;
+    top: 0px;
+    width: 290px;
+    text-align: center;
+    padding: 16px 0 10px 0px;
+    z-index: 44;
+    background: #000;
+    display: none;
+    font-size: 14px;
+    min-height: 66px;
+}
+
+.cwtongyuan_descriptions dt,.cwtongyuan_descriptions dd{
+    float: left;
+}
+.cwtongyuan_descriptions dt{
+    margin-left: 33px;
+    color:#63e9ff;
+}
+.fontwild{color:red;}
+*#menu_cw .cwattrs { left: -45px; }
+#menu_cw .cwattrs .cwsmallimg { position: absolute; left: 0; top: 0; height: 155px; width: 125px; padding: 0; }
+#menu_cw .cwattrs .cwsmallimg img { width: 100px; }
+#menu_cw .cwonspan { width: 260px;float: left; font-size: 14px; }
+#menu_cw .cwonspanst { width: 255px; height: auto; float: left; font-size: 14px; }
+#menu_cw .heinone { float: left; height: 10px; width: 260px; }
+#menu_cw .petseal { float: left;position: relative;width: 216px;height: 40px;}
+#menu_cw .petseal span{position:absolute;}
+.cwonspan.polar { color: #ecf73b; }
+.cwonspan.rebuild { color: #ff6600; }
+.cwonspan .polars { color: #ecf73b; }
+.cwonspan .poalrsb { font-size: 14px; font-weight: normal; color: #ecf73b; }
+.cwonspanst .ystone { color: #ecf73b; }
+.cwspan { display: block; width: 90px; position: absolute; }
+.cwspan.cwws { left: 43px; top: 61px; }
+.cwspan.cwfs { left: 43px; top: 82px; }
+.cwspan.cwsd { left: 43px; top: 105px; }
+.cwspan.cwfy { left: 43px; top: 127px; }
+.cwspan.cwtz { left: 177px; top: 17px; }
+.cwspan.cwll { left: 177px; top: 39px; }
+.cwspan.cwlil { left: 177px; top: 61px; }
+.cwspan.cwmj { left: 177px; top: 83px; }
+.cwspan.cwsxd { left: 190px; top: 105px; }
+.cwspan.cwwx { left: 177px; top: 127px; }
+.cwspan.shic { left: 165px; top: -190px; }
+.cwspan.cwdj { left: 194px; top: -42px; }
+.cwspan.cwqm { left: 194px; top: -20px; }
+.cwspan.yjbd { left: 197px; top: -191px; color: #ff2020; }
+.cwspan.ty{width:55px;height: 22px;position: absolute;margin-left: 162px;margin-top: -72px;background:url(http://img.gyyxcdn.cn/qibao/Images/viewrole/tongyuan.png) no-repeat;text-indent: -99999px;}
+.cwspan.typet{width:55px;height: 22px;background:url(http://img.gyyxcdn.cn/qibao/Images/viewrole/tongyuan.png) no-repeat;text-indent: -99999px;}
+.cwspan.typetdes{width:55px;height: 22px;background:url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat;text-indent: -99999px;}
+.cwspan.tupo{width:55px;height: 22px;background:url(//img.gyyxcdn.cn/qibao/Images/ty.png) no-repeat;text-indent: -99999px;}
+.cwspan.tongyuan1{background-position: 0px 0;}
+.cwspan.tongyuan2{background-position: -55px 0;}
+.cwspan.tongyuan3{background-position: -110px 0;}
+.cwspan.tongyuan4{background-position: -165px 0;}
+.cwspan.tongyuan5{background-position: -220px 0;}
+.cwspan.tongyuan6{background-position: -275px 0;}
+.cwspan.tongyuan7{background-position: 0 -22px;}
+.cwspan.tongyuan8{background-position: -55px -22px;}
+.cwspan.tongyuan9{background-position: -110px -22px;}
+.cwspan.tongyuan10{background-position: -165px -22px;}
+.cwspan.tongyuan11{background-position: -220px -22px;}
+.cwspan.tongyuan12{background:url(//img.gyyxcdn.cn/qibao/Images/ty.png) no-repeat}
+.cwspan.tongyuangray1{background-position: -2839px -452px;}
+.cwspan.tongyuangray2{background-position: -2542px -474px;}
+.cwspan.tongyuangray3{background-position: -2597px -474px;}
+.cwspan.tongyuangray4{background-position: -2652px -474px;}
+.cwspan.tongyuangray5{background-position: -2507px -528px;}
+.cwspan.tongyuangray6{background-position: -2562px -528px;}
+.cwspan.tongyuangray7{background-position: -2617px -528px;}
+.cwspan.tongyuangray8{background-position: -2672px -528px;}
+.cwspan.tongyuangray9{background-position: -2727px -528px;}
+.cwspan.tongyuangray10{background-position: -2782px -528px;}
+.cwspan.tongyuangray11{background-position: -2837px -528px;}
+.cwavatar{ width: 33px;height: 32px;background:url(http://img.gyyxcdn.cn/qibao/Images/FlashImages/shentong.png) no-repeat;display: inline-block;margin-top: 4px;}
+/*宠物详情页物理相性等内容显示*/
+.petpolar,.peteclosion,.petenchant,.petqianghua,.pethuanhua,.petmounttype,.petprimarypro{width:33px;height: 22px;position: absolute;background:url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat;text-indent: -99999px;}
+/* 转生 */
+.petRebirthType{
+    width: 33px;
+    height: 22px;
+    background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/35972.png) no-repeat;
+    text-indent: -99999px ;
+    position: absolute;
+}
+.petpolar.petcwpolar1{background-position:  -2641px -452px;}
+.petpolar.petcwpolar2{background-position:  -2674px -452px;}
+.petpolar.petcwpolar3{background-position:  -2707px -452px;}
+.petpolar.petcwpolar4{background-position:  -2740px -452px;}
+.petpolar.petcwpolar5{background-position:  -2773px -452px;}
+.petpolar.petcwpolar6{background-position:  -2806px -452px;}
+.peteclosion.peteclo{background-position:  -2476px  -452px;}
+.petenchant.petencha{background-position:  -2443px  -452px;}
+.petqianghua.petqiang{background-position: -2509px -452px}
+.pethuanhua.pethuan{background-position:  -2443px -474px;}
+.petmounttype.pet_mountjg{background-position:  -2476px -474px;}
+.petmounttype.pet_mountyl{background-position:  -2542px -452px}
+.petprimarypro.petwild{background-position: -2509px -474px;}
+.petprimarypro.petghost{background-position: -2608px -452px;}
+.petprimarypro.petbaby{background-position: -2575px -452px;}
+.petpolardes,.petbabydes,.petwilddes,.petgohstdes,.pet_mountjgdes,.pet_mountyldes,.petenchades,.peteclosiondes,.petqianghuades,.pethuanhuades{
+    display: inline-block;
+    margin-left: -16px;
+    top: 10px;
+    left: 50%;
+}
+.pettydes{
+    display: inline-block;
+    margin-left: -26px;
+    top: 10px;
+    left: 50%;
+}
+.petmountstyle{color: #00ff00;}
+.huanhuastyle{float:left;margin-left:16px;}
+
+/*宠物资质属性面板*/
+.templateString-noborder .cwzizhibg { height: 452px; left: 628px; margin: 0;position: absolute; top: -248px; width: 240px; z-index: 3; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -2443px 0px; }
+.templateString-noborder .cwresistancebg { height: 452px; left: 628px; margin: 0; overflow: hidden; position: absolute; top: -248px; width: 240px; z-index: 3; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -2683px 0px; }
+.zizhiclose,.resistclose { cursor: pointer; height: 23px; margin: 16px 0 0 214px; width: 21px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -994px -949px; display: block; }
+.templateString-noborder .cwzizhibtn {width: 58px;height: 23px;cursor: pointer;background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat; display: inline-block;background-position: -1143px -543px; position: absolute;left: 22px;top: 34px;}
+.templateString-noborder .cwresistancebtn {width: 58px;height: 23px;cursor: pointer;background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat; display: inline-block;background-position: -1201px -543px;position: absolute;left: 82px;top: 34px;}
+.templateString-noborder .cwresistancebtn.on{background-position: -1259px -543px;}
+.templateString-noborder .cwzizhibtn.on{background-position: -1317px -543px;}
+#menu_con .cwdiv { width: 285px; height: 430px; padding: 15px 0 0 25px; }
+.cwdiv .cwnav { width: 150px; list-style: none; margin: 0 0 25px; padding: 0px; display: block; float: left; height: 165px; overflow: hidden; position: relative; }
+.cwdiv .shlef_tablist { width: 135px; list-style: none; margin: 0 0 25px; padding: 0px; display: block; float: left; height: auto; position: absolute; }
+.cwspan.cwsm { left: 82px; top: 72px; }
+.cwspan.cwzcz {left: 82px;top: 103px;}
+.cwspan.cwxlcz { left: 93px;top: 133px; }
+.cwspan.cwflcz { left: 93px;top: 165px;}
+.cwspan.cwsdcz { left: 93px;top: 197px;}
+.cwspan.cwwgcz {left: 93px;top: 229px;}
+.cwspan.cwfgcz {left: 93px;top: 261px; }
+.cwspan.cwkyw { left: 85px;top: 64px; }
+.cwspan.cwkzd { left: 85px;top: 86px; }
+.cwspan.cwkbd { left: 85px;top: 109px; }
+.cwspan.cwkhs { left: 85px;top: 132px; }
+.cwspan.cwkhl { left: 85px;top: 155px; }
+.cwspan.cwkzh { left: 85px;top: 179px;}
+.cwspan.cwkhg { left: 85px;top: 201px; }
+.cwspan.cwksl { left: 85px;top: 225px;}
+.cwspan.cwksul { left: 85px;top: 247px;}
+.cwspan.cwkmx { left: 85px; top:271px; }
+.cwspan.cwkj { left: 85px; top: 295px; width: 40px; }
+.cwspan.cwkm { left: 85px; top: 318px; width: 40px; }
+.cwspan.cwks { left: 85px; top: 339px; width: 40px; }
+.cwspan.cwkh { left: 85px; top: 363px; width: 40px; }
+.cwspan.cwkt { left: 85px; top: 385px; width: 40px; }
+.cwspan.cwkxd { left: 85px; top: 408px; width: 40px; }
+.petbox{width: 160px;height: 76px;margin: 294px auto;display: block;*position: absolute;*left:40px;*top:39px;}
+.petbox>span { float: left; margin-left: 6px;margin-bottom: 2px;margin-top: 4px;}
+.cwpolarpic{width: 32px;height: 32px;background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat;display:inline-block;}
+.cwpolar1{background-position: -1458px -1100px;}
+.cwpolar2{background-position: -1490px -1100px;}
+.cwpolar3{background-position: -1522px -1100px;}
+.cwpolar4{background-position: -1554px -1100px;}
+.cwpolar5{background-position: -1586px -1100px;}
+.cwpolar6{background-position: -1618px -1100px;}
+.cweclosionpic{width: 32px; height: 32px;background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat;display:inline-block;}
+.cweclosion{background-position: -1682px -1100px;}
+.cwenchantpic{width: 32px; height: 32px;background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat;display:inline-block;}
+.cwenchant{background-position: -1650px -1100px;}
+.cwhuanhuapic{width: 32px; height: 32px;background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat;display:inline-block;}
+.cwhuanhua{background-position: -1842px -1100px;}
+.cwqianghuapic{width: 32px; height: 32px;background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat;display:inline-block;}
+.cwqianghua{background-position: -1714px -1100px;}
+.cwmount_typepic{width: 32px; height: 32px;background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat;display:inline-block;}
+.cwmount_type{background-position: -1874px -1100px;}
+.cwmount_typeylpic{width: 32px; height: 32px;background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat;display:inline-block;}
+.cwmount_typeyl{background-position: -1746px -1100px;}
+.cwegostpic{width: 32px; height: 32px;background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat;display:inline-block;}
+.cwegost{background-position: -1810px -1100px;}
+.cwprimarypro{width: 32px; height: 32px;background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat;display:inline-block;}
+.cwwild{background-position: -1906px -1100px;}
+.cwbaby{background-position: -1778px -1100px;}
+.cwghost{background-position: -1810px -1100px;}
+.cwtongyuan{width: 32px; height: 32px;background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat;display:inline-block;}
+.cwtongyuan.cwtygreen1{background-position:-1938px -1100px}
+.cwtongyuan.cwtygreen2{background-position:-1970px -1100px}
+.cwtongyuan.cwtygreen3{background-position:-2002px -1100px}
+.cwtongyuan.cwtygreen4{background-position:-2034px -1100px}
+.cwtongyuan.cwtygreen5{background-position:-2066px -1100px}
+.cwtongyuan.cwtygreen6{background-position:-2443px -496px}
+.cwtongyuan.cwtygreen7{background-position:-2475px -496px}
+.cwtongyuan.cwtygreen8{background-position:-2507px -496px}
+.cwtongyuan.cwtygreen9{background-position:-2539px -496px}
+.cwtongyuan.cwtygreen10{background-position:-2571px -496px}
+.cwtongyuan.cwtygreen11{background-position:-2603px -496px}
+.cwtongyuan.cwtygreen12{background: url(//img.gyyxcdn.cn/qibao/Images/y.png) no-repeat;}
+
+
+
+.cwtongyuan.cwty1{background-position:-2635px -496px}
+.cwtongyuan.cwty2{background-position:-2667px -496px}
+.cwtongyuan.cwty3{background-position:-2699px -496px}
+.cwtongyuan.cwty4{background-position:-2731px -496px}
+.cwtongyuan.cwty5{background-position:-2763px -496px}
+.cwtongyuan.cwty6{background-position:-2795px -496px}
+.cwtongyuan.cwty7{background-position:-2827px -496px}
+.cwtongyuan.cwty8{background-position:-2859px -496px}
+.cwtongyuan.cwty9{background-position:-2891px -496px}
+.cwtongyuan.cwty10{background-position:-2443px -528px}
+.cwtongyuan.cwty11{background-position:-2475px -528px;}
+#menu_con .tag .rd4 .rd4sp.skill.firstrdcw { margin-left: 0px; }
+#menu_con .tag .rd4 .rd4sp.aptitude { background-position: -1079px -518px; margin-left: 5px; }
+#menu_con .tag .rd4 .rd4sp.talent { background-position: -1354px -518px; width: 70px; margin-left: 5px; }
+.talent.on { background-position: -1284px -518px !important; }
+#menu_con .tag .rd4 .rd4sp.stone { background-position: -1213px -518px; width: 70px; margin-left: 5px; }
+.stone.on { background-position: -1143px -518px !important; }
+#menu_con .tag .rd4 .rd4sp.nature { background-position: -1537px -543px;; width: 64px; margin-left: 5px;}
+#menu_con .tag .rd4 .rd4sp.nature.on { background-position: -1473px -543px;}
+#menu_con .tag .rd4 .rd4sp.yld {background: url('//img.gyyxcdn.cn/old-qibao/pet_yld_dark.png') no-repeat;width: 68px;margin-left: -1px;}
+#menu_con .tag .rd4 .rd4sp.yld.on { background: url('//img.gyyxcdn.cn/old-qibao/pet_yld_light.png') no-repeat;}
+/*经典服宠物资质面板*/
+.templateString-noborder .cwzizhibg_classic {height: 530px; left: 628px; margin: 0; overflow: hidden; position: absolute; top: -248px; width: 224px; z-index: 3; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -1888px 0px;}
+.zizhiclose_classic { cursor: pointer; height: 23px; margin: 7px 0 0 196px; width: 21px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -994px -949px; display: block; }
+.cwspan.cwsm_classic { left: 68px; top: 40px; }
+.cwspan.cwzcz_classic { left: 77px; top: 62px; }
+.cwspan.cwxlcz_classic { left: 93px; top: 84px; }
+.cwspan.cwflcz_classic { left: 93px; top: 106px; }
+.cwspan.cwsdcz_classic { left: 93px; top: 128px; }
+.cwspan.cwwgcz_classic { left: 93px; top: 150px; }
+.cwspan.cwfgcz_classic { left: 93px; top: 172px; }
+.cwspan.cwkyw_classic { left: 78px; top: 223px; }
+.cwspan.cwkzd_classic { left: 78px; top: 245px; }
+.cwspan.cwkbd_classic { left: 78px; top: 267px; }
+.cwspan.cwkhs_classic { left: 78px; top: 289px; }
+.cwspan.cwkhl_classic { left: 78px; top: 311px; }
+.cwspan.cwkzh_classic { left: 78px; top: 333px; }
+.cwspan.cwkhg_classic { left: 78px; top: 355px; }
+.cwspan.cwksl_classic { left: 78px; top: 377px; }
+.cwspan.cwksul_classic { left: 78px; top: 399px; }
+.cwspan.cwkmx_classic { left: 78px; top: 421px; }
+.cwspan.cwkj_classic { left: 64px; top: 443px; width: 40px; }
+.cwspan.cwkm_classic { left: 153px; top: 443px; width: 40px; }
+.cwspan.cwks_classic { left: 64px; top: 465px; width: 40px; }
+.cwspan.cwkh_classic { left: 153px; top: 465px; width: 40px; }
+.cwspan.cwkt_classic { left: 64px; top: 487px; width: 40px; }
+.cwspan.cwkxd_classic { left: 163px; top: 487px; width: 40px;}
+/*宠物技能属性面板*/
+.cwskillbg { height: 367px; left: 315px; margin: 0;position: absolute; top: -242px; width: 304px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -751px -582px; z-index: 1; }
+.cwskillclose { height: 23px; left: 270px; margin: 0; position: absolute; top: 10px; width: 21px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -994px -949px; cursor: pointer; }
+.cwnaturebg,.cwyldbg {
+    left: 23px;
+    top: 213px;
+    width: 440px;
+    height: 213px;
+    background: black;
+    border: 1px solid #825e00;
+    z-index: 9;
+    position: absolute; }
+.cwyldbg{
+    z-index: 55;
+    width: 320px;
+}
+.cwnaturebg .petnature{
+    float: left;
+    font-size: 14px;
+    margin:0 6px;
+}
+.cwnaturebg .tianxin,.cwyldbg .yulingdan{
+    color: #ebdb70;
+    font-size: 17px;
+    display: inline-block;
+    text-align: center;
+    width: 100%;
+    margin: 15px 0;
+}
+.cwyldbg .yulingdan{
+    font-size: 14px;
+}
+.yldLevel{
+    text-align: center;
+}
+.cwyldContent{
+    display: table;
+    margin: 0 auto;
+}
+.cwnaturebg .petnature span{ margin-right: 10px;}
+.cwnatureclose,.cwyldclose { height: 23px; right: 7px; margin: 0; position: absolute; top: 4px; width: 21px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -994px -949px; cursor: pointer; }
+.cwskillbg ul li { list-style: none; padding: 0px; margin: 0px; width: 100%; float: left; height: 24px; }
+.cwskillbg ul li a { color: #fff; display: block; height: 22px; padding: 2px 0 0 0px; text-decoration: none; font-size: 14px; }
+.cwskillbg .skillleft_tabcw { height: 25px; list-style: outside none none; margin: 21px 0 0 22px; padding: 0; width: 283px; display: block; }
+.cwskillbg .skillleft_tabcw span { width: 49px; height: 23px; list-style: none; padding: 0; margin: 0; float: left; display: block; }
+.cwskillbg .skillleft_tabcw span a { width: 49px; height: 23px; list-style: none; padding: 0; margin: 0; display: block; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat; }
+.cwskillbg .skillleft_tabcw span.divisiontab a { background-position: -1424px -518px; }
+.cwskillbg .skillleft_tabcw span.divisiontab a.on { background-position: -1473px -518px; }
+.cwskillbg .skillleft_tabcw span.lifetabbook a { background-position: -1522px -518px; }
+.cwskillbg .skillleft_tabcw span.lifetabbook a.on { background-position: -1570px -518px; }
+.cwskillbg .skillleft_tabcw span.othertab a { background-position: -1619px -518px; }
+.cwskillbg .skillleft_tabcw span.othertab a.on { background-position: -1667px -518px; }
+.cwskillbg .skillleft_tabcw span.heartmethod a.on { background-position: -1375px -543px; }
+.cwskillbg .skillleft_tabcw span.heartmethod a { background-position: -1424px -543px;}
+
+.cwskillbg .skillleft_tabcw span.avatar a { background-position: -1601px -543px; }
+.cwskillbg .skillleft_tabcw span.avatar a.on { background-position: -1649px -543px; }
+
+.cwskillbg .skillleft_tabcw span.petBlood a {width: 58px;height: 23px;background: url(//img.gyyxcdn.cn/old-qibao/pet_blood_icon.png) no-repeat 0 -23px;}
+.cwskillbg .skillleft_tabcw span.petBlood a.on {background-position: 0 0;}
+.scolldiv ul { float: left; _list-style: none; margin: 6px 0 0 19px; _margin: 9px 0 0 18px; padding: 0; width: 267px; overflow: hidden; position: absolute; }
+.scolldiv ul li a .kname { float: left; padding: 0; text-align: center; width: 132px; }
+.scolldiv ul li a .klv { float: left; padding: 0; text-align: center; width: 132px; }
+.scolldiv ul li a.on { background: #06117d; }
+.scolldiv ul li a .knames { float: left; padding: 0; text-align: center; width: 89px; }
+.skilltitles { color: #ecf73b; padding: 1px 0 0 0px; _padding: 3px 0 0 0px; float: left; width: 88px; text-align: center; margin: 0 0 0 19px; font-size: 14px; }
+.skilltitles.sed { padding: 1px 0 0 0px; _padding: 3px 0 0 0px; margin: 0; }
+.skilltitles.srd { width: 57px; }
+
+/*宠物天赋技能面板*/
+.templateString-noborder .cwtalentbg { width: 347px; height: 488px; left: 340px; top: -242px; margin: 0; overflow: hidden; position: absolute; z-index: 3; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat 1px -595px; }
+.talentbgclose { cursor: pointer; display: block; height: 23px; width: 21px; position: absolute; right: 12px; top: 17px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -994px -949px; }
+.cwtalentbg ul { padding: 0px; margin: 0px; float: left; width: 340px; position: absolute; }
+.cwtalentbg ul li { padding: 6px 0px 5px 30px; width: 310px; float: left; background: url("http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png") no-repeat 1px -667px; }
+.cwtalentbg ul li a { text-decoration: none; font-size: 14px; color: #fff; float: left; width: 273px; }
+.cwtalentbg .cwtalentimg { background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -1017px -949px; width: 39px; height: 38px; float: left; }
+.cwtalentbg .cwtalentname { float: left; padding: 10px 0 0 0; width: 85px; text-align: center; }
+.cwtalentbg .cwtalentlv { float: left; padding: 10px 0 0 0; width: 70px; text-align: center; }
+.cwtalentbg .cwtalentstone { float: left; padding: 10px 0 0 0; width: 70px; text-align: center; }
+.talenttitle { color: #ecf73b; padding: 0px; width: 130px; text-align: center; font-size: 14px; position: absolute; top: 52px; left: 47px; }
+.talenttitle.sed { width: 75px; top: 52px; left: 149px; }
+.talenttitle.srd { width: 75px; top: 52px; left: 222px; }
+
+/*宠物魂兽石面板*/
+.templateString-noborder .cwtstonebg { width: 405px; height: 512px; left: 340px; top: -242px; margin: 0; overflow: hidden; position: absolute; z-index: 3; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -346px -571px; }
+.cwtstoneclose { cursor: pointer; display: block; height: 23px; width: 21px; position: absolute; right: 12px; top: 17px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -994px -949px; }
+.cwtstonebg .cwstdiv { height: 357px; width: 363px; position: absolute; top: 61px; left: 20px; }
+.cwtstonebg .cwcolimg { position: absolute; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat; width: 42px; height: 49px; }
+.cwcolimg.green { background-position: -751px -964px; }
+.cwcolimg.white { background-position: -834px -964px; }
+.cwcolimg.blue { background-position: -875px -964px; }
+.cwcolimg.gold { background-position: -792px -964px; }
+.cwcolimg.pink { background-position: -917px -964px; }
+.cwcolimg.cwcimg0 { left: 50px; top: 52px; z-index: 1; }
+.cwcolimg.cwcimg1 { left: 159px; top: 2px; z-index: 1; }
+.cwcolimg.cwcimg2 { left: 267px; top: 46px; z-index: 1; }
+.cwcolimg.cwcimg3 { left: 315px; top: 158px; z-index: 1; }
+.cwcolimg.cwcimg4 { left: 266px; top: 265px; z-index: 1; }
+.cwcolimg.cwcimg5 { left: 157px; top: 309px; z-index: 1; }
+.cwcolimg.cwcimg6 { left: 52px; top: 259px; z-index: 1; }
+.cwcolimg.cwcimg7 { left: 11px; top: 157px; z-index: 1; }
+.cwcolimg.cwcimg8 { left: 143px; top: 180px; z-index: 1; }
+.cwcolimg.cwcimg9 { left: 184px; top: 131px; z-index: 1; }
+.cwcolimg .cwstlv { position: absolute; top: 0px; left: 0px; font-size: 12px; }
+.cwcolimg .cwstname { bottom: -18px; font-size: 14px; left: -7px; position: absolute; font-weight: normal; }
+.cwtstonebg .cwcolimgnone { position: absolute; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat; width: 42px; height: 49px; }
+.cwcolimgnone.colnone { background-position: -971px -974px; }
+.cwcolimgnone.cwcimgs0 { left: 50px; top: 52px; z-index: 0; }
+.cwcolimgnone.cwcimgs1 { left: 159px; top: 2px; z-index: 0; }
+.cwcolimgnone.cwcimgs2 { left: 267px; top: 46px; z-index: 0; }
+.cwcolimgnone.cwcimgs3 { left: 315px; top: 158px; z-index: 0; }
+.cwcolimgnone.cwcimgs4 { left: 266px; top: 265px; z-index: 0; }
+.cwcolimgnone.cwcimgs5 { left: 157px; top: 309px; z-index: 0; }
+.cwcolimgnone.cwcimgs6 { left: 52px; top: 259px; z-index: 0; }
+.cwcolimgnone.cwcimgs7 { left: 11px; top: 157px; z-index: 0; }
+.cwcolimgnone.cwcimgs8 { left: 143px; top: 180px; z-index: 0; }
+.cwcolimgnone.cwcimgs9 { left: 184px; top: 131px; z-index: 0; }
+
+/*娃娃面板*/
+#menu_ww { float: left; height: 208px; padding: 0; width: 283px; }
+#menu_ww .tag3 { position: absolute; top: 227px; left: 25px; }
+#menu_con .wwdiv { width: 285px; height: 430px; padding: 15px 0 0 25px; }
+.wwdiv .wwnav { width: 150px; list-style: none; margin: 0 0 10px; padding: 0px; display: block; float: left; height: 165px; overflow: hidden; position: relative; }
+#menu_ww .foodhp { display: block; float: left; left: 48px; padding: 0 0 0 10px; position: absolute; width: 227px; top: 31px; }
+#menu_ww .foodmaxhp { display: block; left: 56px; position: absolute; top: 33px; z-index: -1; }
+.foodmaxhp #perrdwwfd { background: #630a0c; display: block; height: 15px; _line-height: 5px; z-index: 1; }
+#menu_ww .moodhp { display: block; float: left; left: 48px; padding: 0 0 0 10px; position: absolute; width: 227px; top: 53px; }
+#menu_ww .moodmaxhp { display: block; left: 56px; position: absolute; top: 55px; z-index: -1; }
+.moodmaxhp #perrdwwmd { background: #630a0c; display: block; height: 15px; _line-height: 5px; z-index: 1; }
+#menu_ww .lifemax { display: block; float: left; left: 30px; padding: 0 0 0 10px; position: absolute; top: 185px; width: 238px; text-align: center; }
+#menu_ww .maxexpww { left: 39px; position: absolute; top: 185px; display: block; z-index: -1; }
+.maxexpww #perrdwwexp { background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -755px -949px; display: block; height: 15px; _line-height: 5px; z-index: 1; }
+.wwspan { display: block; width: 90px; position: absolute; }
+.wwspan.wwmc { left: 43px; top: 9px; width: 145px; }
+.wwspan.wwdj { left: 232px; top: 9px; width: 45px; }
+.wwspan.wwws { left: 42px; top: 75px; width: 90px; }
+.wwspan.wwfs { left: 42px; top: 97px; width: 90px; }
+.wwspan.wwlq { left: 184px; top: 75px; width: 90px; }
+.wwspan.wwzh { left: 184px; top: 97px; width: 90px; }
+.wwspan.wwlm { left: 184px; top: 119px; width: 90px; }
+.wwspan.wwhj { left: 69px; top: 119px; width: 90px; }
+.wwspan.wwqm { left: 55px; top: 141px; width: 90px; }
+.wwspan.wwtp { left: 184px; top: 141px; width: 90px; }
+.wwspan.wwtl { left: 41px; top: 163px; width: 90px; }
+.wwspan.wwqz { left: 184px; top: 163px; width: 90px; }
+.wwspan.shic { left: 161px; top: -165px; width: 120px; }
+.wwspan.hjws { left: 122px; top: 219px; width: 70px; }
+.wwspan.hjjs { left: 122px; top: 241px; width: 70px; }
+.wwspan.hjms { left: 122px; top: 263px; width: 70px; }
+.wwspan.hjss { left: 122px; top: 285px; width: 70px; }
+.wwspan.hjhs { left: 122px; top: 307px; width: 70px; }
+.wwspan.hjts { left: 122px; top: 329px; width: 70px; }
+.wwspan.hskj { left: 94px; top: 351px; width: 98px; }
+.wwspan.hskm { left: 94px; top: 373px; width: 98px; }
+.wwspan.hsks { left: 94px; top: 395px; width: 98px; }
+.wwspan.hskh { left: 94px; top: 417px; width: 98px; }
+.wwspan.hskt { left: 94px; top: 439px; width: 98px; }
+#menu_con .wwdiv .rd4 .rd4sp { margin-left: 25px; margin-top: 5px; float: left; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat; width: 64px; height: 25px; }
+#menu_con .wwdiv .rd4 .wwskill { background-position: -467px -518px; }
+#menu_con .wwdiv .rd4 .wwcheats { background-position: -1715px -518px; }
+#menu_con .wwdiv .rd4 .wwequip { background-position: -1780px -518px; }
+#menu_ww .wwattrs { border: 1px solid #beac56; height: 181px; left: -7px; position: absolute; top: -164px; width: 307px; z-index: 4; background: #000; padding: 10px 0 0 0; display: none; }
+#menu_ww .wwattrs .wwsmallimg { float: left; height: 154px; width: 125px; padding: 26px 0 0 0; }
+#menu_ww .wwattrs .wwsmallimg img { width: 100px; }
+#menu_ww .wwonspan { width: 125px; height: 18px; float: left; font-size: 14px; }
+#menu_ww .wwstart { left: 169px; position: absolute; top: -40px; width: 105px; }
+.wwstart .wstr { width: 21px; height: 20px; display: block; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat; float: left; }
+.wwstart .wsfull { background-position: -758px -1014px; }
+.wwstart .wsfhalf { background-position: -778px -1014px; }
+.wwstart .wsnone { background-position: -799px -1014px; }
+/*娃娃技能*/
+.wwskillbg { height: 367px; left: 315px; margin: 0; overflow: hidden; position: absolute; top: -242px; width: 304px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -751px -582px; z-index: 1; }
+.wwskillclose { height: 23px; left: 270px; margin: 0; position: absolute; top: 10px; width: 21px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -994px -949px; cursor: pointer; }
+.wwskillbg ul li { list-style: none; padding: 0px; margin: 0px; width: 100%; float: left; height: 24px; }
+.wwskillbg ul li a { color: #fff; display: block; height: 22px; padding: 2px 0 0 0px; _padding: 2px 0 0 0px; text-decoration: none; font-size: 14px; }
+.wwtitle { float: left; left: 6px; padding: 0; position: absolute; top: 45px; }
+.skilltitleww { color: #ecf73b; padding: 1px 0 0 0px; _padding: 3px 0 0 0px; float: left; width: 118px; text-align: center; margin: 0 0 0 19px; font-size: 14px; }
+.skilltitleww.sed { padding: 1px 0 0 0px; _padding: 3px 0 0 0px; margin: 0; }
+
+/*娃娃装备面板*/
+.templateString-noborder .wwequipbg { height: 500px; left: 628px; margin: 0; position: absolute; top: -248px; width: 224px; z-index: 3; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -1661px 0px; }
+.wwclose { cursor: pointer; height: 23px; margin: 7px 0 0 196px; width: 21px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -994px -949px; display: block; }
+.wwequ9 { position: absolute; left: 48px; top: 62px; z-index: 7; }
+.wwequ10 { position: absolute; left: 128px; top: 62px; z-index: 7; }
+.wwequ11 { position: absolute; left: 48px; top: 128px; z-index: 6; }
+.wwequ12 { position: absolute; left: 128px; top: 128px; z-index: 6; }
+.wwequ50 { left: 108px; position: absolute; top: 121px; z-index: 6; }
+.wwequ51 { left: 108px; position: absolute; top: 42px; z-index: 7; }
+.wwequ52 { left: 30px; position: absolute; top: 121px; z-index: 6; }
+.wwequ53 { left: 186px; position: absolute; top: 121px; z-index: 6; }
+.wwequ54 { left: 72px; position: absolute; top: 199px; }
+.wwequ55 { left: 146px; position: absolute; top: 199px; }
+/*娃娃秘籍面板*/
+.templateString-noborder .wwcheatsbg { height: 302px; left: 451px; margin: 0; position: absolute; top: -227px; width: 267px; z-index: 3; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -1055px -582px; }
+.wwcheatclose { cursor: pointer; height: 23px; margin: 7px 0 0 240px; width: 21px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -994px -949px; display: block; }
+
+/*装备面板*/
+.equipbg { height: 198px; padding: 14px 0 0 35px; width: 276px; }
+#equip_con { float: left; height: 196px; width: 260px; }
+.equipright_tablist { width: 10px; float: left; height: 100px; }
+.equipright_tablist li { float: left; }
+.equipright_tablist li a { display: block; height: 22px; width: 19px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat; }
+.equipright_tablist li.equipstab a { background-position: 2px -546px; }
+.equipright_tablist li.equipstab a.on { background-position: -16px -546px; }
+.equipright_tablist li.equipssparetab a { background-position: -34px -546px; }
+.equipright_tablist li.equipssparetab a.on { background-position: -52px -546px; }
+.equipright_tablist li.equipyytab a { background-position: -70px -546px; }
+.equipright_tablist li.equipyytab a.on { background-position: -88px -546px; }
+.equipright_tablist li.equipsytab a { background-position: -106px -546px; }
+.equipright_tablist li.equipsytab a.on { background-position: -124px -546px; }
+.templateString-noborder #roleleftbg.equipleftbg .equipmoney { float: left; height: 35px; width: 200px; margin: 0 0 0 39px; }
+.templateString-noborder #roleleftbg.equipleftbg.class_equipbg .equipmoney { float: left; height: 35px; width: 235px; margin: 0 0 0 39px; }
+.equipmoneyico { float: left; height: 35px; width: 23px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -147px -543px; }
+.templateString-noborder #roleleftbg.equipleftbg .equipfurnaceico {float: left; height: 24px; width: 27px;background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -170px -543px; margin-left: 7px;display: none;}
+.templateString-noborder #roleleftbg.equipleftbg.class_equipbg .equipfurnaceico { display: none;}
+
+.equipbag { float: left; height: 214px; width: 267px; margin: 0 0 0 33px; }
+.equipbag ul { list-style: none; padding: 0; margin: 0px; }
+.equipbag ul li { float: left; width: 50px; height: 50px; margin: 1px 0 2px 3px; position: relative; }
+.equipbag .js_bg0, .equipbag .js_bg5, .equipbag .js_bg10, .equipbag .js_bg15 { z-index: 10; }
+.equipbag .js_bg1, .equipbag .js_bg6, .equipbag .js_bg11, .equipbag .js_bg16 { z-index: 8; }
+.equipbag .js_bg2, .equipbag .js_bg7, .equipbag .js_bg12, .equipbag .js_bg17 { z-index: 7; }
+.equipbag .js_bg3, .equipbag .js_bg8, .equipbag .js_bg13, .equipbag .js_bg18 { z-index: 6; }
+.equipbag .js_bg4, .equipbag .js_bg9, .equipbag .js_bg14, .equipbag .js_bg19 { z-index: 5; }
+.equipmoney .cashNum { padding: 5px 0 0 7px; float: left; }
+#equip_con .tag4 .eqa1 { height: 50px; left: 47px; position: absolute; top: 122px; width: 50px; z-index: 10; }
+#equip_con .tag4 .eqa2 { height: 50px; left: 109px; position: absolute; top: 61px; width: 50px; z-index: 9; }
+#equip_con .tag4 .eqa3 { height: 50px; left: 109px; position: absolute; top: 122px; width: 50px; z-index: 9; }
+#equip_con .tag4 .eqa4 { height: 50px; left: 171px; position: absolute; top: 61px; width: 50px; }
+#equip_con .tag4 .eqa5 { height: 50px; left: 47px; position: absolute; top: 61px; width: 50px; z-index: 10; }
+#equip_con .tag4 .eqa6 { height: 50px; left: 47px; position: absolute; top: 184px; width: 50px; z-index: 10; }
+#equip_con .tag4 .eqa7 { height: 50px; left: 171px; position: absolute; top: 184px; width: 50px; }
+#equip_con .tag4 .eqa8 { height: 50px; left: 171px; position: absolute; top: 184px; width: 50px; }
+#equip_con .tag4 .eqa9 { height: 50px; left: 233px; position: absolute; top: 122px; width: 50px; }
+#equip_con .eqa9_treasure{ height: 50px; position: absolute; width: 50px; left: 39px;top: 62px;}
+#equip_con .tag4 .eqa10 { height: 50px; left: 109px; position: absolute; top: 184px; width: 50px; z-index: 9; }
+#equip_con .tag4 .eqa31 { height: 50px; left: 171px; position: absolute; top: 61px; width: 50px; }
+#equip_con .tag4 .eqa32 { height: 50px; left: 171px; position: absolute; top: 61px; width: 50px; }
+#equip_con .tag4 .eqa51 { height: 50px; left: 171px; position: absolute; top: 122px; width: 50px; z-index: 8; }
+#equip_con .tag4 .eqa11 { height: 50px; left: 47px; position: absolute; top: 122px; width: 50px; }
+#equip_con .tag4 .eqa12 { height: 50px; left: 109px; position: absolute; top: 61px; width: 50px; }
+#equip_con .tag4 .eqa13 { height: 50px; left: 109px; position: absolute; top: 122px; width: 50px; }
+#equip_con .tag4 .eqa14 { height: 50px; left: 109px; position: absolute; top: 184px; width: 50px; }
+#equip_con .tag4 .eqa15 { height: 50px; left: 47px; position: absolute; top: 61px; width: 50px; }
+#equip_con .tag4 .eqa16 { height: 50px; left: 171px; position: absolute; top: 61px; width: 50px; }
+#equip_con .tag4 .eqa17 { height: 50px; left: 47px; position: absolute; top: 184px; width: 50px; }
+#equip_con .tag4 .eqa18 { height: 50px; left: 171px; position: absolute; top: 184px; width: 50px; }
+#equip_con .tag4 .eqa19 { height: 50px; left: 233px; position: absolute; top: 122px; width: 50px; }
+#equip_con .eqa19_treasure{height: 50px;  position: absolute; width: 50px;left: 39px;top: 64px;}
+#equip_con .tag4 .eqa52 { height: 50px; left: 171px; position: absolute; top: 122px; width: 50px; }
+#equip_con .eqa53{  width: 50px; height: 50px;  position: absolute;top: 63px;left: 138px;}
+#equip_con .eqa54{  width: 50px; height: 50px;  position: absolute;top: 63px;left: 138px;}
+#equip_con .tag4 .eqa55 { height: 50px; left: 233px; position: absolute; top: 184px; width: 50px; }
+#equip_con .tag4 .eqa56 { height: 50px; left: 233px; position: absolute; top: 184px; width: 50px; }
+#equip_con .eqa55_fairyware{height: 50px;  position: absolute; width: 50px;left: 84px;top: 29px;}
+#equip_con .eqa57_fairyware{height: 50px;  position: absolute; width: 50px;left: 84px;top: 177px;}
+#equip_con .eqa56_fairyware {height: 50px;  position: absolute; width: 50px;left: 84px;top: 103px;}
+#equip_con .eqa58_fairyware {height: 50px;  position: absolute; width: 50px;left: 84px;top: 251px;}
+#equip_con .eqa97_fairyware {height: 50px;  position: absolute; width: 50px;left: 149px;top: 29px;}
+#equip_con .eqa98_fairyware {height: 50px;  position: absolute; width: 50px;left: 149px;top: 103px;}
+#equip_con .eqa99_fairyware {height: 50px;  position: absolute; width: 50px;left: 149px;top: 177px;}
+#equip_con .eqa100_fairyware {height: 50px;  position: absolute; width: 50px;left: 149px;top: 251px;}
+/* 第三、四套装备*/
+#equip_con .eqa100010{  width: 50px; height: 50px;  position: absolute;top: 63px;left: 138px;}
+#equip_con .eqa100021{  width: 50px; height: 50px;  position: absolute;top: 63px;left: 138px;}
+#equip_con .tag4 .eqa100000 { height: 50px; left: 47px; position: absolute; top: 122px; width: 50px; }
+#equip_con .tag4 .eqa100001 { height: 50px; left: 109px; position: absolute; top: 61px; width: 50px; }
+#equip_con .tag4 .eqa100002 { height: 50px; left: 109px; position: absolute; top: 122px; width: 50px; }
+#equip_con .tag4 .eqa100003 { height: 50px; left: 109px; position: absolute; top: 184px; width: 50px; }
+#equip_con .tag4 .eqa100004 { height: 50px; left: 47px; position: absolute; top: 61px; width: 50px; }
+#equip_con .tag4 .eqa100005 { height: 50px; left: 171px; position: absolute; top: 61px; width: 50px; }
+#equip_con .tag4 .eqa100006 { height: 50px; left: 47px; position: absolute; top: 184px; width: 50px; }
+#equip_con .tag4 .eqa100007 { height: 50px; left: 171px; position: absolute; top: 184px; width: 50px; }
+#equip_con .tag4 .eqa100008 { height: 50px; left: 233px; position: absolute; top: 122px; width: 50px; }
+#equip_con .tag4 .eqa100009 { height: 50px; left: 171px; position: absolute; top: 122px; width: 50px; }
+#equip_con .eqa100008_treasure{height: 50px;  position: absolute; width: 50px;left: 39px;top: 64px;}
+
+#equip_con .tag4 .eqa100011 { height: 50px; left: 47px; position: absolute; top: 122px; width: 50px; }
+#equip_con .tag4 .eqa100012 { height: 50px; left: 109px; position: absolute; top: 61px; width: 50px; }
+#equip_con .tag4 .eqa100013 { height: 50px; left: 109px; position: absolute; top: 122px; width: 50px; }
+#equip_con .tag4 .eqa100014 { height: 50px; left: 109px; position: absolute; top: 184px; width: 50px; }
+#equip_con .tag4 .eqa100015 { height: 50px; left: 47px; position: absolute; top: 61px; width: 50px; }
+#equip_con .tag4 .eqa100016 { height: 50px; left: 171px; position: absolute; top: 61px; width: 50px; }
+#equip_con .tag4 .eqa100017 { height: 50px; left: 47px; position: absolute; top: 184px; width: 50px; }
+#equip_con .tag4 .eqa100018 { height: 50px; left: 171px; position: absolute; top: 184px; width: 50px; }
+#equip_con .tag4 .eqa100019 { height: 50px; left: 233px; position: absolute; top: 122px; width: 50px; }
+#equip_con .tag4 .eqa100020 { height: 50px; left: 171px; position: absolute; top: 122px; width: 50px; }
+#equip_con .eqa100019_treasure{height: 50px;  position: absolute; width: 50px;left: 39px;top: 64px;}
+
+#equip_con .eqa97_fairyware::after, #equip_con .eqa98_fairyware::after, #equip_con .eqa99_fairyware::after, #equip_con .eqa100_fairyware::after {
+    position: absolute;
+    bottom: -14px;
+    right: -14px;
+    content: "";
+    width: 25px;
+    height: 25px;
+    background: url(//img.gyyxcdn.cn/old-qibao/fairyware_btn.png) no-repeat;
+}
+.class_qhuipbg #equip_con .tag4 .eqa4, .class_qhuipbg #equip_con .tag4 .eqa16 {
+    height: 50px;
+    left: 234px;
+    position: absolute;
+    top: 61px;
+    width: 50px;
+}
+.class_qhuipbg #equip_con .tag4 .eqa7, .class_qhuipbg #equip_con .tag4 .eqa18 {
+    height: 50px;
+    left: 234px;
+    position: absolute;
+    top: 184px;
+    width: 50px;
+}
+#menu_con .daojuShowDetailInfos { font-size: 14px; }
+.js_treasurepairs,.js_treasurepairsii,.js_treasurepairsiii,.js_treasurepairsiiii,.js_fairyware,.js_fairywareii,.js_dress, .js_dressii,.js_jade, .js_jadeii,.js_jadeiii, .js_jadeiiii{
+    display: none;
+}
+.treasurebg,.treasurebgii,.treasurebgiii,.treasurebgiiii{
+        background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat;
+    background-position: -2524px -571px;
+    width: 331px;
+    height: 140px;
+    position: absolute;
+    right: -99%;
+    top: -3px;
+}
+.treasurebgclose{
+   height: 23px;
+    margin: 10px 0 0 310px;
+    width: 21px;
+    background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -994px -949px;
+    cursor: pointer;
+    display: block;
+}
+.dressbg,.dressbgii, .jadebg,.jadebgii, .jadebgiii,.jadebgiiii {
+    background: url(//img.gyyxcdn.cn/old-qibao/qh_dressbg.png) no-repeat;
+    background-position: 0 0;
+    width: 220px;
+    height: 135px;
+    position: absolute;
+    right: -70%;
+    top: 0;
+    display: none;
+}
+.jadebg,.jadebgii, .jadebgiii,.jadebgiiii {
+    background: url(//img.gyyxcdn.cn/old-qibao/qh_jadebg.png) no-repeat;
+    top: 136px;
+}
+.dressbgclose, .jadebgclose{
+    height: 23px;
+    margin: 3px 0 0 195px;
+    width: 21px;
+    background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -994px -949px;
+    cursor: pointer;
+    display: block;
+ }
+ #equip_con .eqa31_treasure { height: 50px; left: 40px; position: absolute; top: 44px; width: 50px; }
+ #equip_con .eqa33_treasure { height: 50px; left: 131px; position: absolute; top: 44px; width: 50px; }
+ #equip_con .eqa5_treasure,  #equip_con .eqa15_treasure { height: 50px; left: 40px; position: absolute; top: 44px; width: 50px; }
+ #equip_con .eqa32_treasure { height: 50px; left: 131px; position: absolute; top: 44px; width: 50px; }
+.fairywarebg,.fairywarebgii{
+    background: url(//img.gyyxcdn.cn/old-qibao/fairyware_bg.png) no-repeat;
+    /* background-position: -2857px -571px; */
+    width: 408px;
+    height: 346px;
+    position: absolute;
+    right: -122%;
+    top: 6px;
+}
+.fairywarebgclose{
+    height: 16px;
+    margin: 6px 0 0 387px;
+    width: 16px;
+    /* background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -994px -949px; */
+    cursor: pointer;
+    display: block;
+}
+.makeup_box{
+    background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat;
+    background-position: -2529px -722px;
+    width: 273px;
+    height: 473px;
+    position: absolute;
+    right: -82%;
+    top: -3px;
+}
+.makeup_boxclose{
+        height: 23px;
+        margin: 19px 0 0 249px;
+        width: 21px;
+        background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.png) no-repeat -994px -949px;
+        cursor: pointer;
+        display: block;   
+}
+.makebox_content{
+    float: left;
+    height: 316px;
+    width: 249px;
+    padding-left: 28px;
+    padding-top: 6px;
+}
+.makeup_iconbox{
+    width: 50px;
+    height: 50px;
+    float: left;
+    margin-right: 3px;
+    margin-bottom: 3px;
+    position: relative;
+}
+.paging_full_numbers{
+    float: left;
+    width: 100px;
+    position: absolute;
+    bottom: 25px;
+    margin-left: 86.5px;
+    *left: 0;
+}
+.paging_full_numbers .previous{
+    float: left;
+    color: transparent;
+    width: 23px;
+    height: 21px;
+    display: inline-block;
+    background: url(http://img.gyyxcdn.cn/qibao/Images/FlashImages/6334.png) no-repeat center center;
+}
+/* .paging_full_numbers .previous.on{
+    float: left;
+    color: transparent;
+    width: 23px;
+    height: 21px;
+    display: inline-block;
+    background: url(http://img.gyyxcdn.cn/qibao/Images/FlashImages/6335.png) no-repeat center center;
+} */
+.paging_full_numbers .next{
+    float: left;
+    color: transparent;
+    width: 23px;
+    height: 21px;
+    display: inline-block;
+    background: url(http://img.gyyxcdn.cn/qibao/Images/FlashImages/6336.png) no-repeat center center;
+}
+/* .paging_full_numbers .next.on{
+    float: left;
+    color: transparent;
+    width: 23px;
+    height: 21px;
+    display: inline-block;
+    background: url(http://img.gyyxcdn.cn/qibao/Images/FlashImages/6337.png) no-repeat center center;
+} */
+.paging_full_numbers .js_page{
+       display: inline-block;
+       margin: 0px 12px;
+       float: left;
+}
+
+/*宠物天书*/
+.cwgodbookdetail{
+    left: -97px;
+    position: absolute;
+    top: 237px;
+    width: 400px;
+    text-align: left;
+    z-index: 44;
+    background: #000;
+    display: none;
+    font-size: 14px;
+}
+.cwgodbookdetail .godimgleft{
+    position: absolute;
+    left: 0;
+    top: 18%;
+    height: 155px;
+    width: 125px;
+    padding: 0;
+}
+
+/*loading图片预加载*/
+.loadimg { left: 45%; top: 20%; position: absolute; text-align: center; display: none; }
+#templateString_suit, #templateString_jewelrySuit { padding: 0px; margin: 0px; background: url(http://img.gyyxcdn.cn/qibao/Images/viewrole/xml_suit_bg.png) no-repeat; width: 353px; height: 167px; border: none; }
+#templateString_jewelrySuit {background: url(//img.gyyxcdn.cn/old-qibao/jewelry_suit_bg.png) no-repeat;}
+#templateString_suit ul, #templateString_jewelrySuit ul { margin: 0; padding: 73px 0 0 30px; }
+#templateString_suit ul li, #templateString_jewelrySuit ul li { float: left; position: relative; margin: 0 5px 0 0; cursor: pointer; }
+#templateString_suit .daojuShowDetailInfos, #templateString_jewelrySuit .daojuShowDetailInfos { top: 50px; left: 52px; }
+#templateString_suit ul li img.filters, #templateString_jewelrySuit ul li img.filters { filter: alpha(opacity=30); -moz-opacity: 0.3; opacity: 0.3; }
+#suittip { color: #f00; display: none; }
+.suitclose { background: url("http://img.gyyxcdn.cn/qibao/Images/viewrole/rolebg.jpg") no-repeat -1601px -894px; cursor: pointer; height: 21px; margin: 0; position: absolute; right: 11px; top: 12px; width: 21px; z-index: 10; }

@@ -12,7 +12,18 @@ import { computeCaptureProbability, createMonsterBaby } from '../game/battle/pet
 import { DEFAULT_MAP_ID, WENDAO_MAPS, WENDAO_WORLD_BOSSES, listMapSummaries } from '../game/battle/monsters.js'
 import { getSkill } from '../game/battle/skills.js'
 import { expBarCapacity } from '../game/characterLevelConfig.js'
-import { addLootStacks, createStarterInventory, getQty, listInventoryStacks, tryConsumeOne } from '../game/inventory.js'
+import {
+  addLootStacks,
+  consumeInventoryRow,
+  createStarterInventory,
+  listInventoryStacks,
+  migrateInventory,
+  normalizeOrbArray,
+  parseInventoryRowKey,
+} from '../game/inventory.js'
+import { buildInventoryRowTooltip, buildItemTooltipParts } from '../game/items/itemTooltip.js'
+import { ItemTooltipLayer } from './ItemTooltipLayer.jsx'
+import { getConsumable, isQuotaOrb } from '../game/items/catalog.js'
 import { getSkillsBySchool } from '../game/battle/schoolSkills.js'
 import {
   allyPatchFromHeroSheet,
@@ -57,36 +68,25 @@ const SPLIT_LOG_H_KEY = 'wendao_split_log_h'
 const LOG_H_MIN = 72
 const LOG_H_DEFAULT = 140
 const BATTLE_MIN = 96
+/** 背包每页 6×4 格 */
+const BAG_SLOTS_PER_PAGE = 24
 
-function Bar({ label, current, max, color }) {
+/** @param {{ label: string, current: number, max: number, kind?: 'hp' | 'mp' | 'exp' }} props */
+function Bar({ label, current, max, kind = 'hp' }) {
   const pct = max > 0 ? Math.round((current / max) * 100) : 0
+  const fill = kind === 'mp' ? 'wd-mp-fill' : kind === 'exp' ? 'wd-exp-fill' : 'wd-hp-fill'
   return (
-    <div className="text-[10px] text-slate-400 leading-tight">
-      <div className="flex justify-between gap-1">
+    <div>
+      <div className="wd-bar-text">
         <span>{label}</span>
         <span>
           {current}/{max}
         </span>
       </div>
-      <div className="mt-0.5 h-1 rounded bg-slate-800 overflow-hidden">
-        <div className={`h-full ${color}`} style={{ width: `${pct}%` }} />
+      <div className="wd-bar-box">
+        <div className={`wd-bar-fill ${fill}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
-  )
-}
-
-function Panel({ title, children, className = '' }) {
-  return (
-    <section
-      className={`rounded-md border border-slate-800/90 bg-slate-900/55 flex flex-col min-h-0 overflow-hidden ${className}`}
-    >
-      <h3 className="shrink-0 px-2 py-1 text-[11px] font-medium tracking-wide text-amber-200/90 border-b border-slate-800 bg-slate-950/40">
-        {title}
-      </h3>
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden overflow-x-hidden p-2 text-[11px] leading-snug text-slate-300">
-        {children}
-      </div>
-    </section>
   )
 }
 
@@ -111,7 +111,8 @@ export function TextBattle() {
   const [actionMode, setActionMode] = useState('fight')
   const [pets, setPets] = useState([])
   const [inventory, setInventory] = useState(createStarterInventory)
-  const [useItemId, setUseItemId] = useState('zhixuecao')
+  /** 道具行：叠放为 itemId，玲珑为 itemId#orbIndex */
+  const [useItemRowKey, setUseItemRowKey] = useState('zhixuecao')
   const [itemHealTargetId, setItemHealTargetId] = useState(null)
   const victoryLootNonceRef = useRef(null)
   const [tael, setTael] = useState(8888)
@@ -136,6 +137,10 @@ export function TextBattle() {
   })
 
   const [heroSheet, setHeroSheet] = useState(() => getInitialBattleHero().heroSheet)
+
+  const invStacks = useMemo(() => listInventoryStacks(inventory), [inventory])
+  const [bagPage, setBagPage] = useState(0)
+  const prevModalForBagRef = useRef(/** @type {typeof modal} */ (null))
 
   const actor = battle.awaitingActorId ? getActor(battle, battle.awaitingActorId) : null
 
@@ -180,9 +185,73 @@ export function TextBattle() {
   }, [actor, itemHealTargetId, livingAllies])
 
   useEffect(() => {
-    const stacks = listInventoryStacks(inventory)
-    if (stacks.length && !stacks.some((s) => s.itemId === useItemId)) setUseItemId(stacks[0].itemId)
-  }, [inventory, useItemId])
+    if (invStacks.length && !invStacks.some((s) => s.rowKey === useItemRowKey)) setUseItemRowKey(invStacks[0].rowKey)
+  }, [invStacks, useItemRowKey])
+
+  const selectedInvRow = useMemo(() => invStacks.find((s) => s.rowKey === useItemRowKey), [invStacks, useItemRowKey])
+  const itemHintText = useMemo(
+    () => (selectedInvRow ? buildInventoryRowTooltip(selectedInvRow) : ''),
+    [selectedInvRow]
+  )
+
+  const [itemHoverTip, setItemHoverTip] = useState(/** @type {null | { left: number, top: number, name: string, type: string, desc: string, num: string }} */ (null))
+
+  const clampTipClient = useCallback((e) => {
+    const ox = 14
+    const oy = 14
+    const margin = 8
+    const estW = 300
+    const estH = 220
+    const vw = typeof window !== 'undefined' ? window.innerWidth : 800
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 600
+    return {
+      left: Math.max(margin, Math.min(e.clientX + ox, vw - estW)),
+      top: Math.max(margin, Math.min(e.clientY + oy, vh - estH)),
+    }
+  }, [])
+
+  const showItemHoverTip = useCallback(
+    (e, row) => {
+      const p = buildItemTooltipParts(row)
+      if (!p) return
+      setItemHoverTip({ ...clampTipClient(e), ...p })
+    },
+    [clampTipClient]
+  )
+
+  const moveItemHoverTip = useCallback(
+    (e) => {
+      setItemHoverTip((t) => (t ? { ...t, ...clampTipClient(e) } : null))
+    },
+    [clampTipClient]
+  )
+
+  const hideItemHoverTip = useCallback(() => setItemHoverTip(null), [])
+
+  useEffect(() => {
+    if (modal != null) hideItemHoverTip()
+  }, [modal, hideItemHoverTip])
+
+  useEffect(() => {
+    if (actionMode !== 'item') hideItemHoverTip()
+  }, [actionMode, hideItemHoverTip])
+
+  useEffect(() => {
+    if (modal === 'bag' && prevModalForBagRef.current !== 'bag') setBagPage(0)
+    prevModalForBagRef.current = modal
+  }, [modal])
+
+  useEffect(() => {
+    if (modal !== 'bag') return
+    const tp = Math.max(1, Math.ceil(invStacks.length / BAG_SLOTS_PER_PAGE))
+    setBagPage((p) => Math.min(p, tp - 1))
+  }, [modal, invStacks.length])
+
+  const bagTotalPages = Math.max(1, Math.ceil(invStacks.length / BAG_SLOTS_PER_PAGE))
+  const bagPageSlots = useMemo(() => {
+    const start = bagPage * BAG_SLOTS_PER_PAGE
+    return Array.from({ length: BAG_SLOTS_PER_PAGE }, (_, i) => invStacks[start + i] ?? null)
+  }, [bagPage, invStacks])
 
   const foes = useMemo(() => getLegalTargets(battle, 'foe'), [battle])
   const resolvedTargetId = useMemo(() => {
@@ -284,19 +353,47 @@ export function TextBattle() {
 
   const onUseConsumable = useCallback(() => {
     if (!actor || battle.phase === 'end') return
-    if (getQty(inventory, useItemId) < 1) return
+    const parsed = parseInventoryRowKey(useItemRowKey)
+    const def = getConsumable(parsed.itemId)
+    if (!def) return
     const tid = itemHealTargetId && livingAllies.some((a) => a.id === itemHealTargetId) ? itemHealTargetId : actor.id
-    const { state: next, ok } = submitUseConsumable(battle, {
+    const target = getActor(battle, tid)
+    if (!target) return
+
+    let restoreHp = /** @type {number | undefined} */ (undefined)
+    let restoreMp = /** @type {number | undefined} */ (undefined)
+
+    if (isQuotaOrb(def)) {
+      const m = migrateInventory(inventory)
+      const arr = normalizeOrbArray(m[parsed.itemId])
+      const orb = parsed.orbIndex != null ? arr[parsed.orbIndex] : null
+      if (!orb || orb.remaining <= 0) return
+      if (def.kind === 'hp') {
+        const room = Math.max(0, target.maxHp - target.hp)
+        const hp = Math.min(room, orb.remaining)
+        if (hp <= 0) return
+        restoreHp = hp
+      } else {
+        const room = Math.max(0, target.maxMp - target.mp)
+        const mp = Math.min(room, orb.remaining)
+        if (mp <= 0) return
+        restoreMp = mp
+      }
+    }
+
+    const { state: next, ok, hpDelta = 0, mpDelta = 0 } = submitUseConsumable(battle, {
       actorId: actor.id,
       targetId: tid,
-      itemId: useItemId,
+      itemId: parsed.itemId,
+      restoreHp,
+      restoreMp,
     })
     if (!ok) return
-    const inv2 = tryConsumeOne(inventory, useItemId)
+    const inv2 = consumeInventoryRow(inventory, parsed, { hpRestored: hpDelta, mpRestored: mpDelta })
     if (!inv2) return
     setBattle(next)
     setInventory(inv2)
-  }, [actor, battle, inventory, useItemId, itemHealTargetId, livingAllies])
+  }, [actor, battle, inventory, useItemRowKey, itemHealTargetId, livingAllies])
 
   const onConfirm = useCallback(() => {
     if (!actor || !resolvedTargetId || battle.phase === 'end') return
@@ -358,27 +455,26 @@ export function TextBattle() {
   const logLines = battle.log.slice(-24)
   const mapName = MAPS.find((m) => m.id === mapId)?.name ?? '地图'
 
-  const panelBtn =
-    'rounded border border-slate-600/80 bg-slate-800/60 px-2 py-1 text-[10px] text-slate-200 hover:border-amber-700/50 hover:bg-slate-800'
+  const panelBtn = 'wendao-btn text-sm py-1.5 px-3'
 
   const leaderAlly = battle.units.find((u) => u.side === 'ally')
 
   return (
-    <div className="flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-[#0c1016] text-slate-200">
-      <header className="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b border-slate-800/90 bg-slate-950/90 px-2 py-1.5">
-        <h1 className="text-xs font-semibold text-amber-100/95">问道风</h1>
-        <nav className="flex items-center gap-1 text-[10px] text-slate-500" aria-label="面包屑">
-          <span className="text-slate-400">主页</span>
-          <span className="text-slate-600">/</span>
-          <span className="text-slate-300">{encounterMode === 'boss' ? '世界 BOSS' : '野外'}</span>
-          <span className="text-slate-600">/</span>
-          <span className="text-slate-400">{mapName}</span>
+    <>
+    <div className="wendao-battle flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden">
+      <header className="wendao-navbar shrink-0">
+        <span className="wendao-brand">问道风</span>
+        <nav className="flex flex-wrap items-center gap-1 text-sm font-semibold text-[#8b5a2b]" aria-label="面包屑">
+          <span>主页</span>
+          <span className="font-normal text-[#cbb896]">/</span>
+          <span>{encounterMode === 'boss' ? '世界 BOSS' : '野外'}</span>
+          <span className="font-normal text-[#cbb896]">/</span>
+          <span className="font-normal text-[#a08055]">{mapName}</span>
         </nav>
-        <div className="mx-0.5 h-4 w-px bg-slate-700" />
-        <label className="flex items-center gap-1 text-[10px] text-slate-400">
+        <label className="wendao-label text-sm">
           人数
           <select
-            className="max-w-[3.5rem] rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-[10px]"
+            className="wendao-select ml-1 max-w-[4rem] py-1 text-sm"
             value={partySize}
             onChange={(e) => setPartySize(Number(e.target.value))}
           >
@@ -389,32 +485,18 @@ export function TextBattle() {
             ))}
           </select>
         </label>
-        <fieldset className="flex items-center gap-2 text-[10px] text-slate-400">
-          <label className="inline-flex cursor-pointer items-center gap-0.5">
-            <input
-              type="radio"
-              name="enc"
-              checked={encounterMode === 'wild'}
-              onChange={() => setEncounterMode('wild')}
-            />
+        <fieldset className="flex flex-wrap items-center gap-1 border-0 p-0">
+          <label className="wendao-label">
+            <input type="radio" name="enc" checked={encounterMode === 'wild'} onChange={() => setEncounterMode('wild')} />
             野怪
           </label>
-          <label className="inline-flex cursor-pointer items-center gap-0.5">
-            <input
-              type="radio"
-              name="enc"
-              checked={encounterMode === 'boss'}
-              onChange={() => setEncounterMode('boss')}
-            />
+          <label className="wendao-label">
+            <input type="radio" name="enc" checked={encounterMode === 'boss'} onChange={() => setEncounterMode('boss')} />
             BOSS
           </label>
         </fieldset>
         {encounterMode === 'wild' && (
-          <select
-            className="max-w-[8rem] rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-[10px]"
-            value={mapId}
-            onChange={(e) => setMapId(e.target.value)}
-          >
+          <select className="wendao-select max-w-[10rem] text-sm" value={mapId} onChange={(e) => setMapId(e.target.value)}>
             {MAPS.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.name}
@@ -424,7 +506,7 @@ export function TextBattle() {
         )}
         {encounterMode === 'boss' && (
           <select
-            className="max-w-[10rem] rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-[10px]"
+            className="wendao-select max-w-[12rem] text-sm"
             value={worldBossKey}
             onChange={(e) => setWorldBossKey(e.target.value)}
           >
@@ -435,18 +517,13 @@ export function TextBattle() {
             ))}
           </select>
         )}
-        <button
-          type="button"
-          className="rounded bg-amber-800/90 px-2 py-0.5 text-[10px] font-medium text-amber-50 hover:bg-amber-700"
-          onClick={restart}
-        >
+        <button type="button" className="wendao-btn wendao-btn-main text-sm" onClick={restart}>
           开战 / 重置
         </button>
         {battle.phase === 'end' && (
-          <span className="text-[10px] text-amber-300">{battle.outcome === 'victory' ? '胜' : '败'}</span>
+          <span className="text-sm font-bold text-[#b86b12]">{battle.outcome === 'victory' ? '胜' : '败'}</span>
         )}
-        <div className="w-full shrink-0 border-t border-slate-800/80 pt-1 min-[640px]:ml-auto min-[640px]:w-auto min-[640px]:border-0 min-[640px]:pt-0" />
-        <div className="flex w-full flex-wrap gap-1 min-[640px]:w-auto">
+        <div className="flex w-full flex-wrap gap-2 min-[768px]:ml-auto min-[768px]:w-auto min-[768px]:justify-end">
           <button type="button" className={panelBtn} onClick={() => setModal('character')}>
             人物属性
           </button>
@@ -468,200 +545,204 @@ export function TextBattle() {
         </div>
       </header>
 
-      <div ref={splitColRef} className="flex min-h-0 flex-1 flex-col overflow-hidden p-2">
-        <Panel title="战斗" className="min-h-0 flex-1">
-          <div className="grid min-h-0 flex-1 grid-cols-2 gap-2">
-            <div className="flex min-h-0 min-w-0 flex-col">
-              <div className="mb-1 shrink-0 text-[10px] font-medium text-sky-200/90">我方</div>
-              <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto">
-                  {battle.units
-                    .filter((u) => u.side === 'ally')
-                    .map((u) => (
-                      <li
-                        key={u.id}
-                        className={`rounded border px-1.5 py-1 ${
-                          u.id === battle.awaitingActorId
-                            ? 'border-amber-500/50 bg-amber-950/25'
-                            : 'border-slate-800 bg-slate-950/40'
-                        }`}
-                      >
-                        <div className="text-[10px] font-medium text-slate-100">
-                          {u.name} <span className="font-normal text-slate-500">Lv{u.level ?? 1}</span>
-                          {u.hp <= 0 && <span className="text-rose-400"> 阵亡</span>}
-                        </div>
-                        <div className="mt-1 space-y-0.5">
-                          <Bar label="HP" current={u.hp} max={u.maxHp} color="bg-emerald-600/85" />
-                          <Bar label="MP" current={u.mp} max={u.maxMp} color="bg-sky-600/75" />
-                          {expBarCapacity(u.level ?? 1) > 0 ? (
-                            <Bar
-                              label="经"
-                              current={Math.min(expBarCapacity(u.level ?? 1), Math.max(0, u.expIntoLevel ?? 0))}
-                              max={expBarCapacity(u.level ?? 1)}
-                              color="bg-amber-600/65"
-                            />
-                          ) : null}
-                        </div>
-                      </li>
-                    ))}
-              </ul>
-            </div>
-            <div className="flex min-h-0 min-w-0 flex-col">
-              <div className="mb-1 shrink-0 text-[10px] font-medium text-rose-200/90">敌方</div>
-              <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-0.5">
-                  {battle.units
-                    .filter((u) => u.side === 'foe')
-                    .map((u) => (
-                      <li key={u.id} className="rounded border border-slate-800 bg-slate-950/35 px-1.5 py-1">
-                        <div className="text-[10px] font-medium text-slate-100">
-                          {u.name}{' '}
-                          <span className="font-normal text-slate-500">Lv{u.level}</span>
-                          {u.isWorldBoss && (
-                            <span className="ml-0.5 rounded bg-amber-900/40 px-0.5 text-[9px] text-amber-200">BOSS</span>
-                          )}
-                        </div>
-                        <div className="mt-0.5 space-y-0.5">
-                          <Bar label="HP" current={u.hp} max={u.maxHp} color="bg-rose-700/80" />
-                          <Bar label="MP" current={u.mp} max={u.maxMp} color="bg-violet-700/65" />
-                        </div>
-                      </li>
-                    ))}
-              </ul>
-            </div>
-          </div>
+      <div ref={splitColRef} className="flex min-h-0 flex-1 flex-col overflow-hidden px-2.5 pb-2">
+        <div className="wendao-battle-panels min-h-0 flex-1">
+          <section className="wendao-panel">
+            <h2 className="wendao-panel-title">我方队伍</h2>
+            <ul className="min-h-0 flex-1 space-y-0 overflow-y-auto">
+              {battle.units
+                .filter((u) => u.side === 'ally')
+                .map((u) => (
+                  <li
+                    key={u.id}
+                    className={`wendao-char ${u.id === battle.awaitingActorId ? 'wendao-char--active' : ''}`}
+                  >
+                    <div className="wendao-char-name">
+                      {u.name}{' '}
+                      <span className="font-normal text-[#6b5344]">Lv{u.level ?? 1}</span>
+                      {u.hp <= 0 && <span className="text-[#c04040]"> 阵亡</span>}
+                    </div>
+                    <Bar label="HP" current={u.hp} max={u.maxHp} kind="hp" />
+                    <Bar label="MP" current={u.mp} max={u.maxMp} kind="mp" />
+                    {expBarCapacity(u.level ?? 1) > 0 ? (
+                      <Bar
+                        label="经验"
+                        current={Math.min(expBarCapacity(u.level ?? 1), Math.max(0, u.expIntoLevel ?? 0))}
+                        max={expBarCapacity(u.level ?? 1)}
+                        kind="exp"
+                      />
+                    ) : null}
+                  </li>
+                ))}
+            </ul>
+          </section>
+          <section className="wendao-panel wendao-panel--enemy">
+            <h2 className="wendao-panel-title">敌方怪物</h2>
+            <ul className="min-h-0 flex-1 space-y-0 overflow-y-auto pr-0.5">
+              {battle.units
+                .filter((u) => u.side === 'foe')
+                .map((u) => (
+                  <li key={u.id} className="wendao-char">
+                    <div className="wendao-char-name">
+                      {u.name}{' '}
+                      <span className="font-normal text-[#6b5344]">Lv{u.level}</span>
+                      {u.isWorldBoss && (
+                        <span className="ml-1 rounded bg-[#fbe9c7] px-1 text-xs font-bold text-[#8b5a2b] ring-1 ring-[#d4b886]">
+                          BOSS
+                        </span>
+                      )}
+                    </div>
+                    <Bar label="HP" current={u.hp} max={u.maxHp} kind="hp" />
+                    <Bar label="MP" current={u.mp} max={u.maxMp} kind="mp" />
+                  </li>
+                ))}
+            </ul>
+          </section>
+        </div>
 
-          {actor && battle.phase !== 'end' && (
-            <div className="mt-2 shrink-0 border-t border-slate-800 pt-2">
-                <div className="mb-1 text-[10px] text-amber-200/90">行动：{actor.name}</div>
-                <fieldset className="mb-1 flex flex-wrap gap-2 text-[10px] text-slate-400">
-                  <label className="inline-flex cursor-pointer items-center gap-0.5">
-                    <input type="radio" name="act" checked={actionMode === 'fight'} onChange={() => setActionMode('fight')} />
-                    技能
-                  </label>
-                  <label className="inline-flex cursor-pointer items-center gap-0.5">
-                    <input type="radio" name="act" checked={actionMode === 'capture'} onChange={() => setActionMode('capture')} />
-                    捕捉
-                  </label>
-                  <label className="inline-flex cursor-pointer items-center gap-0.5">
-                    <input
-                      type="radio"
-                      name="act"
-                      checked={actionMode === 'item'}
-                      onChange={() => {
-                        setActionMode('item')
-                        if (actor) setItemHealTargetId(actor.id)
-                      }}
-                    />
-                    道具
-                  </label>
-                </fieldset>
-                <div className="flex flex-wrap items-end gap-2">
-                  {actionMode === 'item' && listInventoryStacks(inventory).length > 0 && (
-                    <>
-                      <label className="text-[10px] text-slate-400">
-                        药
-                        <select
-                          className="ml-0.5 max-w-[6.5rem] rounded border border-slate-700 bg-slate-950 px-1 py-0.5 text-[10px]"
-                          value={useItemId}
-                          onChange={(e) => setUseItemId(e.target.value)}
-                        >
-                          {listInventoryStacks(inventory).map((s) => (
-                            <option key={s.itemId} value={s.itemId}>
-                              {s.def.name}×{s.qty}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="text-[10px] text-slate-400">
-                        目标
-                        <select
-                          className="ml-0.5 rounded border border-slate-700 bg-slate-950 px-1 py-0.5 text-[10px]"
-                          value={itemHealTargetId ?? actor.id}
-                          onChange={(e) => setItemHealTargetId(e.target.value)}
-                        >
-                          {livingAllies.map((a) => (
-                            <option key={a.id} value={a.id}>
-                              {a.name}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </>
-                  )}
-                  {actionMode === 'fight' && (
-                    <label className="text-[10px] text-slate-400">
-                      技
-                      <select
-                        className="ml-0.5 max-w-[7rem] rounded border border-slate-700 bg-slate-950 px-1 py-0.5 text-[10px]"
-                        value={skillId}
-                        onChange={(e) => setSkillId(e.target.value)}
-                      >
-                        {actor.skillPool.map((id) => {
-                          const s = getSkill(id)
-                          return (
-                            <option key={id} value={id} disabled={actor.mp < s.mpCost}>
-                              {s.name}
-                            </option>
-                          )
-                        })}
-                      </select>
-                    </label>
-                  )}
-                  <label className="text-[10px] text-slate-400">
-                    敌
+        {actor && battle.phase !== 'end' && (
+          <div className="wendao-action-box mt-3 shrink-0">
+            <div className="wendao-action-title">当前行动：{actor.name}</div>
+            <fieldset className="mb-3 flex flex-wrap gap-2 border-0 p-0">
+              <label className="wendao-label">
+                <input type="radio" name="act" checked={actionMode === 'fight'} onChange={() => setActionMode('fight')} />
+                技能
+              </label>
+              <label className="wendao-label">
+                <input type="radio" name="act" checked={actionMode === 'capture'} onChange={() => setActionMode('capture')} />
+                捕捉
+              </label>
+              <label className="wendao-label">
+                <input
+                  type="radio"
+                  name="act"
+                  checked={actionMode === 'item'}
+                  onChange={() => {
+                    setActionMode('item')
+                    if (actor) setItemHealTargetId(actor.id)
+                  }}
+                />
+                道具
+              </label>
+            </fieldset>
+            <div className="flex flex-wrap items-end gap-2">
+              {actionMode === 'item' && invStacks.length > 0 && (
+                <>
+                  <label
+                    className="wendao-label text-sm"
+                    onMouseEnter={(e) => {
+                      if (selectedInvRow) showItemHoverTip(e, selectedInvRow)
+                    }}
+                    onMouseMove={moveItemHoverTip}
+                    onMouseLeave={hideItemHoverTip}
+                  >
+                    药
                     <select
-                      className="ml-0.5 max-w-[6rem] rounded border border-slate-700 bg-slate-950 px-1 py-0.5 text-[10px]"
-                      value={resolvedTargetId ?? ''}
-                      onChange={(e) => setTargetId(e.target.value)}
+                      className="wendao-select ml-1 max-w-[11rem] text-sm"
+                      value={useItemRowKey}
+                      onChange={(e) => setUseItemRowKey(e.target.value)}
                     >
-                      {foes.map((f) => (
-                        <option key={f.id} value={f.id}>
-                          {f.name}
+                      {invStacks.map((s) => (
+                        <option key={s.rowKey} value={s.rowKey}>
+                          {s.stackable ? `${s.def.name}×${s.qty}` : s.def.name}
                         </option>
                       ))}
                     </select>
                   </label>
-                  <button
-                    type="button"
-                    disabled={
-                      actionMode === 'capture'
-                        ? !resolvedTargetId
-                        : actionMode === 'fight'
-                          ? !resolvedTargetId || getSkill(skillId).mpCost > actor.mp
-                          : getQty(inventory, useItemId) < 1 || livingAllies.length === 0
-                    }
-                    className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-900 disabled:opacity-40"
-                    onClick={onConfirm}
+                  <label className="wendao-label text-sm">
+                    目标
+                    <select
+                      className="wendao-select ml-1 max-w-[8rem] text-sm"
+                      value={itemHealTargetId ?? actor.id}
+                      onChange={(e) => setItemHealTargetId(e.target.value)}
+                    >
+                      {livingAllies.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </>
+              )}
+              {actionMode === 'item' && itemHintText && (
+                <p className="mt-1 max-w-full whitespace-pre-line text-xs leading-snug text-[#6b5f52]">{itemHintText}</p>
+              )}
+              {actionMode === 'fight' && (
+                <label className="wendao-label text-sm">
+                  技
+                  <select
+                    className="wendao-select ml-1 max-w-[9rem] text-sm"
+                    value={skillId}
+                    onChange={(e) => setSkillId(e.target.value)}
                   >
-                    {actionMode === 'capture' ? '捕捉' : actionMode === 'item' ? '用药' : '出手'}
-                  </button>
-                </div>
-                {actionMode === 'capture' && captureTarget && (
-                  <p className="mt-1 text-[9px] text-amber-200/80">成功率约 {capturePct}%</p>
-                )}
+                    {actor.skillPool.map((id) => {
+                      const s = getSkill(id)
+                      return (
+                        <option key={id} value={id} disabled={actor.mp < s.mpCost}>
+                          {s.name}
+                        </option>
+                      )
+                    })}
+                  </select>
+                </label>
+              )}
+              <label className="wendao-label text-sm">
+                敌
+                <select
+                  className="wendao-select ml-1 max-w-[8rem] text-sm"
+                  value={resolvedTargetId ?? ''}
+                  onChange={(e) => setTargetId(e.target.value)}
+                >
+                  {foes.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                disabled={
+                  actionMode === 'capture'
+                    ? !resolvedTargetId
+                    : actionMode === 'fight'
+                      ? !resolvedTargetId || getSkill(skillId).mpCost > actor.mp
+                      : !selectedInvRow ||
+                          (selectedInvRow.stackable
+                            ? selectedInvRow.qty < 1
+                            : (selectedInvRow.remaining ?? 0) < 1) ||
+                          livingAllies.length === 0
+                }
+                className="wendao-btn wendao-btn-main text-sm disabled:opacity-40"
+                onClick={onConfirm}
+              >
+                {actionMode === 'capture' ? '捕捉' : actionMode === 'item' ? '用药' : '出手'}
+              </button>
             </div>
-          )}
-        </Panel>
+            {actionMode === 'capture' && captureTarget && (
+              <p className="mt-2 text-sm text-[#8b5a2b]">成功率约 {capturePct}%</p>
+            )}
+          </div>
+        )}
 
         <div
           role="separator"
           aria-orientation="horizontal"
           aria-label="上下拖拽调整战报高度，双击恢复默认"
-          className="group relative z-10 my-0.5 flex h-3 shrink-0 cursor-ns-resize items-center justify-center rounded border-y border-transparent hover:border-amber-800/40 hover:bg-amber-950/30"
+          className="wendao-split group relative z-10 my-1 flex h-3 shrink-0 cursor-ns-resize items-center justify-center rounded border-y border-transparent"
           onPointerDown={onSplitPointerDown}
           onDoubleClick={resetLogSplit}
         >
-          <span className="pointer-events-none h-0.5 w-10 rounded-full bg-slate-600 group-hover:bg-amber-600/70" />
+          <span className="wendao-split-bar pointer-events-none h-0.5 w-10 rounded-full" />
         </div>
 
-        <section
-          className="flex shrink-0 flex-col overflow-hidden rounded-md border border-slate-800/90 bg-slate-950/70"
-          style={{ height: logPanePx }}
-        >
-          <div className="flex shrink-0 items-center justify-between border-b border-slate-800 px-2 py-1">
-            <h3 className="text-[11px] font-medium tracking-wide text-amber-200/90">战报</h3>
-            <span className="text-[9px] text-slate-600">拖拽条调节 · 双击条复位</span>
+        <section className="wendao-log shrink-0" style={{ height: logPanePx }}>
+          <div className="wendao-log-head">
+            <span className="wendao-log-title">战报</span>
+            <span className="wendao-log-hint">拖拽条调节 · 双击条复位</span>
           </div>
-          <ol className="min-h-0 flex-1 space-y-0.5 overflow-y-auto p-2 font-mono text-[10px] leading-tight text-slate-400">
+          <ol className="wendao-log-list">
             {logLines.map((line, i) => (
               <li key={`${i}-${line.slice(0, 10)}`}>{line}</li>
             ))}
@@ -673,40 +754,41 @@ export function TextBattle() {
         title={`【人物属性】${heroSheet.displayName} (Lv.${leaderAlly?.level ?? 1} ${heroSheet.school})`}
         open={modal === 'character'}
         onClose={() => setModal(null)}
-        panelClassName="max-w-5xl"
+        guofeng
+        panelClassName="max-w-[96vw]"
       >
         <CharacterAttributePanel
           level={leaderAlly?.level ?? 12}
           expIntoLevel={leaderAlly?.expIntoLevel ?? 0}
           sheet={heroSheet}
+          guofeng
           onCommit={syncHeroToBattle}
         />
       </Modal>
 
-      <Modal title="宠物管理" open={modal === 'pets'} onClose={() => setModal(null)}>
+      <Modal title="宠物管理" open={modal === 'pets'} onClose={() => setModal(null)} guofeng>
         <div className="mb-3 flex justify-end">
-          <button
-            type="button"
-            className="rounded border border-slate-600 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
-            onClick={addRandomBaby}
-          >
+          <button type="button" className="wendao-btn text-sm" onClick={addRandomBaby}>
             + 随机宝宝（演示）
           </button>
         </div>
         {pets.length === 0 ? (
-          <p className="text-slate-500">暂无宠物。战斗中捕捉成功或点击上方按钮添加。</p>
+          <p className="text-sm text-[#6b5f52]">暂无宠物。战斗中捕捉成功或点击上方按钮添加。</p>
         ) : (
           <ul className="space-y-3">
             {pets.map((pet) => (
-              <li key={pet.id} className="rounded border border-slate-800 bg-slate-950/50 p-3 text-sm">
-                <div className="font-medium text-slate-100">
+              <li
+                key={pet.id}
+                className="rounded-lg border-2 border-[#d4b886] bg-[#fdfaf3] p-3 text-sm text-[#3a3a38]"
+              >
+                <div className="font-bold text-[#4a3520]">
                   {pet.displayName}{' '}
-                  <span className="font-normal text-slate-500">
+                  <span className="font-normal text-[#6b5344]">
                     {pet.kind === 'baby' ? '宝宝' : '野生'} · Lv{pet.level}
                   </span>
                 </div>
                 {pet.growthDetail && (
-                  <div className="mt-1 text-xs text-slate-500 font-mono">
+                  <div className="mt-1 font-mono text-xs text-[#6b5f52]">
                     资质 血{pet.growthDetail.hp} 法{pet.growthDetail.mp} 速{pet.growthDetail.spd} 物攻
                     {pet.growthDetail.pAtk} 法攻{pet.growthDetail.mAtk}
                     {pet.growthBand && (
@@ -717,12 +799,12 @@ export function TextBattle() {
                     )}
                   </div>
                 )}
-                <div className="mt-1 text-xs text-slate-500">
+                <div className="mt-1 text-xs text-[#6b5f52]">
                   HP {pet.maxHp} · MP {pet.maxMp} · 物攻 {pet.atk} · 法攻 {pet.mAtk ?? '-'} · 防 {pet.def} · 速 {pet.speed}
                   {pet.affinity && ` · 相性 ${pet.affinity}`}
                 </div>
                 {pet.innateSkillIds?.length > 0 ? (
-                  <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                  <div className="mt-2 flex flex-wrap gap-2 text-xs text-[#5a4a38]">
                     {pet.innateSkillIds.map((id) => (
                       <label key={id} className="inline-flex cursor-pointer items-center gap-1">
                         <input
@@ -735,7 +817,7 @@ export function TextBattle() {
                     ))}
                   </div>
                 ) : (
-                  <p className="mt-2 text-xs text-slate-600">无天生技能池</p>
+                  <p className="mt-2 text-xs text-[#8a7a68]">无天生技能池</p>
                 )}
               </li>
             ))}
@@ -743,36 +825,87 @@ export function TextBattle() {
         )}
       </Modal>
 
-      <Modal title="背包" open={modal === 'bag'} onClose={() => setModal(null)}>
-        <p className="mb-2 text-xs text-slate-500">战斗胜利自动入包；战斗中可用「道具」消耗药品。</p>
-        {listInventoryStacks(inventory).length === 0 ? (
-          <p className="text-slate-500">背包为空。</p>
-        ) : (
-          <ul className="space-y-1">
-            {listInventoryStacks(inventory).map((s) => (
-              <li
-                key={s.itemId}
-                className="flex justify-between rounded border border-slate-800 px-2 py-1.5 text-sm"
+      <Modal
+        title="背包"
+        open={modal === 'bag'}
+        onClose={() => setModal(null)}
+        guofeng
+        hideHeader
+        bodyClassName="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-3 text-sm text-[#3a3a38]"
+        panelClassName="wendao-bag-dialog max-w-[520px]"
+      >
+        <div className="bag-popup">
+          <div className="bag-head">
+            <h2 id="modal-title" className="bag-title">
+              背包
+            </h2>
+            <button type="button" className="bag-close" onClick={() => setModal(null)} aria-label="关闭">
+              ×
+            </button>
+          </div>
+          <p className="bag-hint">战斗胜利自动入包；战斗中「道具」消耗药品。点击格子可选中该物品为战斗用药。</p>
+          <div className="bag-grid" role="list">
+            {bagPageSlots.map((s, idx) => (
+              <div
+                key={`${bagPage}-${idx}`}
+                role="listitem"
+                className={`bag-item ${s ? 'has-goods' : 'bag-item--empty'}`}
+                onMouseEnter={(e) => {
+                  if (s) showItemHoverTip(e, s)
+                  else hideItemHoverTip()
+                }}
+                onMouseMove={s ? moveItemHoverTip : undefined}
+                onMouseLeave={hideItemHoverTip}
+                onClick={() => {
+                  if (s) setUseItemRowKey(s.rowKey)
+                }}
               >
-                <span className="text-slate-200">{s.def.name}</span>
-                <span className="text-slate-500">×{s.qty}</span>
-              </li>
+                {s ? (
+                  <>
+                    <span className="bag-item-name">{s.def.name}</span>
+                    {s.stackable ? <span className="bag-item-qty">×{s.qty}</span> : null}
+                  </>
+                ) : (
+                  <span className="text-[#bbb]">空</span>
+                )}
+              </div>
             ))}
-          </ul>
-        )}
+          </div>
+          <div className="bag-footer">
+            <button
+              type="button"
+              className="wendao-btn text-sm"
+              disabled={bagPage <= 0}
+              onClick={() => setBagPage((p) => Math.max(0, p - 1))}
+            >
+              上一页
+            </button>
+            <span className="bag-page-info">
+              {bagPage + 1} / {bagTotalPages}
+            </span>
+            <button
+              type="button"
+              className="wendao-btn text-sm"
+              disabled={bagPage >= bagTotalPages - 1}
+              onClick={() => setBagPage((p) => Math.min(bagTotalPages - 1, p + 1))}
+            >
+              下一页
+            </button>
+          </div>
+        </div>
       </Modal>
 
-      <Modal title="任务" open={modal === 'quest'} onClose={() => setModal(null)} wide>
-        <ul className="mb-4 list-inside list-disc space-y-2 text-slate-400">
+      <Modal title="任务" open={modal === 'quest'} onClose={() => setModal(null)} wide guofeng>
+        <ul className="mb-4 list-inside list-disc space-y-2 text-sm text-[#5a4a38]">
           <li>师门：完成一场战斗（{battle.phase === 'end' && battle.outcome === 'victory' ? '已完成' : '未完成'}）</li>
           <li>修山：组队击败世界 BOSS（占位）</li>
           <li>日常：捕捉 1 只野生宠（占位）</li>
         </ul>
-        <details className="rounded border border-slate-800 p-2 text-xs text-slate-500">
-          <summary className="cursor-pointer font-medium text-amber-200/90">门派技能表（金系）</summary>
+        <details className="rounded-lg border-2 border-[#d4b886] bg-[#fdfaf3] p-2 text-xs text-[#6b5f52]">
+          <summary className="cursor-pointer font-bold text-[#8b5a2b]">门派技能表（金系）</summary>
           <table className="mt-2 w-full border-collapse text-xs">
             <thead>
-              <tr className="border-b border-slate-700 text-left text-slate-500">
+              <tr className="border-b border-[#d4b886] text-left text-[#6b5344]">
                 <th className="py-1 pr-2">分支</th>
                 <th className="py-1 pr-2">阶</th>
                 <th className="py-1 pr-2">技能</th>
@@ -781,11 +914,11 @@ export function TextBattle() {
             </thead>
             <tbody>
               {getSkillsBySchool('金').map((sk) => (
-                <tr key={sk.id} className="border-b border-slate-800/80">
-                  <td className="py-1 text-slate-500">{sk.branch === 'B' ? '攻' : sk.branch === 'C' ? '障' : '辅'}</td>
-                  <td className="py-1">{sk.tier}</td>
-                  <td className="py-1 text-slate-300">{sk.name}</td>
-                  <td className="py-1 text-slate-500">≥{sk.learnCharLevel}</td>
+                <tr key={sk.id} className="border-b border-[#e8dcc8]">
+                  <td className="py-1 text-[#6b5344]">{sk.branch === 'B' ? '攻' : sk.branch === 'C' ? '障' : '辅'}</td>
+                  <td className="py-1 text-[#3a3a38]">{sk.tier}</td>
+                  <td className="py-1 text-[#3a3a38]">{sk.name}</td>
+                  <td className="py-1 text-[#6b5344]">≥{sk.learnCharLevel}</td>
                 </tr>
               ))}
             </tbody>
@@ -793,37 +926,51 @@ export function TextBattle() {
         </details>
       </Modal>
 
-      <Modal title="商城" open={modal === 'shop'} onClose={() => setModal(null)}>
-        <p className="mb-3 text-sm text-slate-500">银两：{tael}</p>
+      <Modal title="商城" open={modal === 'shop'} onClose={() => setModal(null)} guofeng>
+        <p className="mb-3 text-sm font-semibold text-[#8b5a2b]">银两：{tael}</p>
         <ul className="space-y-2">
-          {SHOP_ROWS.map((row) => (
-            <li key={row.key} className="flex items-center justify-between gap-2 rounded border border-slate-800 px-3 py-2">
-              <span className="text-slate-200">{row.label}</span>
+          {SHOP_ROWS.map((row) => {
+            const def = getConsumable(row.itemId)
+            const shopTipRow = def
+              ? { itemId: row.itemId, qty: row.qty, def, stackable: true, rowKey: `shop-${row.key}` }
+              : null
+            return (
+            <li
+              key={row.key}
+              className="flex items-center justify-between gap-2 rounded-lg border-2 border-[#d4b886] bg-[#fdfaf3] px-3 py-2"
+              onMouseEnter={(e) => shopTipRow && showItemHoverTip(e, shopTipRow)}
+              onMouseMove={moveItemHoverTip}
+              onMouseLeave={hideItemHoverTip}
+            >
+              <span className="font-medium text-[#4a3520]">{row.label}</span>
               <button
                 type="button"
                 disabled={tael < row.price}
-                className="rounded border border-amber-800/60 px-2 py-1 text-sm text-amber-200/90 disabled:opacity-40"
+                className="wendao-btn text-sm disabled:opacity-40"
                 onClick={() => buyShop(row)}
               >
                 {row.price} 银两
               </button>
             </li>
-          ))}
+            )
+          })}
         </ul>
       </Modal>
 
-      <Modal title="签到" open={modal === 'sign'} onClose={() => setModal(null)}>
-        <p className="mb-2 text-sm text-slate-500">连续签到 {signedStreak} 天（演示累计）</p>
+      <Modal title="签到" open={modal === 'sign'} onClose={() => setModal(null)} guofeng>
+        <p className="mb-2 text-sm text-[#6b5f52]">连续签到 {signedStreak} 天（演示累计）</p>
         <button
           type="button"
           disabled={lastSignDay === todayStr}
-          className="w-full rounded bg-teal-900/70 py-2 text-sm font-medium text-teal-100 disabled:opacity-40"
+          className="wendao-btn wendao-btn-main w-full py-2.5 text-base disabled:opacity-40"
           onClick={onDailySign}
         >
           {lastSignDay === todayStr ? '今日已签到' : '每日签到'}
         </button>
-        <p className="mt-3 text-xs text-slate-600">奖励：银两 +88、止血草×2、白果×1（演示）</p>
+        <p className="mt-3 text-xs text-[#6b5f52]">奖励：银两 +88、止血草×2、白果×1（演示）</p>
       </Modal>
     </div>
+    <ItemTooltipLayer tip={itemHoverTip} />
+    </>
   )
 }

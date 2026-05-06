@@ -11,8 +11,9 @@ describe('catalog consumables', () => {
     expect(getRestoreAmount(getConsumable('fengwangmi'))).toBe(7000)
   })
 
-  it('玲珑为满回（Infinity）', () => {
+  it('玲珑在表意上为补满（Infinity），真实回复由额度与缺失量在战斗层结算', () => {
     expect(getRestoreAmount(getConsumable('xuelinglong'))).toBe(Number.POSITIVE_INFINITY)
+    expect(getRestoreAmount(getConsumable('falinglong'))).toBe(Number.POSITIVE_INFINITY)
   })
 
   it('rollRestoreAmount 与 getRestoreAmount 一致（兼容）', () => {
