@@ -3,10 +3,15 @@
 """
 从 qibao_equip_data.json 导出文字游戏用装备配置（仅 装备 + 武器），去掉交易/区服/筛选等字段。
 
-移除：deal_price、show_item_price、business_valid_date、server_code、server_name、
-      level_filter、slot_name、icon_local_path
+输入字段（新版 crawl.py 输出）：
+  base_attrs  - 基础属性字典（hurt/defense/blood/magic/speed/dodge/rebuild_level/suit_polar 等）
+  random_attrs - 随机属性列表（需 --fetch-xml 时才有内容）
 
-保留：数值与展示、图标 URL、分类与 item_subtype_zh、item_info_code（可作唯一键，但不写入 id 字段）。
+移除字段：deal_price、show_item_price、business_valid_date、server_code、server_name、
+          level_filter、slot_name、icon_local_path
+
+保留字段：category、item_info_code、item_type_id、item_name、item_level、item_subtype_zh、
+          icon_url、base_attrs、random_attrs
 
 排序：先大类（装备 → 武器），再 item_type_id，再 item_level 升序；同名以 item_name 作次序。
 
@@ -36,12 +41,29 @@ DROP_KEYS = frozenset(
     }
 )
 
-# 大类顺序：装备在前，武器在后
 _CATEGORY_ORDER = {"装备": 0, "武器": 1, "宠物": 2}
 
 
 def to_game_row(raw: dict) -> dict:
-    return {k: v for k, v in raw.items() if k not in DROP_KEYS}
+    row = {k: v for k, v in raw.items() if k not in DROP_KEYS}
+
+    # 兼容旧格式：将扁平字段迁移进 base_attrs
+    if "base_attrs" not in row:
+        flat_keys = (
+            "hurt", "hurt_display", "defense", "defense_display",
+            "blood", "magic", "speed", "speed_display",
+            "dodge", "dodge_display", "rebuild_level", "suit_polar",
+        )
+        base_attrs = {}
+        for k in flat_keys:
+            if k in row:
+                base_attrs[k] = row.pop(k)
+        row["base_attrs"] = base_attrs
+
+    if "random_attrs" not in row:
+        row["random_attrs"] = []
+
+    return row
 
 
 def _sort_key(row: dict) -> tuple:
@@ -72,7 +94,7 @@ def main() -> None:
     default_in = os.path.join(here, "qibao_equip_data.json")
     default_out = os.path.join(root, "src", "game", "data", "qibaoEquipCatalog.json")
 
-    ap = argparse.ArgumentParser(description="导出游戏用精简装备 JSON")
+    ap = argparse.ArgumentParser(description="导出游戏用精简装备 JSON（含基础属性与随机属性）")
     ap.add_argument("--input", default=default_in)
     ap.add_argument("--output", default=default_out)
     ap.add_argument(
@@ -100,7 +122,9 @@ def main() -> None:
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(game_rows, f, ensure_ascii=False, indent=2)
 
+    has_random = sum(1 for r in game_rows if r.get("random_attrs"))
     print(f"已写入 {len(game_rows)} 条 -> {out_path}")
+    print(f"  其中含随机属性：{has_random} 条，无随机属性：{len(game_rows) - has_random} 条")
 
 
 if __name__ == "__main__":

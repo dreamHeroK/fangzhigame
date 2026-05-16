@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:blog.sina.com.cn)",
+      "WebFetch(domain:m.ximalaya.com)",
+      "WebFetch(domain:www.xiaoyingsudai.com)",
+      "WebFetch(domain:wd.gyyx.cn)",
+      "WebFetch(domain:www.bilibili.com)",
+      "WebFetch(domain:roadrich.gyyx.cn)",
+      "WebFetch(domain:m.4399.cn)",
+      "WebFetch(domain:m.shoujiwan.com)",
+      "WebFetch(domain:zhidao.baidu.com)",
+      "WebFetch(domain:tieba.baidu.com)",
+      "WebFetch(domain:m.iask.sina.com.cn)",
+      "WebFetch(domain:www.hanlefang.net)",
+      "WebFetch(domain:m.51edu.com)",
+      "WebFetch(domain:u.nuo5.com)",
+      "WebFetch(domain:www.kmw.com)",
+      "WebFetch(domain:games.sina.com.cn)",
+      "Bash(python -c ' *)",
+      "Bash(python generate_pet_reference.py)",
+      "Bash(python \"d:/learning/wendao/python/generate_pet_reference.py\")"
+    ]
+  }
+}

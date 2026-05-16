@@ -1,22 +1,25 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-从光宇奇宝斋「购买商品」列表拉取装备公开数据（图标 URL、名称、数值属性等），写入 JSON 并下载图标。
+从光宇奇宝斋「购买商品」列表拉取装备公开数据，写入 JSON 并下载图标。
 
-数据来源与页面一致：https://qibao.gyyx.cn/Buy/Index/
-列表接口（与站点 AdvancedSearch.js / jquery.datalist.js 一致）：
-  - GET https://qibao.gyyx.cn/AdvancedSearch/AccouterItemList  （装备，itemTypeID=0 不限部位）
-  - GET https://qibao.gyyx.cn/AdvancedSearch/WeaponItemList    （武器，itemTypeID=0 不限类型）
-  - GET https://qibao.gyyx.cn/AdvancedSearch/PetItemList      （宠物/坐骑，itemTypeID=0 不限种类）
+数据来源：https://qibao.gyyx.cn/Buy/Index/
+列表接口：
+  - GET https://qibao.gyyx.cn/AdvancedSearch/AccouterItemList  （装备）
+  - GET https://qibao.gyyx.cn/AdvancedSearch/WeaponItemList    （武器）
+  - GET https://qibao.gyyx.cn/AdvancedSearch/PetItemList       （宠物/坐骑）
 
-抓取规则：
-  - 等级与子类筛选均为「不限」，按 TotalCount / PageCount 翻页拉取列表全部数据；
-  - 全局按 item_name 去重，同名只保留最先出现的一条。
+XML 详情接口（--fetch-xml 启用）：
+  - GET https://qibao.gyyx.cn/ItemInfo/ItemDetailXml?itemId={ItemInfoCode}
+  返回 XML，包含 <basic_attrib>（基础属性）和 <attrib>（随机属性）节点。
 
-图标：下载到 icons/ 目录，文件名为 item_name（非法文件名字符替换为下划线）+ 原图扩展名。
+去重规则：
+  - 按 (item_name, item_level) 组合去重，同名同级只保留最先出现的一条。
+  - 注意：旧版本按 item_name 去重，会丢失不同等级的同名装备。
 
-说明：
-  - 请遵守站点服务条款与 robots，控制请求频率。
+输出字段说明：
+  base_attrs  - 基础属性：来自列表 API 的固定数值（攻击/防御/气血/法力/速度/闪避等）
+  random_attrs - 随机属性：来自 XML 详情的洗练/附加属性，需 --fetch-xml 才会填充
 """
 
 from __future__ import annotations
@@ -28,6 +31,7 @@ import random
 import re
 import sys
 import time
+import xml.etree.ElementTree as ET
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
@@ -43,16 +47,15 @@ LIST_PET = f"{QIBAO_ORIGIN}/AdvancedSearch/PetItemList"
 SERVERS_URL = f"{QIBAO_ORIGIN}/AdvancedSearch/GameServerList"
 ITEM_TYPES_URL = f"{QIBAO_ORIGIN}/iteminfo/itemtypes"
 
+# 装备 XML 详情接口（返回 XML 包含基础属性 + 随机属性）
+DETAIL_XML_URL = f"{QIBAO_ORIGIN}/ItemInfo/ItemDetailXml"
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_ICON_DIR = os.path.join(SCRIPT_DIR, "icons")
 DEFAULT_JSON = os.path.join(SCRIPT_DIR, "qibao_equip_data.json")
 
-# 与购买页「不限」选项一致（装备/武器/宠物等级均传此值）
 LEVEL_ANY = "不限"
-
-# 默认区服：无双倾城（商品较多，ServerCode 以接口列表为准）
 DEFAULT_SERVER_NAME = "无双倾城"
-
 GOODS_STATES = "Sales,FreeShow,PublicityAndAssureing,Publicity"
 
 HEADERS = {
@@ -78,7 +81,6 @@ def ensure_dir(path: str) -> None:
 
 
 def safe_filename_for_item_name(name: str, icon_url: str) -> str:
-    """用装备名做文件名，去掉 Windows 非法字符；扩展名跟随后端图片 URL。"""
     base = re.sub(r'[\\/:*?"<>|]', "_", (name or "").strip())
     base = re.sub(r"\s+", "_", base).strip("._") or "item"
     path = urlparse(icon_url).path
@@ -101,7 +103,6 @@ def resolve_server_id(
     preferred_code: Optional[int],
     preferred_name: Optional[str],
 ) -> Tuple[int, str]:
-    """返回 (ServerCode, ServerName)。优先 --server；否则按名称在列表中精确匹配。"""
     rows = load_server_rows()
     if preferred_code is not None:
         for row in rows:
@@ -149,7 +150,6 @@ def pet_list_params(
     level: str,
     order: str = "0",
 ) -> Dict[str, Any]:
-    """与 AdvancedSearch.js 中 PetItemList 的 ajax 参数一致（默认值同页面「不限」）。"""
     return {
         "r": random.random(),
         "pageIndex": page_index,
@@ -213,6 +213,98 @@ def download_icon(url: str, dest_path: str, sleep_s: float) -> bool:
         return False
 
 
+# ===================== XML 详情解析 =====================
+
+def _resolve_type_template(type_str: str, value: str) -> str:
+    """将 type 属性中的 %s / %s% 替换为实际值，处理「所有相性 4 增加 (+1.02%)」格式。"""
+    if "," in value:
+        # 格式：「数值,百分比」，如 "4,1.02" → "所有相性 4 增加 (+1.02%)"
+        idx = value.rfind(",")
+        main_val = value[:idx]
+        pct_val = value[idx + 1:]
+        result = re.sub(r"%s%|%s", main_val, type_str, count=1)
+        result = re.sub(r"\(%s\)", "", result)
+        return result.strip() + f" (+{pct_val}%)"
+    return re.sub(r"%s%|%s", value, type_str)
+
+
+def parse_xml_attribs(xml_bytes: bytes) -> Dict[str, List[Dict[str, str]]]:
+    """
+    解析装备 XML 详情，返回：
+      base_attrs  - list of {type, value, display, color}，来自 <basic_attrib> 节点
+      random_attrs - list of {type, value, display, color}，来自 <attrib> 节点
+    """
+    try:
+        text = xml_bytes.decode("utf-8", errors="replace")
+        root = ET.fromstring(text)
+    except ET.ParseError:
+        return {"base_attrs": [], "random_attrs": []}
+
+    # 查找 <attribs> 容器，不存在时直接用 root
+    attribs_node = root.find("attribs")
+    if attribs_node is None:
+        attribs_node = root
+
+    base_list: List[Dict[str, str]] = []
+    rand_list: List[Dict[str, str]] = []
+
+    for elem in attribs_node.iter():
+        tag = elem.tag.lower()
+        if tag not in ("basic_attrib", "attrib"):
+            continue
+        type_str = (elem.get("type") or "").strip()
+        color = (elem.get("color") or "").strip()
+        value = (elem.text or "").strip()
+        if not type_str and not value:
+            continue
+        display = _resolve_type_template(type_str, value) if type_str else value
+        entry = {"type": type_str, "value": value, "display": display, "color": color}
+        if tag == "basic_attrib":
+            base_list.append(entry)
+        else:
+            rand_list.append(entry)
+
+    return {"base_attrs": base_list, "random_attrs": rand_list}
+
+
+def fetch_item_xml_detail(item_info_code: int, sleep_s: float) -> Optional[Dict[str, List]]:
+    """
+    拉取单条装备的 XML 详情，解析基础属性和随机属性。
+    返回 {"base_attrs": [...], "random_attrs": [...]} 或 None（失败时）。
+    """
+    params = {"itemId": item_info_code, "r": random.random()}
+    time.sleep(sleep_s)
+    try:
+        resp = SESSION.get(DETAIL_XML_URL, params=params, timeout=25)
+        resp.raise_for_status()
+        if not resp.content or len(resp.content) < 10:
+            return None
+        return parse_xml_attribs(resp.content)
+    except Exception as exc:
+        print(f"    [WARN] XML 详情获取失败 itemId={item_info_code}: {exc}")
+        return None
+
+
+# ===================== 记录构建 =====================
+
+def _make_base_attrs(raw: Dict[str, Any]) -> Dict[str, Any]:
+    """从列表 API raw 中提取基础属性（固有数值，来自装备本身类型和等级）。"""
+    return {
+        "hurt": raw.get("Hurt"),
+        "hurt_display": strip_html(raw.get("HurtHtmlHelper")),
+        "defense": raw.get("Defense"),
+        "defense_display": strip_html(raw.get("DefenseHtmlHelper")),
+        "blood": raw.get("Blood"),
+        "magic": raw.get("Magic"),
+        "speed": raw.get("Speed"),
+        "speed_display": strip_html(raw.get("SpeedHtmlHelper")),
+        "dodge": raw.get("Dodge"),
+        "dodge_display": strip_html(raw.get("DodgeHtmlHelper")),
+        "rebuild_level": raw.get("RebuildLevel"),
+        "suit_polar": raw.get("SuitPolar"),
+    }
+
+
 def raw_to_record(
     raw: Dict[str, Any],
     category: str,
@@ -233,18 +325,10 @@ def raw_to_record(
         "item_level": raw.get("ItemLevel"),
         "server_code": raw.get("ServerCode"),
         "server_name": raw.get("ServerName"),
-        "hurt": raw.get("Hurt"),
-        "hurt_display": strip_html(raw.get("HurtHtmlHelper")),
-        "defense": raw.get("Defense"),
-        "defense_display": strip_html(raw.get("DefenseHtmlHelper")),
-        "blood": raw.get("Blood"),
-        "magic": raw.get("Magic"),
-        "speed": raw.get("Speed"),
-        "speed_display": strip_html(raw.get("SpeedHtmlHelper")),
-        "dodge": raw.get("Dodge"),
-        "dodge_display": strip_html(raw.get("DodgeHtmlHelper")),
-        "rebuild_level": raw.get("RebuildLevel"),
-        "suit_polar": raw.get("SuitPolar"),
+        # 基础属性（固有，由装备类型和等级决定）
+        "base_attrs": _make_base_attrs(raw),
+        # 随机属性（洗练/附加，由 --fetch-xml 从 XML 详情填充；默认空列表）
+        "random_attrs": [],
         "deal_price": raw.get("DealPrice"),
         "show_item_price": strip_html(raw.get("ShowItemPrice")),
         "business_valid_date": raw.get("BusinessValidDate"),
@@ -261,17 +345,7 @@ def pet_raw_to_record(
     code = raw.get("ItemInfoCode")
     name = (raw.get("ItemName") or "").strip()
     img_url = raw.get("ItemImageName") or raw.get("ItemImage") or ""
-    rec: Dict[str, Any] = {
-        "category": "宠物",
-        "slot_name": kind_label,
-        "item_subtype_zh": item_subtype_zh("宠物", raw.get("ItemTypeId")),
-        "level_filter": level_filter,
-        "item_info_code": code,
-        "item_type_id": raw.get("ItemTypeId"),
-        "item_name": name,
-        "item_level": raw.get("ItemLevel"),
-        "server_code": raw.get("ServerCode"),
-        "server_name": raw.get("ServerName"),
+    base_attrs = {
         "hurt": raw.get("PhyPower"),
         "hurt_display": strip_html(raw.get("PhyPowerHtmlHelper")),
         "defense": None,
@@ -284,29 +358,48 @@ def pet_raw_to_record(
         "dodge_display": None,
         "rebuild_level": raw.get("PhyRebuildLevel"),
         "suit_polar": None,
-        "deal_price": raw.get("DealPrice"),
-        "show_item_price": strip_html(raw.get("ShowItemPrice")),
-        "business_valid_date": raw.get("BusinessValidDate"),
-        "icon_url": img_url,
-        "icon_local_path": None,
+        # 宠物专有
         "martial_display": strip_html(raw.get("MartialHtmlHelper")),
         "shape_display": strip_html(raw.get("ShapeHtmlHelper")),
         "rebirth_level": raw.get("RebirthLevel"),
         "zhanli_lv": raw.get("ZhanliLv"),
     }
-    return rec
+    return {
+        "category": "宠物",
+        "slot_name": kind_label,
+        "item_subtype_zh": item_subtype_zh("宠物", raw.get("ItemTypeId")),
+        "level_filter": level_filter,
+        "item_info_code": code,
+        "item_type_id": raw.get("ItemTypeId"),
+        "item_name": name,
+        "item_level": raw.get("ItemLevel"),
+        "server_code": raw.get("ServerCode"),
+        "server_name": raw.get("ServerName"),
+        "base_attrs": base_attrs,
+        "random_attrs": [],
+        "deal_price": raw.get("DealPrice"),
+        "show_item_price": strip_html(raw.get("ShowItemPrice")),
+        "business_valid_date": raw.get("BusinessValidDate"),
+        "icon_url": img_url,
+        "icon_local_path": None,
+    }
 
+
+# ===================== 翻页抓取 =====================
 
 def fetch_all_list_pages(
     list_url: str,
     build_params: Callable[[int], Dict[str, Any]],
     sleep_s: float,
-    seen_names: set,
+    seen_pairs: set,
     to_record: Callable[[Dict[str, Any]], Dict[str, Any]],
     log_label: str,
     max_pages: int,
 ) -> List[Dict[str, Any]]:
-    """按 PageCount 翻页拉取全部行，写入 to_record；按 seen_names 跳过同名（保留先出现的）。"""
+    """
+    按 PageCount 翻页拉取全部行。
+    按 (item_name, item_level) 去重，同名同级只保留最先出现的一条。
+    """
     out: List[Dict[str, Any]] = []
     first = fetch_json(list_url, build_params(1), sleep_s)
     if not first.get("IsSuccess"):
@@ -321,9 +414,11 @@ def fetch_all_list_pages(
     def consume(data: Dict[str, Any]) -> None:
         for raw in data.get("Data") or []:
             name = (raw.get("ItemName") or "").strip()
-            if not name or name in seen_names:
+            level = raw.get("ItemLevel")
+            key = (name, level)
+            if not name or key in seen_pairs:
                 continue
-            seen_names.add(name)
+            seen_pairs.add(key)
             out.append(to_record(raw))
 
     consume(first)
@@ -334,10 +429,47 @@ def fetch_all_list_pages(
             break
         consume(data)
         if page % 10 == 0 or page == page_count:
-            print(f"    …第 {page}/{page_count} 页，本类累计保留 {len(out)} 条（已按名去重）")
+            print(f"    …第 {page}/{page_count} 页，本类累计保留 {len(out)} 条（按名+等级去重）")
     print(f"  {log_label}: 本类结束，保留 {len(out)} 条")
     return out
 
+
+# ===================== XML 批量填充 =====================
+
+def fill_xml_details(
+    records: List[Dict[str, Any]],
+    sleep_s: float,
+    categories: Optional[set] = None,
+) -> None:
+    """
+    为 records 中每条（装备/武器，不含宠物）拉取 XML 详情，填充 base_attrs 和 random_attrs。
+    categories: 限定只处理的 category 集合（None 表示不限）。
+    """
+    targets = [
+        r for r in records
+        if r.get("item_info_code")
+        and (categories is None or r.get("category") in categories)
+    ]
+    total = len(targets)
+    print(f"\n开始拉取 XML 详情（共 {total} 条）…")
+    ok = fail = 0
+    for i, rec in enumerate(targets, 1):
+        code = rec["item_info_code"]
+        detail = fetch_item_xml_detail(code, sleep_s)
+        if detail:
+            # XML 详情的 base_attrs 列表合并进 base_attrs（以 display 形式追加）
+            if detail.get("base_attrs"):
+                rec["base_attrs"]["xml_base"] = detail["base_attrs"]
+            rec["random_attrs"] = detail.get("random_attrs") or []
+            ok += 1
+        else:
+            fail += 1
+        if i % 50 == 0 or i == total:
+            print(f"  XML 详情进度: {i}/{total}（成功 {ok} 失败 {fail}）")
+    print(f"XML 详情拉取完成：成功 {ok}，失败 {fail}")
+
+
+# ===================== 其他工具 =====================
 
 def attach_icons(records: List[Dict[str, Any]], icon_dir: str, sleep_s: float) -> None:
     ensure_dir(icon_dir)
@@ -354,15 +486,17 @@ def attach_icons(records: List[Dict[str, Any]], icon_dir: str, sleep_s: float) -
             rec["icon_local_path"] = None
 
 
-def dedupe_records_by_name(records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """按 item_name 只保留第一条（防御性）。"""
+def dedupe_records(records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """按 (item_name, item_level) 只保留第一条（防御性）。"""
     seen: set = set()
     out: List[Dict[str, Any]] = []
     for r in records:
-        n = (r.get("item_name") or "").strip()
-        if not n or n in seen:
+        name = (r.get("item_name") or "").strip()
+        level = r.get("item_level")
+        key = (name, level)
+        if not name or key in seen:
             continue
-        seen.add(n)
+        seen.add(key)
         out.append(r)
     return out
 
@@ -374,6 +508,8 @@ def save_item_types(path: str, sleep_s: float) -> None:
     print(f"已写入类型表: {path}")
 
 
+# ===================== 主程序 =====================
+
 def main() -> None:
     if hasattr(sys.stdout, "reconfigure"):
         try:
@@ -381,34 +517,31 @@ def main() -> None:
         except Exception:
             pass
     parser = argparse.ArgumentParser(
-        description="奇宝斋装备/武器/宠物：不限筛选 + 全列表翻页 + 按 item_name 去重"
+        description="奇宝斋装备/武器/宠物：全等级全品类抓取，分离基础属性与随机属性"
     )
-    parser.add_argument("--server", type=int, default=None, help="ServerCode，指定后忽略 --server-name")
+    parser.add_argument("--server", type=int, default=None)
+    parser.add_argument("--server-name", default=DEFAULT_SERVER_NAME)
+    parser.add_argument("--page-size", type=int, default=50)
+    parser.add_argument("--max-pages", type=int, default=0, help="每类最多页数，0=不限（调试用）")
+    parser.add_argument("--sleep", type=float, default=0.6, help="列表请求间隔（秒）")
+    parser.add_argument("--xml-sleep", type=float, default=0.8, help="XML 详情请求间隔（秒）")
     parser.add_argument(
-        "--server-name",
-        default=DEFAULT_SERVER_NAME,
-        help=f"区服名称（精确匹配），未指定 --server 时使用，默认「{DEFAULT_SERVER_NAME}」",
+        "--fetch-xml",
+        action="store_true",
+        help="为装备/武器拉取 XML 详情，填充随机属性（random_attrs）",
     )
     parser.add_argument(
-        "--page-size",
-        type=int,
-        default=50,
-        help="每页条数（接口接受较大值时可减少请求次数），至少 5",
+        "--xml-categories",
+        default="装备,武器",
+        help="--fetch-xml 只处理的类别（逗号分隔），默认「装备,武器」",
     )
-    parser.add_argument(
-        "--max-pages",
-        type=int,
-        default=0,
-        help="每类列表最多抓取页数，0 表示不限制（调试用）",
-    )
-    parser.add_argument("--sleep", type=float, default=0.6, help="请求间隔（秒）")
-    parser.add_argument("--no-icons", action="store_true", help="不下载图片")
+    parser.add_argument("--no-icons", action="store_true")
     parser.add_argument("--json", default=DEFAULT_JSON)
-    parser.add_argument("--icon-dir", default=DEFAULT_ICON_DIR, help="图标目录，默认 python/icons")
-    parser.add_argument("--no-equip", action="store_true", help="不抓取装备列表")
-    parser.add_argument("--no-weapon", action="store_true", help="不抓取武器列表")
-    parser.add_argument("--no-pet", action="store_true", help="不抓取宠物列表")
-    parser.add_argument("--save-itemtypes", action="store_true", help="额外保存 itemtypes 到 qibao_itemtypes.json")
+    parser.add_argument("--icon-dir", default=DEFAULT_ICON_DIR)
+    parser.add_argument("--no-equip", action="store_true")
+    parser.add_argument("--no-weapon", action="store_true")
+    parser.add_argument("--no-pet", action="store_true")
+    parser.add_argument("--save-itemtypes", action="store_true")
     args = parser.parse_args()
 
     server_id, server_label = resolve_server_id(args.server, args.server_name)
@@ -416,7 +549,7 @@ def main() -> None:
     page_size = max(5, int(args.page_size))
     max_pages = max(0, int(args.max_pages))
 
-    seen_names: set = set()
+    seen_pairs: set = set()  # (item_name, item_level)
     all_rows: List[Dict[str, Any]] = []
 
     if not args.no_equip:
@@ -430,7 +563,7 @@ def main() -> None:
                 LIST_EQUIP,
                 equip_params,
                 args.sleep,
-                seen_names,
+                seen_pairs,
                 lambda r: raw_to_record(r, "装备", "装备", LEVEL_ANY),
                 "装备",
                 max_pages,
@@ -448,7 +581,7 @@ def main() -> None:
                 LIST_WEAPON,
                 weapon_params,
                 args.sleep,
-                seen_names,
+                seen_pairs,
                 lambda r: raw_to_record(r, "武器", "武器", LEVEL_ANY),
                 "武器",
                 max_pages,
@@ -466,17 +599,22 @@ def main() -> None:
                 LIST_PET,
                 pet_params_page,
                 args.sleep,
-                seen_names,
+                seen_pairs,
                 lambda r: pet_raw_to_record(r, "宠物", LEVEL_ANY),
                 "宠物",
                 max_pages,
             )
         )
 
-    all_rows = dedupe_records_by_name(all_rows)
+    all_rows = dedupe_records(all_rows)
+
+    # 可选：拉取 XML 详情填充随机属性
+    if args.fetch_xml:
+        xml_cats = {c.strip() for c in args.xml_categories.split(",") if c.strip()}
+        fill_xml_details(all_rows, args.xml_sleep, xml_cats)
 
     if not args.no_icons:
-        print(f"下载图标到: {args.icon_dir}（文件名 = item_name + 扩展名）")
+        print(f"下载图标到: {args.icon_dir}")
         attach_icons(all_rows, args.icon_dir, args.sleep)
 
     with open(args.json, "w", encoding="utf-8") as f:
