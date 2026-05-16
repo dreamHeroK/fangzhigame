@@ -1,4 +1,4 @@
-import { CONSUMABLE_BY_ID, getConsumable, potionIdsForTier, tierFromMonsterLevel } from './catalog.js'
+﻿import { CONSUMABLE_BY_ID, getConsumable, potionIdsForTier, tierFromMonsterLevel } from './catalog.js'
 
 function pick(arr, rng) {
   return arr[Math.floor(rng() * arr.length)]

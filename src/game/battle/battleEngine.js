@@ -1,4 +1,4 @@
-import { getSkill } from './skills.js'
+﻿import { getSkill } from './skills.js'
 import {
   elementDamageFactor,
   mantleBloodHeal,
@@ -341,28 +341,36 @@ export function submitUseConsumable(
 }
 
 /**
- * 玩家回合：对单个目标施放技能（含普通攻击）
+ * 玩家回合：对一个或多个目标施放技能（含普通攻击）
+ * targetIds 优先；targetId 为兼容旧调用的单目标回退。
  */
-export function submitPlayerAction(state, { actorId, skillId, targetId }, rng = Math.random) {
+export function submitPlayerAction(state, { actorId, skillId, targetId, targetIds }, rng = Math.random) {
   if (state.phase === 'end') return state
   if (state.awaitingActorId !== actorId) return state
   const actor = getActor(state, actorId)
-  const target = getActor(state, targetId)
-  if (!actor || actor.side !== 'ally' || !target || target.hp <= 0) return state
+  if (!actor || actor.side !== 'ally') return state
   const skill = getSkill(skillId)
   if (!actor.skillPool.includes(skill.id)) return state
   if (actor.mp < skill.mpCost) return state
 
+  // 解析目标列表：优先 targetIds，否则退回 targetId 单体
+  const ids = targetIds?.length > 0 ? targetIds : targetId ? [targetId] : []
+  const validTargets = ids.map((id) => getActor(state, id)).filter((t) => t && t.hp > 0)
+  if (validTargets.length === 0) return state
+
   let s = spendMp(state, actor.id, skill.mpCost)
-  const res = applyStrike(s, actor.id, target.id, skill.id, rng)
-  s = res.state
-  const dmg = res.damage
-  const tgt = getActor(s, target.id)
+  const hits = []
+  for (const tgt of validTargets) {
+    const res = applyStrike(s, actor.id, tgt.id, skill.id, rng)
+    s = res.state
+    hits.push({ name: getActor(s, tgt.id)?.name ?? tgt.name, damage: res.damage })
+  }
+
   const mpNote = skill.mpCost > 0 ? `（耗 MP ${skill.mpCost}）` : ''
-  s = pushLog(
-    s,
-    `${actor.name} 使用【${skill.name}】${mpNote} → ${tgt?.name ?? target.name} 受到 ${dmg} 点伤害。`
-  )
+  const hitDesc = hits.length === 1
+    ? `${hits[0].name} 受到 ${hits[0].damage} 点伤害`
+    : `${hits.map((h) => h.name).join('、')} 各受 ${hits.map((h) => h.damage).join('、')} 点伤害（合计 ${hits.reduce((a, h) => a + h.damage, 0)}）`
+  s = pushLog(s, `${actor.name} 使用【${skill.name}】${mpNote} → ${hitDesc}。`)
   s = { ...s, awaitingActorId: null }
   s = advanceRoundPointer(s)
   s = tickUntilInputOrEnd(s, rng)

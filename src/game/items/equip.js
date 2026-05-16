@@ -1,4 +1,4 @@
-// 配置：装备生成核心参数
+﻿// 配置：装备生成核心参数
 const EQUIP_CONFIG = {
     // 1. 等级段模板 (每10级一档)
     levelBrackets: [

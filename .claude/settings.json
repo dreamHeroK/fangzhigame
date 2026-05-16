@@ -20,7 +20,24 @@
       "WebFetch(domain:games.sina.com.cn)",
       "Bash(python -c ' *)",
       "Bash(python generate_pet_reference.py)",
-      "Bash(python \"d:/learning/wendao/python/generate_pet_reference.py\")"
+      "Bash(python \"d:/learning/wendao/python/generate_pet_reference.py\")",
+      "Bash(Get-ChildItem -Path \"d:\\\\learning\\\\wendao\" -Recurse -Directory)",
+      "Bash(Select-Object -First 20)",
+      "Bash(Format-Table FullName)",
+      "Bash(node -e ' *)",
+      "Bash(Get-ChildItem -Path \"d:\\\\learning\\\\wendao\\\\src\" -Recurse -Include \"*.jsx\",\"*.tsx\",\"*.css\")",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(npm run *)",
+      "Bash(curl -s http://localhost:5173)",
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(npx vite *)",
+      "Read(//c/Users/leo.kang/AppData/Local/Temp/**)",
+      "Bash(git show *)",
+      "Bash(grep -E \"\\\\.\\(py|js\\)$|scripts\")",
+      "Bash(Get-ChildItem -Path \"d:\\\\learning\\\\wendao\\\\src\\\\game\\\\data\" -Force)",
+      "PowerShell(Get-ChildItem -Path \"d:\\\\learning\\\\wendao\" -File -Depth 0 | Where-Object { $_.Extension -in @\\('.json', '.py'\\) })",
+      "PowerShell(New-Item -ItemType Directory -Force \"d:\\\\learning\\\\wendao\\\\src\\\\game\\\\data\")",
+      "PowerShell(Copy-Item \"d:\\\\learning\\\\wendao\\\\python\\\\pet_reference.json\" \"d:\\\\learning\\\\wendao\\\\src\\\\game\\\\data\\\\petCatalog.json\")"
     ]
   }
 }

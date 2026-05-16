@@ -1,4 +1,4 @@
-import { getConsumable, getRestoreAmount, isQuotaOrb } from '../items/catalog.js'
+﻿import { getConsumable, getRestoreAmount, isQuotaOrb } from '../items/catalog.js'
 
 function clamp(n, lo, hi) {
   return Math.max(lo, Math.min(hi, n))

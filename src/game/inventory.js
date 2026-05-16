@@ -1,4 +1,4 @@
-import { getConsumable, isQuotaOrbItemId, LINGLONG_DEFAULT_QUOTA } from './items/catalog.js'
+﻿import { getConsumable, isQuotaOrbItemId, LINGLONG_DEFAULT_QUOTA } from './items/catalog.js'
 
 /**
  * 背包：普通药为数量；血玲珑/法玲珑为数组，每项一颗玲珑 `{ remaining }`（不可叠加为多格）。

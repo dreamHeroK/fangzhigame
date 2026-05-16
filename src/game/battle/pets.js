@@ -1,4 +1,4 @@
-import { getMonsterProfile, rollInnateIds } from './monsterProfiles.js'
+﻿import { getMonsterProfile, rollInnateIds } from './monsterProfiles.js'
 import {
   computeStatsFromGrowth,
   rollPetGrowthDetail,

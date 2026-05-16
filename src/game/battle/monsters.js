@@ -1,4 +1,4 @@
-import { DEFAULT_MAP_ID, getMapById, getWorldBossByKey } from './wendaoMapsConfig.js'
+﻿import { DEFAULT_MAP_ID, getMapById, getWorldBossByKey } from './wendaoMapsConfig.js'
 import { getMonsterProfile } from './monsterProfiles.js'
 
 function uid(prefix) {
