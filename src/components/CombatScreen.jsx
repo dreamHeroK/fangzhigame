@@ -5,40 +5,54 @@ import {
   submitPlayerAction,
   submitCapture,
   getActor,
+  STATUS_LABELS,
 } from '../game/battle/battleEngine.js'
 import { getSkill } from '../game/battle/skills.js'
 import { suggestMapIdForLevel } from '../game/battle/wendaoMapsConfig.js'
-import { getSnapshot as charSnapshot } from '../game/characterStore.js'
-
-const HERO_STATS = {
-  maxHp: 4860,
-  maxMp: 2160,
-  atk: 142,
-  mAtk: 158,
-  def: 68,
-  speed: 24,
-}
+import { getSnapshot as charSnapshot, applyBattleRewardsAction } from '../game/characterStore.js'
+import { computeHeroDerived } from '../game/playerSheet.js'
+import { createAllyUnit } from '../game/battle/monsters.js'
+import { createPetAllyUnit } from '../game/battle/pets.js'
 
 function makeNewBattle() {
   const char = charSnapshot()
+  const d = computeHeroDerived(char.level, char)
   const mapId = suggestMapIdForLevel(char.level)
   const learnedEquipped = char.equippedSkills.filter((id) => (char.skillLevels[id] ?? 0) > 0)
   const skillPool = ['normal_attack', ...learnedEquipped]
-  return createBattle({
-    partySize: 2,
-    allyNames: [char.name, '听雪楼'],
-    allyStats: { level: char.level, ...HERO_STATS },
-    allySkills: skillPool,
-    mapId,
-  })
+
+  const playerUnit = createAllyUnit(char.name, {
+    level:       char.level,
+    maxHp:       d.maxHp,
+    maxMp:       d.maxMp,
+    atk:         d.phyDmg,
+    mAtk:        d.magDmg,
+    def:         d.def,
+    speed:       d.speed,
+    skillLevels: char.skillLevels,
+  }, skillPool)
+
+  // 最多携带 9 只宠物（含玩家共 10 格位）
+  const activePets = (char.petRoster ?? []).filter(p => p.active).slice(0, 9)
+  const petUnits = activePets.map(createPetAllyUnit)
+
+  return createBattle({ allyUnits: [playerUnit, ...petUnits], mapId })
 }
 
 const allyPos = [
-  { x: 7,  y: 58, scale: 0.95 },
-  { x: 16, y: 58, scale: 0.95 },
-  { x: 25, y: 58, scale: 0.95 },
-  { x: 34, y: 58, scale: 0.95 },
-  { x: 43, y: 58, scale: 0.95 },
+  // 0: 玩家 - 最后排
+  { x: 8,  y: 46, scale: 0.75 },
+  // 1-5: 宠物前排
+  { x: 5,  y: 82, scale: 0.85 },
+  { x: 14, y: 82, scale: 0.85 },
+  { x: 23, y: 82, scale: 0.85 },
+  { x: 32, y: 82, scale: 0.85 },
+  { x: 41, y: 82, scale: 0.85 },
+  // 6-9: 宠物次排
+  { x: 9,  y: 60, scale: 0.78 },
+  { x: 18, y: 60, scale: 0.78 },
+  { x: 27, y: 60, scale: 0.78 },
+  { x: 36, y: 60, scale: 0.78 },
 ]
 const enemyPos = [
   { x: 56, y: 82, scale: 1.00 },
@@ -124,6 +138,17 @@ const CombatUnit = ({ unit, pos, side, isCenter, isAffected, onClick }) => {
             <Seal size={20} round school={unit.affinity}>{unit.affinity}</Seal>
           </div>
         )}
+        {unit.kind === 'pet' && !isEnemy && (
+          <div style={{
+            position: 'absolute', bottom: 3, right: 3,
+            fontFamily: 'var(--font-mono)', fontSize: 8,
+            background: 'rgba(26,74,42,0.85)', color: '#7ecf4a',
+            border: '1px solid #3a8040', borderRadius: 2,
+            padding: '0 3px', lineHeight: '14px',
+          }}>
+            宠
+          </div>
+        )}
         {/* 主目标：完整准星 */}
         {isCenter && (
           <svg viewBox="0 0 60 60" style={{
@@ -152,8 +177,58 @@ const CombatUnit = ({ unit, pos, side, isCenter, isAffected, onClick }) => {
         )}
       </div>
       <div style={{ marginTop: 3, paddingInline: 3 }}>
-        <Bar value={unit.hp} max={unit.maxHp} type="hp" height={isBoss ? 7 : 6} showText={false} />
+        <Bar value={unit.hp} max={unit.maxHp} type="hp" height={isBoss ? 7 : 5} showText={false} />
+        {isEnemy && !dead && (
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+            fontFamily: 'var(--font-mono)', marginTop: 2, paddingInline: 1,
+            fontSize: isBoss ? 10 : 9,
+          }}>
+            <span style={{ color: hpColor(unit.hp, unit.maxHp), fontWeight: 600 }}>
+              {unit.hp.toLocaleString()}
+            </span>
+            <span style={{ color: 'var(--ink-4)' }}>
+              /{unit.maxHp.toLocaleString()}
+            </span>
+          </div>
+        )}
+        <StatusBadges statusEffects={unit.statusEffects} small />
       </div>
+    </div>
+  )
+}
+
+function hpColor(hp, maxHp) {
+  const r = maxHp > 0 ? hp / maxHp : 0
+  if (r > 0.6) return 'var(--bamboo)'
+  if (r > 0.3) return 'var(--gold-2)'
+  return 'var(--vermilion)'
+}
+
+const STATUS_STYLE = {
+  poison:  { background: '#1e4a10', color: '#7ecf4a', border: '1px solid #3a8020' },
+  freeze:  { background: '#0a2e4a', color: '#7dd8f7', border: '1px solid #1a6080' },
+  sleep:   { background: '#2e1650', color: '#c8a8f8', border: '1px solid #6040a0' },
+  confuse: { background: '#4a2800', color: '#f0b040', border: '1px solid #906010' },
+  forget:  { background: '#303030', color: '#b0b0b0', border: '1px solid #606060' },
+}
+
+const StatusBadges = ({ statusEffects, small = false }) => {
+  if (!statusEffects?.length) return null
+  return (
+    <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap', marginTop: 2 }}>
+      {statusEffects.map(eff => (
+        <span key={eff.type} style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: small ? 7 : 9,
+          padding: small ? '0 2px' : '1px 4px',
+          borderRadius: 2,
+          lineHeight: 1.4,
+          ...(STATUS_STYLE[eff.type] ?? { background: '#333', color: '#fff' }),
+        }}>
+          {STATUS_LABELS[eff.type] ?? eff.type}{eff.duration > 0 ? `·${eff.duration}` : ''}
+        </span>
+      ))}
     </div>
   )
 }
@@ -195,7 +270,13 @@ const PartyCard = ({ unit, isActive }) => (
     )}
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
       <div style={{ width: 36, height: 36, position: 'relative' }}>
-        <div className="portrait" style={{ width: 36, height: 36, fontSize: 14 }}>{unit.name[0]}</div>
+        <div className="portrait" style={{
+          width: 36, height: 36, fontSize: unit.kind === 'pet' ? 11 : 14,
+          background: unit.kind === 'pet' ? 'linear-gradient(135deg,#1a4a2a,#2d6040)' : undefined,
+          border: unit.kind === 'pet' ? '1px solid #3a8040' : undefined,
+        }}>
+          {unit.kind === 'pet' ? '宠' : unit.name[0]}
+        </div>
         {unit.affinity && (
           <div style={{ position: 'absolute', bottom: -3, right: -3 }}>
             <Seal size={14} round school={unit.affinity}>{unit.affinity}</Seal>
@@ -206,33 +287,45 @@ const PartyCard = ({ unit, isActive }) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
           <span className="brush" style={{ fontSize: 13 }}>{unit.name}</span>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-3)' }}>
-            Lv{unit.level}{unit.affinity ? ` · 法${unit.affinity}` : ''}
+            Lv{unit.level}{unit.affinity ? ` · ${unit.kind === 'pet' ? '宠' : '法'}${unit.affinity}` : ''}
           </span>
         </div>
         <Bar value={unit.hp} max={unit.maxHp} type="hp" height={6} />
         <div style={{ marginTop: 2 }}>
           <Bar value={unit.mp} max={unit.maxMp} type="mp" height={4} showText={false} />
         </div>
+        <StatusBadges statusEffects={unit.statusEffects} />
       </div>
     </div>
   </div>
 )
 
-const SkillCard = ({ sk, selected, disabled, onClick }) => (
+const SkillCard = ({ sk, skillLevel = 0, selected, disabled, forgotten, onClick }) => (
   <div
     className={'slot' + (selected ? ' q-rare' : '')}
     onClick={disabled ? undefined : onClick}
     style={{
       aspectRatio: 'auto', padding: '4px 5px',
       flexDirection: 'column', gap: 1, fontSize: 11,
-      background: selected ? '#fff8ea' : undefined,
-      borderColor: selected ? 'var(--vermilion)' : undefined,
+      background: selected ? '#fff8ea' : forgotten ? 'rgba(48,48,48,0.08)' : undefined,
+      borderColor: selected ? 'var(--vermilion)' : forgotten ? '#606060' : undefined,
       boxShadow: selected ? '0 0 0 2px rgba(163,55,58,0.2)' : undefined,
       opacity: disabled ? 0.45 : 1,
       cursor: disabled ? 'not-allowed' : 'pointer',
     }}
   >
-    <span className="brush" style={{ fontSize: 13, color: 'var(--ink)', lineHeight: 1.1 }}>{sk.name}</span>
+    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
+      <span className="brush" style={{ fontSize: 13, color: 'var(--ink)', lineHeight: 1.1 }}>{sk.name}</span>
+      {skillLevel > 0 && (
+        <span style={{
+          fontFamily: 'var(--font-mono)', fontSize: 7, lineHeight: 1,
+          color: 'var(--paper)', background: skillLevel >= 80 ? 'var(--vermilion)' : skillLevel >= 40 ? 'var(--gold-2)' : 'var(--ink-3)',
+          borderRadius: 2, padding: '1px 3px', whiteSpace: 'nowrap', flexShrink: 0, marginTop: 2,
+        }}>
+          {skillLevel}
+        </span>
+      )}
+    </div>
     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--ink-3)' }}>{sk.desc}</span>
     {sk.mpCost > 0 && (
       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#3a5a8a' }}>{sk.mpCost} 灵力</span>
@@ -249,7 +342,11 @@ const ActionPanel = ({ actor, selectedSkillId, onSelectSkill, mode, onMode }) =>
     { k: 'flee',    n: '逃跑', t: '逃' },
   ]
 
-  const skills = actor ? actor.skillPool.map(id => getSkill(id)) : []
+  // 使用技能等级缩放后的实际法力消耗
+  const skills = actor
+    ? actor.skillPool.map(id => getSkill(id, actor.skillLevels?.[id] ?? 0))
+    : []
+  const hasForget = actor?.statusEffects?.some(e => e.type === 'forget')
 
   return (
     <div style={{ width: 380, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -276,15 +373,20 @@ const ActionPanel = ({ actor, selectedSkillId, onSelectSkill, mode, onMode }) =>
         ))}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 5, flex: 1 }}>
-        {skills.map((sk) => (
-          <SkillCard
-            key={sk.id}
-            sk={sk}
-            selected={sk.id === selectedSkillId}
-            disabled={!actor || sk.mpCost > actor.mp}
-            onClick={() => onSelectSkill(sk.id)}
-          />
-        ))}
+        {skills.map((sk) => {
+          const lv = actor?.skillLevels?.[sk.id] ?? 0
+          return (
+            <SkillCard
+              key={sk.id}
+              sk={sk}
+              skillLevel={lv}
+              selected={sk.id === selectedSkillId}
+              disabled={!actor || sk.mpCost > actor.mp || (hasForget && sk.mpCost > 0)}
+              forgotten={hasForget && sk.mpCost > 0}
+              onClick={() => onSelectSkill(sk.id)}
+            />
+          )
+        })}
       </div>
     </div>
   )
@@ -378,6 +480,9 @@ export default function CombatScreen() {
   const [mode, setMode] = useState('skill')
   const [floats, setFloats] = useState([])
   const prevUnitsRef = useRef(null)
+  const lastActionKindRef = useRef(null)   // 上一次玩家出手的技能类型
+  const pendingComboKindRef = useRef(null) // 本次出手是否触发连击（在 useEffect 里消费）
+  const lastSkillByActorRef = useRef({})   // 每个 actor 上次选择的技能
 
   const allies = battle.units.filter((u) => u.side === 'ally')
   const foes = battle.units.filter((u) => u.side === 'foe')
@@ -410,6 +515,17 @@ export default function CombatScreen() {
     return [selectedTargetId, ...others]
   }, [selectedTargetId, targetCount, foes.map((f) => f.id + f.hp).join()])
 
+  // actor 切换时恢复上次为该 actor 选择的技能
+  useEffect(() => {
+    if (!actor) return
+    const remembered = lastSkillByActorRef.current[actor.templateKey]
+    if (remembered && actor.skillPool.includes(remembered)) {
+      setSelectedSkillId(remembered)
+    } else {
+      setSelectedSkillId('normal_attack')
+    }
+  }, [actor?.id])
+
   // Auto-select first living foe when needed
   useEffect(() => {
     const stillValid = livingFoes.find((f) => f.id === selectedTargetId)
@@ -418,13 +534,33 @@ export default function CombatScreen() {
     }
   }, [battle])
 
+  // 战斗胜利 → 落账经验 / 宠物经验 / 银两
+  useEffect(() => {
+    if (!battle.victoryLootNonce || !battle.victoryRewards) return
+    const activePetIds = allies
+      .filter(u => u.kind === 'pet')
+      .map(u => {
+        // petunit_<petId> → 取 petRoster 对应 id
+        const char = charSnapshot()
+        return char.petRoster.find(p => `petunit_${p.id}` === u.id)?.id
+      })
+      .filter(Boolean)
+    applyBattleRewardsAction(battle.victoryRewards, activePetIds)
+  }, [battle.victoryLootNonce])
+
   // Damage floats: diff HP between renders
   useEffect(() => {
     const prev = prevUnitsRef.current
     prevUnitsRef.current = battle.units
     if (!prev) return
 
+    // 消费连击触发信号（只在玩家主动出手后有值）
+    const comboKind = pendingComboKindRef.current
+    pendingComboKindRef.current = null
+
     const newFloats = []
+    let firstFoeHitPos = null  // 连击标签落在第一个受伤敌方单位上方
+
     for (const u of battle.units) {
       const p = prev.find((x) => x.id === u.id)
       if (!p) continue
@@ -435,23 +571,55 @@ export default function CombatScreen() {
       const idx = arr.findIndex((x) => x.id === u.id)
       const pos = isAlly ? allyPos[idx] : enemyPos[Math.min(idx, 9)]
       if (!pos) continue
+
+      const drift = Math.round((Math.random() - 0.5) * 52)
+      // 伤害 ≥ 30% maxHp 视为大伤害
+      const isBigHit = dmg >= u.maxHp * 0.30
+
       newFloats.push({
         id: Math.random().toString(36).slice(2),
-        x: pos.x,
-        y: pos.y - 12,
+        x: pos.x + (Math.random() - 0.5) * 3,
+        y: pos.y - 14,
         text: `－${dmg.toLocaleString()}`,
-        crit: !isAlly,
+        kind: isBigHit ? 'crit' : 'normal',
+        drift,
+      })
+
+      if (!isAlly && !firstFoeHitPos) firstFoeHitPos = pos
+    }
+
+    // 连击标签：悬浮在第一个受伤敌方头顶，独立于伤害数字
+    if (comboKind && firstFoeHitPos) {
+      const label = comboKind === 'magic' ? '法术连击！' : '物理连击！'
+      newFloats.push({
+        id: Math.random().toString(36).slice(2),
+        x: firstFoeHitPos.x,
+        y: firstFoeHitPos.y - 30,
+        text: label,
+        kind: 'combo',
+        drift: (Math.random() - 0.5) * 20,
       })
     }
+
     if (newFloats.length > 0) {
       setFloats((f) => [...f, ...newFloats])
       const ids = new Set(newFloats.map((f) => f.id))
-      setTimeout(() => setFloats((f) => f.filter((x) => !ids.has(x.id))), 1800)
+      setTimeout(() => setFloats((f) => f.filter((x) => !ids.has(x.id))), 2000)
     }
   }, [battle])
 
+  function handleSelectSkill(skillId) {
+    setSelectedSkillId(skillId)
+    if (actor) lastSkillByActorRef.current[actor.templateKey] = skillId
+  }
+
   function handleAction() {
     if (!actor || !selectedSkillId || !selectedTargetId || battle.phase === 'end') return
+    const skillDef = getSkill(selectedSkillId)
+    const kind = skillDef.kind  // 'physical' | 'magic'
+    // 与上次同类型 → 触发连击标签
+    pendingComboKindRef.current = lastActionKindRef.current === kind ? kind : null
+    lastActionKindRef.current = kind
     const next = submitPlayerAction(battle, {
       actorId: actor.id,
       skillId: selectedSkillId,
@@ -462,6 +630,7 @@ export default function CombatScreen() {
 
   function handleCapture() {
     if (!actor || !selectedTargetId || battle.phase === 'end') return
+    lastActionKindRef.current = null  // 捕捉不计入连击链
     const { state } = submitCapture(battle, { actorId: actor.id, foeId: selectedTargetId })
     setBattle(state)
   }
@@ -473,6 +642,9 @@ export default function CombatScreen() {
     setMode('skill')
     setFloats([])
     prevUnitsRef.current = null
+    lastActionKindRef.current = null
+    pendingComboKindRef.current = null
+    // lastSkillByActorRef 跨战斗保留，不清空
   }
 
   // Turn queue: next 7 actors (skip dead)
@@ -491,37 +663,6 @@ export default function CombatScreen() {
 
   return (
     <div className="paper-bg ink-wash-bg" style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', fontFamily: 'var(--font-body)', color: 'var(--ink)' }}>
-
-      {/* Victory / Defeat overlay */}
-      {battle.phase === 'end' && (
-        <div style={{
-          position: 'absolute', inset: 0, zIndex: 100,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'rgba(243,237,224,0.92)', backdropFilter: 'blur(4px)',
-        }}>
-          <div style={{ textAlign: 'center' }}>
-            <div className="brush" style={{
-              fontSize: 56, lineHeight: 1.1,
-              color: battle.outcome === 'victory' ? 'var(--gold)' : 'var(--vermilion)',
-              textShadow: '0 2px 8px rgba(0,0,0,0.15)',
-            }}>
-              {battle.outcome === 'victory' ? '胜 利' : '落 败'}
-            </div>
-            {battle.outcome === 'victory' && battle.lastVictoryLoot?.length > 0 && (
-              <div style={{ margin: '12px 0', fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--ink-2)', lineHeight: 2 }}>
-                {battle.lastVictoryLoot.map((l, i) => (
-                  <div key={i}>{l.name} × {l.qty}</div>
-                ))}
-              </div>
-            )}
-            <div style={{ marginTop: 24 }}>
-              <button className="btn-ink btn-ink-primary" onClick={handleNewBattle} style={{ fontSize: 16, padding: '10px 32px' }}>
-                再 战
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Top info bar */}
       <div style={{
@@ -560,7 +701,8 @@ export default function CombatScreen() {
           敌方 {foes.length}
         </div>
         <RowGuide y={84} label="前排 · FRONT" side="left" />
-        <RowGuide y={58} label="后排 · BACK" side="left" />
+        <RowGuide y={60} label="中排 · MID" side="left" />
+        <RowGuide y={46} label="后排 · BACK" side="left" />
         <RowGuide y={82} label="前排 · FRONT" side="right" />
         <RowGuide y={58} label="后排 · BACK" side="right" />
         <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: 8, height: 360, background: 'linear-gradient(180deg, transparent, var(--ink-3) 20%, var(--ink-3) 80%, transparent)', opacity: 0.25 }} />
@@ -609,12 +751,23 @@ export default function CombatScreen() {
           )
         })()}
 
-        {/* Damage floats */}
+        {/* 飘字占位（不在此处渲染，见下方独立 overlay） */}
+      </div>
+
+      {/* 飘雪 overlay — 独立于战场 overflow:hidden，z-index 高于所有面板 */}
+      <div style={{
+        position: 'absolute', top: 56, left: 0, right: 0, height: 500,
+        pointerEvents: 'none', zIndex: 30,
+      }}>
         {floats.map((f) => (
           <div
             key={f.id}
-            className={'damage-float' + (f.crit ? ' damage-crit' : '')}
-            style={{ left: `${f.x}%`, top: `${f.y}%` }}
+            className={`damage-float${f.kind === 'crit' ? ' damage-crit' : f.kind === 'combo' ? ' damage-combo' : ''}`}
+            style={{
+              left: `${f.x}%`,
+              top: `${f.y}%`,
+              '--fd': `${f.drift}px`,
+            }}
           >
             {f.text}
           </div>
@@ -641,44 +794,112 @@ export default function CombatScreen() {
           </div>
         </div>
 
-        <ActionPanel
-          actor={actor}
-          selectedSkillId={selectedSkillId}
-          onSelectSkill={setSelectedSkillId}
-          mode={mode}
-          onMode={setMode}
-        />
-
-        <TargetPanel
-          foes={foes}
-          selectedTargetId={selectedTargetId}
-          affectedTargetIds={affectedTargetIds}
-          targetCount={targetCount}
-          onSelectTarget={setSelectedTargetId}
-          onAction={handleAction}
-          onCapture={handleCapture}
-          mode={mode}
-          canAct={canAct && (mode === 'catch' ? !!selectedTargetId : !!(selectedSkillId && selectedTargetId))}
-        />
+        {battle.phase === 'end' ? (
+          /* ── 结算卡（内嵌，不遮挡战场） ── */
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 32, paddingLeft: 12 }}>
+            {/* 胜负大字 */}
+            <div className="brush" style={{
+              fontSize: 52, lineHeight: 1, flexShrink: 0,
+              color: battle.outcome === 'victory' ? 'var(--gold)' : 'var(--vermilion)',
+              textShadow: '0 2px 6px rgba(0,0,0,0.12)',
+            }}>
+              {battle.outcome === 'victory' ? '胜 利' : '落 败'}
+            </div>
+            {/* 奖励数值 */}
+            {battle.outcome === 'victory' && (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 20, fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                  <span style={{ color: 'var(--bamboo)' }}>
+                    经验 <span style={{ color: 'var(--ink)', fontWeight: 600 }}>
+                      +{(battle.victoryRewards?.exp ?? 0).toLocaleString()}
+                    </span>
+                  </span>
+                  <span style={{ color: 'var(--bamboo)' }}>
+                    银两 <span style={{ color: 'var(--gold-2)', fontWeight: 600 }}>
+                      +{(battle.victoryRewards?.gold ?? 0).toLocaleString()}
+                    </span>
+                  </span>
+                </div>
+                {battle.lastVictoryLoot?.length > 0 && (
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {battle.lastVictoryLoot.map((l, i) => {
+                      const name = l.name ?? l.itemId
+                      return (
+                        <span key={i} style={{
+                          fontFamily: 'var(--font-mono)', fontSize: 11,
+                          padding: '2px 7px', borderRadius: 2,
+                          background: 'rgba(140,108,67,0.12)', border: '1px solid var(--gold-2)',
+                          color: 'var(--ink-2)',
+                        }}>
+                          {name} ×{l.qty}
+                        </span>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+            <button
+              className="btn-ink btn-ink-primary"
+              onClick={handleNewBattle}
+              style={{ fontSize: 15, padding: '10px 28px', flexShrink: 0 }}
+            >
+              再 战
+            </button>
+          </div>
+        ) : (
+          <>
+            <ActionPanel
+              actor={actor}
+              selectedSkillId={selectedSkillId}
+              onSelectSkill={handleSelectSkill}
+              mode={mode}
+              onMode={setMode}
+            />
+            <TargetPanel
+              foes={foes}
+              selectedTargetId={selectedTargetId}
+              affectedTargetIds={affectedTargetIds}
+              targetCount={targetCount}
+              onSelectTarget={setSelectedTargetId}
+              onAction={handleAction}
+              onCapture={handleCapture}
+              mode={mode}
+              canAct={canAct && (mode === 'catch' ? !!selectedTargetId : !!(selectedSkillId && selectedTargetId))}
+            />
+          </>
+        )}
       </div>
 
       {/* Battle log */}
       <div style={{
-        position: 'absolute', right: 22, top: 78, width: 280, maxHeight: 320,
+        position: 'absolute', right: 22, top: 78, width: 280,
+        maxHeight: battle.phase === 'end' ? 420 : 320,
         background: 'rgba(243,237,224,0.85)', border: '1px solid var(--ink-3)',
         backdropFilter: 'blur(2px)', padding: '10px 12px',
         fontFamily: 'var(--font-body)', fontSize: 12, lineHeight: 1.55,
         color: 'var(--ink-2)', zIndex: 6, overflowY: 'auto',
+        transition: 'max-height 0.3s',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 6, borderBottom: '1px dashed var(--ink-4)', marginBottom: 6 }}>
           <span className="brush" style={{ fontSize: 14, color: 'var(--vermilion)' }}>战 报</span>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-4)', letterSpacing: 1 }}>BATTLE LOG</span>
         </div>
         {[...battle.log].reverse().map((line, i) => {
-          const isSys = line.startsWith('【') || line.startsWith('战斗') || line.startsWith('我方') || line.startsWith('—')
+          const isVictory = line.startsWith('战斗胜利')
+          const isDefeat  = line.startsWith('我方溃败')
+          const isReward  = /^(经验|获得)/.test(line)
+          const isDivider = line.startsWith('— —')
+          const isSys = line.startsWith('【') || line.startsWith('战斗') || line.startsWith('我方') || isDivider
+          const color = isVictory ? 'var(--gold)'
+            : isDefeat ? 'var(--vermilion)'
+            : isReward ? 'var(--bamboo)'
+            : isDivider ? 'var(--ink-4)'
+            : isSys ? 'var(--bamboo)'
+            : 'var(--ink-2)'
           return (
-            <div key={i} style={{ marginBottom: 4, opacity: Math.max(0.25, 1 - i * 0.07), fontSize: 11, lineHeight: 1.5 }}>
-              <span style={{ color: isSys ? 'var(--bamboo)' : 'var(--ink-2)' }}>{line}</span>
+            <div key={i} style={{ marginBottom: 4, opacity: Math.max(0.25, 1 - i * 0.06), fontSize: 11, lineHeight: 1.5 }}>
+              <span style={{ color, fontWeight: (isVictory || isDefeat) ? 600 : 'normal' }}>{line}</span>
             </div>
           )
         })}

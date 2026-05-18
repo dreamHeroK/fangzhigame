@@ -131,6 +131,81 @@ export function expIntoCurrentLevel(totalExp) {
   return Math.max(0, totalExp - totalExpToReachLevel(lv))
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 宠物升级经验（端游参数，约为人物 65%；宠物满级 100）
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const PET_MAX_LEVEL = 100
+
+/**
+ * 宠物等级经验节点（稀疏，中间线性插值）
+ * 数值约为同级人物经验 × 0.65
+ */
+export const PET_EXP_KNOTS = Object.freeze([
+  [1,    80],
+  [2,   150],
+  [3,   240],
+  [5,   503],
+  [10,  1544],
+  [15,  4174],
+  [20,  11822],
+  [25,  29418],
+  [30,  77979],
+  [40,  438205],
+  [50,  1801603],
+  [55,  3176340],
+  [60,  5593722],
+  [65,  9847500],
+  [70,  17322500],
+  [75,  30485000],
+  [80,  53625000],
+  [85,  94250000],
+  [90,  165750000],
+  [95,  291200000],
+  [100, 96174000],
+])
+
+/**
+ * 宠物从 level 升到 level+1 所需经验。
+ */
+export function petExpRequiredToNextLevel(level) {
+  const L = Math.floor(level)
+  if (L < 1) return PET_EXP_KNOTS[0][1]
+  if (L >= PET_MAX_LEVEL) return 0
+
+  const knots = PET_EXP_KNOTS
+  let i = 0
+  while (i + 1 < knots.length && knots[i + 1][0] <= L) i++
+
+  const [la, va] = knots[i]
+  if (L === la) return va
+
+  const nextK = knots[i + 1]
+  if (!nextK) return va
+  const [lb, vb] = nextK
+  if (L <= la || lb <= la) return va
+  const t = (L - la) / (lb - la)
+  return Math.round(va + (vb - va) * t)
+}
+
+/**
+ * 给宠物增加经验，自动升级，返回 { level, expIntoLevel, levelsGained }。
+ */
+export function applyPetExp(currentLevel, currentExpIntoLevel, gainedExp) {
+  let lv   = Math.min(PET_MAX_LEVEL, Math.max(1, Math.floor(currentLevel)))
+  let pool = Math.max(0, Number(currentExpIntoLevel) || 0) + Math.max(0, Number(gainedExp) || 0)
+  let levelsGained = 0
+  while (lv < PET_MAX_LEVEL) {
+    const need = petExpRequiredToNextLevel(lv)
+    if (need <= 0 || pool < need) break
+    pool -= need
+    lv++
+    levelsGained++
+  }
+  if (lv >= PET_MAX_LEVEL) pool = 0
+  return { level: lv, expIntoLevel: pool, levelsGained }
+}
+
 /**
  * 升到下一级还需经验；已满级返回 0。
  */

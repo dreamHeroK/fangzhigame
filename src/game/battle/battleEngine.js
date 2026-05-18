@@ -1,4 +1,5 @@
-﻿import { getSkill } from './skills.js'
+﻿import { expRequiredToNextLevel, petExpRequiredToNextLevel } from '../characterLevelConfig.js'
+import { getSkill } from './skills.js'
 import {
   elementDamageFactor,
   mantleBloodHeal,
@@ -29,20 +30,59 @@ function pushLog(state, line) {
   return { ...state, log }
 }
 
+export const STATUS_LABELS = { poison: '中毒', freeze: '冰冻', sleep: '昏睡', confuse: '混乱', forget: '遗忘' }
+const STATUS_EXPIRE_MSG = {
+  poison:  '中毒已解除。',
+  freeze:  '解冻，可以行动。',
+  sleep:   '苏醒过来。',
+  confuse:  '恢复神智，不再混乱。',
+  forget:  '恢复记忆，可以施法。',
+}
+
+/**
+ * 端游经验计算：每只怪 ≈ 0.2% 同级升级经验，宠物 ≈ 0.2% 宠物升级经验。
+ * 100 场同级战（5 怪/场）≈ 升一级，与端游节奏一致。
+ */
+function calcVictoryRewards(foes, rng) {
+  let exp    = 0
+  let petExp = 0
+  let gold   = 0
+  for (const f of foes) {
+    const L = Math.max(1, f.level)
+    exp    += Math.max(10, Math.floor(expRequiredToNextLevel(L) * 0.002))
+    petExp += Math.max(5,  Math.floor(petExpRequiredToNextLevel(L) * 0.002))
+    gold   += Math.floor(L * (2 + rng() * 3))
+  }
+  return { exp, petExp, gold }
+}
+
 /** @param {Array<{ itemId: string, qty: number }>} [extraLoot] 例如捕捉最后一只时补上已从场上移除的怪 */
 function finalizeVictory(s, rng, extraLoot = []) {
   const foes = s.units.filter((u) => u.side === 'foe')
   const fromField = rollBattleDrops(foes, rng)
   const lastVictoryLoot = mergeLootStacks([...fromField, ...extraLoot])
+  const { exp, petExp, gold } = calcVictoryRewards(foes, rng)
+  // 给每条 loot 附上可读名称，方便 UI 直接渲染
+  const lastVictoryLootNamed = lastVictoryLoot.map(l => ({
+    ...l, name: getConsumable(l.itemId)?.name ?? l.itemId,
+  }))
   const lootMsg = formatLootLine(lastVictoryLoot)
+  const rewardLines = [
+    '— — — — — — — — — —',
+    '战斗胜利。',
+    `人物经验 +${exp.toLocaleString()}　宠物经验 +${petExp.toLocaleString()}`,
+    `银两 +${gold.toLocaleString()}`,
+    lootMsg,
+  ]
   return {
     ...s,
     phase: 'end',
     outcome: 'victory',
     awaitingActorId: null,
-    lastVictoryLoot,
+    lastVictoryLoot: lastVictoryLootNamed,
+    victoryRewards: { exp, petExp, gold },
     victoryLootNonce: `${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
-    log: [...s.log, '战斗胜利。', lootMsg].slice(-80),
+    log: [...s.log, ...rewardLines].slice(-80),
   }
 }
 
@@ -78,7 +118,9 @@ function patchUnit(state, id, patch) {
 }
 
 function baseDamage(attacker, defender, skillId, rng = Math.random) {
-  const sk = getSkill(skillId)
+  const skillLevel = attacker.skillLevels?.[skillId] ?? 0
+  const sk = getSkill(skillId, skillLevel)
+  if (sk.power <= 0) return 0  // 障碍/控制技能：不造成直接伤害
   const atkTemp = attacker.side === 'ally' ? (attacker.innateTempAtkMul ?? 1) : 1
   const defTemp = defender.side === 'ally' ? 1 + (defender.innateTempDefBonus ?? 0) : 1
   const physAtk = attacker.atk * (attacker.passiveAtkMul ?? 1) * atkTemp
@@ -106,9 +148,17 @@ function applyStrike(state, attackerId, defenderId, skillId, rng) {
   const attacker = getActor(state, attackerId)
   const defender = getActor(state, defenderId)
   if (!attacker || !defender || defender.hp <= 0) return { state, damage: 0 }
-  const raw = baseDamage(attacker, defender, skillId, rng)
-  const incoming = resolveIncomingInnate(defender, skillId, raw, rng)
+  // 冰冻：无敌，攻击无效
+  if (defender.statusEffects?.some(e => e.type === 'freeze')) return { state, damage: 0 }
   let s = state
+  // 昏睡：受击即苏醒
+  if (defender.statusEffects?.some(e => e.type === 'sleep')) {
+    s = patchUnit(s, defenderId, { statusEffects: defender.statusEffects.filter(e => e.type !== 'sleep') })
+    s = pushLog(s, `${defender.name} 受击惊醒！`)
+  }
+  const raw = baseDamage(attacker, defender, skillId, rng)
+  if (raw === 0) return { state: s, damage: 0 }  // 控制技能：接触但无伤害
+  const incoming = resolveIncomingInnate(defender, skillId, raw, rng)
   for (const line of incoming.logs) s = pushLog(s, line)
   const dmg = incoming.damage
   s = applyDamage(s, defenderId, dmg)
@@ -166,6 +216,81 @@ function advanceRoundPointer(state) {
   return rebuildRoundQueue({ ...state, roundIndex: 0 })
 }
 
+// ── 状态效果辅助 ──────────────────────────────────────────────────────────
+
+function addStatusEffect(state, targetId, effect) {
+  const t = getActor(state, targetId)
+  if (!t || t.hp <= 0) return state
+  const effects = (t.statusEffects ?? []).filter(e => e.type !== effect.type)
+  return patchUnit(state, targetId, { statusEffects: [...effects, effect] })
+}
+
+/** 按命中率决定是否施加状态；tier≥4 命中率极高（强控） */
+function tryApplyStatus(state, casterId, targetId, skill, rng) {
+  const { statusEffect } = skill
+  if (!statusEffect) return state
+  const caster = getActor(state, casterId)
+  const target = getActor(state, targetId)
+  if (!target || target.hp <= 0) return state
+  // 冰冻目标已处于封锁状态，不再叠加其他控制
+  if (target.statusEffects?.some(e => e.type === 'freeze')) return state
+  const skillLevel = caster?.skillLevels?.[skill.id] ?? 0
+  const levelDiff = Math.max(0, (target.level ?? 1) - (caster?.level ?? 1))
+  const tier = skill.tier ?? 1
+  const rate = tier >= 4
+    ? 0.88
+    : Math.max(0.12, Math.min(0.92, 0.55 + skillLevel * 0.0025 - levelDiff * 0.025))
+  if (rng() > rate) return pushLog(state, `【${STATUS_LABELS[statusEffect.type]}】未能命中 ${target.name}。`)
+  const s = addStatusEffect(state, targetId, { ...statusEffect })
+  return pushLog(s, `${target.name} 陷入【${STATUS_LABELS[statusEffect.type]}】（${statusEffect.duration}回合）！`)
+}
+
+/** 每回合开始时处理状态效果，返回 { state, skipTurn, actRandomly } */
+function processStatusTick(state, actorId, rng) {
+  const actor = getActor(state, actorId)
+  if (!actor?.statusEffects?.length) return { state, skipTurn: false, actRandomly: false }
+  let s = state
+  let skipTurn = false
+  let actRandomly = false
+  const remaining = []
+  for (const eff of actor.statusEffects) {
+    if (eff.type === 'poison') {
+      const dmg = Math.max(1, Math.round(actor.maxHp * (eff.tickPct ?? 0.05)))
+      s = applyDamage(s, actorId, dmg)
+      s = pushLog(s, `${actor.name} 中毒发作，流失 ${dmg} 气血。`)
+    } else if (eff.type === 'freeze') {
+      skipTurn = true
+      s = pushLog(s, `${actor.name} 被冰封，无法行动。`)
+    } else if (eff.type === 'sleep') {
+      skipTurn = true
+      s = pushLog(s, `${actor.name} 昏睡中，无法行动。`)
+    } else if (eff.type === 'confuse') {
+      actRandomly = true
+      s = pushLog(s, `${actor.name} 神志混乱！`)
+    }
+    // forget: 不跳过回合，仅限制技能，在行动时处理
+    const newDur = eff.duration - 1
+    if (newDur > 0) remaining.push({ ...eff, duration: newDur })
+    else {
+      const msg = STATUS_EXPIRE_MSG[eff.type]
+      if (msg) s = pushLog(s, `${actor.name} ${msg}`)
+    }
+  }
+  s = patchUnit(s, actorId, { statusEffects: remaining })
+  return { state: s, skipTurn, actRandomly }
+}
+
+/** 混乱状态：随机攻击任意存活单位（包括友军） */
+function executeConfusedTurn(state, actor, rng) {
+  const allLiving = state.units.filter(u => u.hp > 0 && u.id !== actor.id)
+  if (!allLiving.length) return state
+  const target = allLiving[Math.floor(rng() * allLiving.length)]
+  const res = applyStrike(state, actor.id, target.id, 'normal_attack', rng)
+  return pushLog(res.state, `${actor.name} 神志混乱，随机攻击了 ${target.name}，造成 ${res.damage} 伤害！`)
+}
+
+// ── 普通辅助 ──────────────────────────────────────────────────────────────
+
 function pickRandomLiving(state, side, rng) {
   const pool = living(state, side)
   if (pool.length === 0) return null
@@ -173,6 +298,8 @@ function pickRandomLiving(state, side, rng) {
 }
 
 function monsterChooseAction(state, monster, rng) {
+  // 遗忘状态：只能普通攻击
+  if (monster.statusEffects?.some(e => e.type === 'forget')) return { skillId: 'normal_attack' }
   const pool = monster.skillPool.map(getSkill)
   const usable = pool.filter((s) => s.mpCost <= monster.mp && s.id !== 'normal_attack')
   const useSkill = usable.length > 0 && rng() < 0.42
@@ -200,26 +327,34 @@ function defaultAllyName(i) {
  */
 export function createBattle(opts = {}) {
   const rng = opts.rng ?? Math.random
-  const partySize = clamp(opts.partySize ?? 2, 1, 5)
   const mapId = opts.mapId ?? DEFAULT_MAP_ID
   const map = getMapById(mapId)
-  const allies = []
-  for (let i = 0; i < partySize; i++) {
-    allies.push(
-      createAllyUnit(
-        opts.allyNames?.[i] ?? defaultAllyName(i),
-        opts.allyStats ?? {
-          level: 12,
-          maxHp: 320,
-          maxMp: 120,
-          atk: 42,
-          def: 18,
-          speed: 17 + i,
-        },
-        opts.allySkills ?? allySkillPoolDefault()
+
+  // 支持直接传入预构建单位（玩家+宠物场景）
+  let allies
+  if (opts.allyUnits?.length > 0) {
+    allies = [...opts.allyUnits]
+  } else {
+    const n = clamp(opts.partySize ?? 2, 1, 5)
+    allies = []
+    for (let i = 0; i < n; i++) {
+      allies.push(
+        createAllyUnit(
+          opts.allyNames?.[i] ?? defaultAllyName(i),
+          opts.allyStats ?? {
+            level: 12,
+            maxHp: 320,
+            maxMp: 120,
+            atk: 42,
+            def: 18,
+            speed: 17 + i,
+          },
+          opts.allySkills ?? allySkillPoolDefault()
+        )
       )
-    )
+    }
   }
+  const partySize = clamp(allies.length, 1, 5)
   const wantsBoss = opts.encounter === 'world_boss' && opts.worldBossKey
   const bossFoes = wantsBoss
     ? buildWorldBossEncounter(opts.worldBossKey, { scale: opts.foeScale ?? 1 })
@@ -254,8 +389,8 @@ export function tickUntilInputOrEnd(state, rng = Math.random) {
     const out = battleOutcome(s)
     if (out) {
       if (out === 'victory') return finalizeVictory(s, rng)
-      const msg = '我方溃败。'
-      return { ...s, phase: 'end', outcome: out, awaitingActorId: null, log: [...s.log, msg].slice(-80) }
+      return { ...s, phase: 'end', outcome: out, awaitingActorId: null,
+        log: [...s.log, '— — — — — — — — — —', '我方溃败。'].slice(-80) }
     }
     const idx = nextActorIndex(s)
     if (idx < 0) {
@@ -270,11 +405,14 @@ export function tickUntilInputOrEnd(state, rng = Math.random) {
     }
     if (actor.side === 'ally') {
       s = startOfTurnHooks({ ...s, roundIndex: idx }, actor.id, rng)
-      const a = getActor(s, actorId)
-      if (!a || a.hp <= 0) {
-        s = { ...s, roundIndex: idx + 1 }
-        continue
-      }
+      let a = getActor(s, actorId)
+      if (!a || a.hp <= 0) { s = { ...s, roundIndex: idx + 1 }; continue }
+      const { state: s2, skipTurn, actRandomly } = processStatusTick(s, actorId, rng)
+      s = s2
+      a = getActor(s, actorId)
+      if (!a || a.hp <= 0) { s = { ...s, roundIndex: idx + 1 }; continue }
+      if (skipTurn) { s = advanceRoundPointer(s); continue }
+      if (actRandomly) { s = executeConfusedTurn(s, a, rng); s = advanceRoundPointer(s); continue }
       return { ...s, awaitingActorId: a.id, roundIndex: idx }
     }
     s = executeFoeTurn({ ...s, roundIndex: idx }, actor, rng)
@@ -285,8 +423,14 @@ export function tickUntilInputOrEnd(state, rng = Math.random) {
 
 function executeFoeTurn(state, monster, rng) {
   let s = startOfTurnHooks(state, monster.id, rng)
-  const m = getActor(s, monster.id)
+  let m = getActor(s, monster.id)
   if (!m || m.hp <= 0) return s
+  const { state: s2, skipTurn, actRandomly } = processStatusTick(s, monster.id, rng)
+  s = s2
+  m = getActor(s, monster.id)
+  if (!m || m.hp <= 0) return s
+  if (skipTurn) return s
+  if (actRandomly) return executeConfusedTurn(s, m, rng)
   const choice = monsterChooseAction(s, m, rng)
   const skill = getSkill(choice.skillId)
   const target = pickRandomLiving(s, 'ally', rng)
@@ -297,10 +441,15 @@ function executeFoeTurn(state, monster, rng) {
   const dmg = res.damage
   const tgt = getActor(s, target.id)
   const mpNote = skill.mpCost > 0 ? `（耗 MP ${skill.mpCost}）` : ''
-  s = pushLog(
-    s,
-    `${m.name} 使用【${skill.name}】${mpNote} → ${tgt?.name ?? target.name} 受到 ${dmg} 点伤害。`
-  )
+  if (dmg > 0) {
+    s = pushLog(s, `${m.name} 使用【${skill.name}】${mpNote} → ${tgt?.name ?? target.name} 受到 ${dmg} 点伤害。`)
+  } else {
+    s = pushLog(s, `${m.name} 对 ${tgt?.name ?? target.name} 施放【${skill.name}】${mpNote}。`)
+  }
+  if (skill.statusEffect) {
+    const tgtNow = getActor(s, target.id)
+    if (tgtNow && tgtNow.hp > 0) s = tryApplyStatus(s, m.id, target.id, skill, rng)
+  }
   return s
 }
 
@@ -349,7 +498,12 @@ export function submitPlayerAction(state, { actorId, skillId, targetId, targetId
   if (state.awaitingActorId !== actorId) return state
   const actor = getActor(state, actorId)
   if (!actor || actor.side !== 'ally') return state
-  const skill = getSkill(skillId)
+
+  // 遗忘：无法使用消耗灵力的技能，强制普通攻击
+  const hasForget = actor.statusEffects?.some(e => e.type === 'forget')
+  const effectiveSkillId = hasForget && skillId !== 'normal_attack' ? 'normal_attack' : skillId
+  const skill = getSkill(effectiveSkillId)
+
   if (!actor.skillPool.includes(skill.id)) return state
   if (actor.mp < skill.mpCost) return state
 
@@ -363,14 +517,30 @@ export function submitPlayerAction(state, { actorId, skillId, targetId, targetId
   for (const tgt of validTargets) {
     const res = applyStrike(s, actor.id, tgt.id, skill.id, rng)
     s = res.state
-    hits.push({ name: getActor(s, tgt.id)?.name ?? tgt.name, damage: res.damage })
+    hits.push({ name: getActor(s, tgt.id)?.name ?? tgt.name, damage: res.damage, id: tgt.id })
   }
 
+  const forceNote = hasForget && skillId !== 'normal_attack' ? '（遗忘·强制普攻）' : ''
   const mpNote = skill.mpCost > 0 ? `（耗 MP ${skill.mpCost}）` : ''
-  const hitDesc = hits.length === 1
-    ? `${hits[0].name} 受到 ${hits[0].damage} 点伤害`
-    : `${hits.map((h) => h.name).join('、')} 各受 ${hits.map((h) => h.damage).join('、')} 点伤害（合计 ${hits.reduce((a, h) => a + h.damage, 0)}）`
-  s = pushLog(s, `${actor.name} 使用【${skill.name}】${mpNote} → ${hitDesc}。`)
+  const totalDmg = hits.reduce((a, h) => a + h.damage, 0)
+  if (totalDmg > 0) {
+    const hitDesc = hits.length === 1
+      ? `${hits[0].name} 受到 ${hits[0].damage} 点伤害`
+      : `${hits.map((h) => h.name).join('、')} 各受 ${hits.map((h) => h.damage).join('、')} 点伤害（合计 ${totalDmg}）`
+    s = pushLog(s, `${actor.name}${forceNote} 使用【${skill.name}】${mpNote} → ${hitDesc}。`)
+  } else {
+    const targetNames = hits.map(h => h.name).join('、')
+    s = pushLog(s, `${actor.name}${forceNote} 对 ${targetNames} 施放【${skill.name}】${mpNote}。`)
+  }
+
+  // 障碍技能：尝试对存活目标施加状态效果
+  if (skill.statusEffect) {
+    for (const hit of hits) {
+      const tgtNow = getActor(s, hit.id)
+      if (tgtNow && tgtNow.hp > 0) s = tryApplyStatus(s, actor.id, hit.id, skill, rng)
+    }
+  }
+
   s = { ...s, awaitingActorId: null }
   s = advanceRoundPointer(s)
   s = tickUntilInputOrEnd(s, rng)

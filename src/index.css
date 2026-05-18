@@ -251,7 +251,20 @@ body {
   position: relative;
 }
 
-/* 飘字 */
+/* 飘雪伤害数字 */
+@keyframes floatDmg {
+  0%   { opacity: 1;    transform: translateY(0)     translateX(0)                         scale(1);    }
+  12%  { opacity: 1;    transform: translateY(-16px)  translateX(var(--fd, 6px))            scale(1.15); }
+  55%  { opacity: 0.88; transform: translateY(-56px)  translateX(calc(var(--fd, 6px)*1.35)) scale(0.92); }
+  100% { opacity: 0;    transform: translateY(-100px) translateX(calc(var(--fd, 6px)*1.8))  scale(0.58); }
+}
+/* 连击附加数字：更短、横向 */
+@keyframes floatCombo {
+  0%   { opacity: 1;    transform: translateY(0)    translateX(0)   scale(1);    }
+  15%  { opacity: 1;    transform: translateY(-8px)  translateX(var(--fd, 6px)) scale(1.1); }
+  100% { opacity: 0;    transform: translateY(-70px) translateX(calc(var(--fd, 6px)*1.6)) scale(0.7); }
+}
+
 .damage-float {
   position: absolute;
   font-family: var(--font-brush);
@@ -260,12 +273,23 @@ body {
   text-shadow:
     1px 1px 0 var(--paper),
     -1px -1px 0 var(--paper),
-    2px 2px 4px rgba(0,0,0,0.3);
+    2px 2px 6px rgba(0,0,0,0.4);
   font-weight: 700;
   pointer-events: none;
+  white-space: nowrap;
+  animation: floatDmg 1.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  transform-origin: center bottom;
 }
-.damage-crit { color: #c4501a; font-size: 36px; }
-.damage-heal { color: var(--bamboo); }
+/* 大伤害 / 暴击：橙红加大 */
+.damage-crit  { color: #c4501a; font-size: 38px; }
+/* 连击追加：金色偏小 */
+.damage-combo {
+  color: var(--gold-2);
+  font-size: 22px;
+  animation: floatCombo 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+/* 回复 */
+.damage-heal  { color: var(--bamboo); }
 
 /* 标签页 */
 .tab-list {

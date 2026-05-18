@@ -1,10 +1,11 @@
-import React, { useState } from 'react'
+import React, { useState, useSyncExternalStore } from 'react'
 import CombatScreen from './components/CombatScreen.jsx'
 import CharacterScreen from './components/CharacterScreen.jsx'
 import SkillsScreen from './components/SkillsScreen.jsx'
 import PetsScreen from './components/PetsScreen.jsx'
 import BagScreen from './components/BagScreen.jsx'
 import { QuestScreen, ShopScreen, SignScreen, WorldMapScreen } from './components/MiscScreens.jsx'
+import { subscribe, getSnapshot } from './game/characterStore.js'
 
 const SCREENS = [
   { id: 'combat',    label: '战斗',  component: CombatScreen },
@@ -20,6 +21,7 @@ const SCREENS = [
 
 export default function App() {
   const [active, setActive] = useState('combat')
+  const char = useSyncExternalStore(subscribe, getSnapshot)
   const Screen = SCREENS.find((s) => s.id === active)?.component ?? CombatScreen
 
   return (
@@ -37,7 +39,7 @@ export default function App() {
         ))}
         <div style={{ flex: 1 }} />
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-4)', letterSpacing: 1 }}>
-          天行健 · Lv50 · 金系
+          {char.name} · Lv{char.level} · {char.school}系
         </div>
       </nav>
       <div className="screen-wrap">

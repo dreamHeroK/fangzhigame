@@ -5,6 +5,7 @@ import {
   sumGrowthParts,
 } from './petGrowthTable.js'
 import { WENDAO_MAPS } from './wendaoMapsConfig.js'
+import { getPetByKey } from '../petCatalog.js'
 
 function spawnLabel(key) {
   for (const m of WENDAO_MAPS) {
@@ -60,6 +61,53 @@ export function createWildPetFromFoe(foe, rng = Math.random) {
     speed: st.speed,
     mAtk: st.mAtk,
     notes: '战斗中怪物无天生；成长资质见 growthDetail。宠物可勾选启用天生（后续出战）。',
+  }
+}
+
+const SCHOOL_SLUG = { 金: 'jin', 木: 'mu', 水: 'shui', 火: 'huo', 土: 'tu' }
+
+/** 按宠物等级和相性生成技能池（B系攻击为主） */
+function buildPetSkillPool(level, affinity) {
+  const pool = ['normal_attack']
+  const slug = SCHOOL_SLUG[affinity]
+  if (!slug) return pool
+  if (level >= 10)  pool.push(`${slug}_B1`)
+  if (level >= 19)  pool.push(`${slug}_B2`)
+  if (level >= 38)  pool.push(`${slug}_B3`)
+  if (level >= 60)  pool.push(`${slug}_B4`)
+  if (level >= 100) pool.push(`${slug}_B5`)
+  return pool
+}
+
+/**
+ * 把宠物 roster 条目转换为战斗单位（side: 'ally'）
+ * @param {{ id, spawnKey, displayName, kind, level, growth, innateIds }} pet
+ */
+export function createPetAllyUnit(pet) {
+  const isBaby = pet.kind === '宝宝'
+  const stats = computeStatsFromGrowth(pet.level, pet.growth, { baby: isBaby })
+  const catalog = getPetByKey(pet.spawnKey)
+  const affinity = catalog?.affinity ?? null
+  const skillPool = buildPetSkillPool(pet.level, affinity)
+  return {
+    id: `petunit_${pet.id}`,
+    side: 'ally',
+    kind: 'pet',
+    templateKey: pet.spawnKey,
+    name: pet.displayName,
+    level: pet.level,
+    maxHp: stats.maxHp,
+    hp: stats.maxHp,
+    maxMp: stats.maxMp,
+    mp: stats.maxMp,
+    atk: stats.atk,
+    mAtk: stats.mAtk,
+    def: stats.def,
+    speed: stats.speed,
+    skillPool,
+    skillLevels: {},
+    affinity,
+    innateSkillIds: pet.innateIds ?? [],
   }
 }
 

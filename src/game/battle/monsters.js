@@ -30,23 +30,25 @@ export function inferSkillPool(spawn, isBoss = false) {
 
   if (tags.has('world_boss') || isBoss) {
     add('liehuo', 'leiji', 'lipojun', 'shuiyan', 'bingdong')
+    // 首领掌握障碍技能：金系遗忘 + 水系冰冻 + 火系昏睡
+    add('jin_C1', 'shui_C2', 'huo_C1')
   }
   if (tags.has('undead')) add('shidu', 'gutu')
-  if (tags.has('ghost')) add('yaofeng', 'bingdong', 'shidu')
+  if (tags.has('ghost')) add('yaofeng', 'bingdong', 'shidu', 'huo_C1')     // 鬼魂：昏睡
   if (tags.has('aquatic')) add('shuiyan', 'bingdong')
-  if (tags.has('dragon')) add('liehuo', 'leiji', 'shuiyan')
+  if (tags.has('dragon')) add('liehuo', 'leiji', 'shuiyan', 'shui_C1')    // 龙：冰冻
   if (tags.has('fire')) add('liehuo')
   if (tags.has('ice')) add('bingdong', 'shuiyan')
   if (tags.has('thunder') || tags.has('metal')) add('leiji')
   if (tags.has('wood') || tags.has('spirit')) add('yaofeng', 'duci')
-  if (tags.has('venom') || tags.has('insect')) add('duci')
+  if (tags.has('venom') || tags.has('insect')) add('duci', 'mu_C1')        // 毒系：中毒DoT
   if (tags.has('beast') && !tags.has('dragon')) add('shixin', 'chuangji')
   if (tags.has('bird')) add('liehuo', 'yaofeng')
   if (tags.has('demon')) add('liehuo', 'duci', 'lipojun')
-  if (tags.has('fox')) add('yaofeng', 'duci')
+  if (tags.has('fox')) add('yaofeng', 'duci', 'huo_C1')                   // 狐系：昏睡
   if (tags.has('wind')) add('yaofeng', 'duci')
   if (tags.has('dark')) add('shidu', 'yaofeng')
-  if (tags.has('humanoid') && spawn.level >= 60) add('lipojun', 'leiji')
+  if (tags.has('humanoid') && spawn.level >= 60) add('lipojun', 'leiji', 'jin_C1')  // 高阶人形：遗忘
   if (spawn.level >= 45 && !tags.has('beast')) add('bingdong')
   if (spawn.level >= 70) add('lipojun')
 
@@ -186,6 +188,8 @@ export function createAllyUnit(name, stats, skillIds) {
     def: stats.def,
     speed: stats.speed,
     skillPool: skillIds ?? allySkillPoolDefault(),
+    /** Record<skillId, number> 技能修炼等级（来自 characterStore） */
+    skillLevels: stats.skillLevels ?? {},
   }
 }
 

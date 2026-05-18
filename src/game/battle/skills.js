@@ -12,6 +12,13 @@ const C_MP  = [30,  42,  65,  88,  130]
 const C_PWR = [0.65, 0.78, 0.90, 1.00, 1.10]
 const D_MP  = [28,  40,  60,  80,  120]
 
+/** 五系障碍状态：金→遗忘 木→中毒 水→冰冻 火→昏睡 土→混乱 */
+const STATUS_BY_SCHOOL = { 金: 'forget', 木: 'poison', 水: 'freeze', 火: 'sleep', 土: 'confuse' }
+/** 各阶持续回合数 */
+const STATUS_DURATION  = [2, 2, 3, 3, 4]
+/** 中毒每回合掉血百分比（木系专用） */
+const POISON_PCT       = [0.05, 0.06, 0.08, 0.10, 0.13]
+
 /** 从 targetNote 解析最大攻击目标数：取字串中最大数字，"单体…" → 1 */
 function parseMaxTargets(targetNote) {
   if (!targetNote || /单体/.test(targetNote) || /强控/.test(targetNote) || /辅助/.test(targetNote)) return 1
@@ -24,13 +31,18 @@ function deriveSkill(sk) {
   const elem = SCHOOL_ELEM[sk.school] ?? null
   const maxTargets = parseMaxTargets(sk.targetNote)
   if (sk.branch === 'B') {
-    return { id: sk.id, name: sk.name, kind: 'magic', mpCost: B_MP[t], power: B_PWR[t], element: elem, desc: sk.targetNote, maxTargets }
+    return { id: sk.id, name: sk.name, kind: 'magic', branch: 'B', mpCost: B_MP[t], power: B_PWR[t], element: elem, desc: sk.targetNote, maxTargets }
   }
   if (sk.branch === 'C') {
-    return { id: sk.id, name: sk.name, kind: 'magic', mpCost: C_MP[t], power: C_PWR[t], element: elem, desc: sk.targetNote, maxTargets }
+    const statusType = STATUS_BY_SCHOOL[sk.school] ?? 'forget'
+    return {
+      id: sk.id, name: sk.name, kind: 'control', branch: 'C', tier: sk.tier,
+      mpCost: C_MP[t], power: 0, element: elem, desc: sk.targetNote, maxTargets,
+      statusEffect: { type: statusType, duration: STATUS_DURATION[t], tickPct: POISON_PCT[t] },
+    }
   }
   // D 辅助：按物理处理，伤害低，主要用于 MP 消耗展示
-  return { id: sk.id, name: sk.name, kind: 'physical', mpCost: D_MP[t], power: 0.30, element: null, desc: sk.targetNote, maxTargets: 1 }
+  return { id: sk.id, name: sk.name, kind: 'physical', branch: 'D', mpCost: D_MP[t], power: 0.30, element: null, desc: sk.targetNote, maxTargets: 1 }
 }
 
 export const SKILLS = {
@@ -144,9 +156,51 @@ export const SKILLS = {
   },
 }
 
-export function getSkill(id) {
-  if (SKILLS[id]) return SKILLS[id]
-  const schoolSk = getSchoolSkillDef(id)
-  if (schoolSk) return deriveSkill(schoolSk)
-  return SKILLS.normal_attack
+/**
+ * 按技能修炼等级缩放功率与法力消耗（参考问道端游成长曲线）。
+ *
+ * B 攻击法术：power × (1 + lv*0.008 + (lv/100)²×0.5)，MP × (1 + lv*0.004)
+ * C 障碍法术：power × (1 + lv*0.005 + (lv/100)²×0.25)，MP 同 B
+ * D / 物理：   power × (1 + lv*0.003)，MP 微增
+ *
+ * lv = 0（未习得）时返回原始 base，保证怪物技能不受影响。
+ */
+function applySkillLevelScaling(sk, lv) {
+  if (!lv || lv <= 0) return sk
+  const t = lv / 100
+  const mpMul = 1 + lv * 0.004
+  if (sk.kind === 'magic') {
+    const isBranch = sk.branch  // deriveSkill 保留了 branch 字段
+    const isC = isBranch === 'C'
+    const pwrMul = isC
+      ? 1 + lv * 0.005 + t * t * 0.25
+      : 1 + lv * 0.008 + t * t * 0.50
+    return {
+      ...sk,
+      power:  sk.power  * pwrMul,
+      mpCost: Math.min(sk.mpCost * 2.5, Math.round(sk.mpCost * mpMul)),
+    }
+  }
+  // 物理 / D 辅助
+  return {
+    ...sk,
+    power:  sk.power  * (1 + lv * 0.003),
+    mpCost: Math.min(sk.mpCost * 2.0, Math.round(sk.mpCost * (1 + lv * 0.003))),
+  }
+}
+
+/**
+ * 获取技能定义；传入 skillLevel 时返回按等级缩放后的副本。
+ * @param {string} id
+ * @param {number} [skillLevel=0]
+ */
+export function getSkill(id, skillLevel = 0) {
+  let base
+  if (SKILLS[id]) {
+    base = SKILLS[id]
+  } else {
+    const schoolSk = getSchoolSkillDef(id)
+    base = schoolSk ? deriveSkill(schoolSk) : SKILLS.normal_attack
+  }
+  return applySkillLevelScaling(base, skillLevel)
 }

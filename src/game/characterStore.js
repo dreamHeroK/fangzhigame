@@ -1,8 +1,25 @@
 /**
- * 全局角色状态 - 技能习得、装备、资源
+ * 全局角色状态 - 技能习得、装备、资源、属性加点
  * useSyncExternalStore 兼容的轻量 store
  */
 import { getAllSchoolSkills, canLearnSkill, maxSkillLevelForChar } from './battle/schoolSkills.js'
+import {
+  getAttributePointBudget,
+  getAffinityPointBudget,
+  sumFour,
+  sumAffinity,
+  clampFourStats,
+  clampAffinity,
+  autoAllocateVitInt,
+  AFFINITY_CAP_PER_ELEMENT,
+  getFixedStatFloor,
+} from './playerSheet.js'
+import {
+  applyExpTowardLevelUp,
+  CHARACTER_MAX_LEVEL,
+  applyPetExp,
+  PET_MAX_LEVEL,
+} from './characterLevelConfig.js'
 
 const STORAGE_KEY = 'wendao_char_v1'
 
@@ -10,8 +27,34 @@ const DEFAULT_STATE = {
   name: '天行健',
   school: '金',
   level: 50,
-  tael: 248800,      // 银两
-  potential: 4820,   // 潜能
+  tael: 248800,
+  potential: 4820,
+
+  // ── 四维加点（自由点按等级预算分配，最低 = 等级值 per stat）──
+  // Lv50 budget=210, floor=50 each → 10 free (all into int)
+  vit: 50,
+  int: 60,
+  str: 50,
+  agi: 50,
+
+  // ── 相性（每系 0-30，总和受等级预算限制）──
+  // Lv50 budget=25 → 金系满25
+  affMetal: 25,
+  affWood: 0,
+  affWater: 0,
+  affFire: 0,
+  affEarth: 0,
+
+  // ── 资历 & 杂项 ──
+  daoYears: 12,
+  daoDays: 86,
+  fame: 1260,
+  staminaCur: 4520,
+  staminaMax: 5000,
+  meritRecord: 28,
+  expCur: 12840,        // legacy字段保留兼容
+  expIntoLevel: 12840,  // 本级已积累经验（等价于 expCur）
+
   /** Record<skillId, number> 已修炼等级；0 = 未习得 */
   skillLevels: {
     jin_B1: 65,
@@ -23,6 +66,7 @@ const DEFAULT_STATE = {
   },
   /** 战斗技能槽（最多 6 个；仅 B/C 系可装备） */
   equippedSkills: ['jin_B1', 'jin_B2', 'jin_B3'],
+
   /**
    * 宠物列表。每项格式：
    * { id, spawnKey, displayName, kind:'宝宝'|'野生', level, master?,
@@ -32,37 +76,37 @@ const DEFAULT_STATE = {
   petRoster: [
     {
       id: 'pet1', spawnKey: 'wulong', displayName: '乌龙·宝宝', kind: '宝宝',
-      level: 1, master: '天行健', active: true,
+      level: 1, expIntoLevel: 0, master: '天行健', active: true,
       growth: { hp: 72, mp: 78, spd: 56, pAtk: 2, mAtk: 58, totalBand: [210, 300] },
       innateIds: ['bianchangmoji', 'shemingyiji'],
     },
     {
       id: 'pet2', spawnKey: 'haigui', displayName: '海龟·野生', kind: '野生',
-      level: 25, master: '听雪楼', active: true,
+      level: 25, expIntoLevel: 0, master: '听雪楼', active: true,
       growth: { hp: 92, mp: 66, spd: 18, pAtk: 0, mAtk: 40, totalBand: [170, 260] },
       innateIds: ['fangweidujian'],
     },
     {
       id: 'pet3', spawnKey: 'huoya', displayName: '火鸦·宝宝', kind: '宝宝',
-      level: 1, master: '焚青劫', active: true,
+      level: 1, expIntoLevel: 0, master: '焚青劫', active: true,
       growth: { hp: 60, mp: 80, spd: 62, pAtk: 0, mAtk: 65, totalBand: [210, 300] },
       innateIds: ['shiwanhuoji', 'mantianxuewu'],
     },
     {
       id: 'pet4', spawnKey: 'taojing', displayName: '桃精·野生', kind: '野生',
-      level: 17, master: '一川烟', active: true,
+      level: 17, expIntoLevel: 0, master: '一川烟', active: true,
       growth: { hp: 50, mp: 70, spd: 44, pAtk: 0, mAtk: 40, totalBand: [160, 250] },
       innateIds: ['bamiaozhuzhang'],
     },
     {
       id: 'pet5', spawnKey: 'baiyuan', displayName: '白猿·野生', kind: '野生',
-      level: 22, master: '厚土君', active: true,
+      level: 22, expIntoLevel: 0, master: '厚土君', active: true,
       growth: { hp: 78, mp: 40, spd: 28, pAtk: 72, mAtk: 0, totalBand: [170, 260] },
       innateIds: ['fanzhuanqiankun'],
     },
     {
       id: 'pet6', spawnKey: 'xuenv', displayName: '雪女·野生', kind: '野生',
-      level: 75, active: false,
+      level: 75, expIntoLevel: 0, active: false,
       growth: { hp: 90, mp: 64, spd: 60, pAtk: 0, mAtk: 62, totalBand: [230, 320] },
       innateIds: ['fangweidujian', 'siwangchanmian'],
     },
@@ -74,7 +118,14 @@ function load() {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const saved = JSON.parse(raw)
-      return { ...DEFAULT_STATE, ...saved }
+      const merged = { ...DEFAULT_STATE, ...saved }
+      // 向前兼容：expCur 旧字段迁移
+      if (merged.expIntoLevel == null) merged.expIntoLevel = merged.expCur ?? 0
+      // 宠物缺失 expIntoLevel 时补零
+      merged.petRoster = (merged.petRoster ?? []).map(p =>
+        p.expIntoLevel == null ? { ...p, expIntoLevel: 0 } : p
+      )
+      return merged
     }
   } catch {}
   return { ...DEFAULT_STATE }
@@ -106,7 +157,52 @@ function patch(updates) {
   notify()
 }
 
-// --- 升级费用 ---
+// ── 属性加点 ────────────────────────────────────────────────────────────────
+
+/**
+ * 给指定四维属性加 1 点（消耗自由点）
+ * @param {'vit'|'int'|'str'|'agi'} stat
+ * @returns {{ ok: boolean, reason?: string }}
+ */
+export function addStatAction(stat) {
+  const budget = getAttributePointBudget(state.level)
+  const used = sumFour(state)
+  if (used >= budget) return { ok: false, reason: '无剩余属性点' }
+  if (!['vit', 'int', 'str', 'agi'].includes(stat)) return { ok: false, reason: '未知属性' }
+  patch({ [stat]: (state[stat] ?? 0) + 1 })
+  return { ok: true }
+}
+
+/**
+ * 给指定相性加 1 点
+ * @param {'Metal'|'Wood'|'Water'|'Fire'|'Earth'} elem
+ * @returns {{ ok: boolean, reason?: string }}
+ */
+export function addAffinityAction(elem) {
+  const key = 'aff' + elem
+  const budget = getAffinityPointBudget(state.level)
+  const used = sumAffinity(state)
+  if (used >= budget) return { ok: false, reason: '无剩余相性点' }
+  const cur = state[key] ?? 0
+  if (cur >= AFFINITY_CAP_PER_ELEMENT) return { ok: false, reason: `${elem}相性已达上限 30` }
+  patch({ [key]: cur + 1 })
+  return { ok: true }
+}
+
+/** 自动分配：剩余自由点按 3体:2灵 分配 */
+export function autoAllocateAction() {
+  const next = autoAllocateVitInt(state, state.level)
+  patch({ vit: next.vit, int: next.int, str: next.str, agi: next.agi })
+}
+
+/** 重置四维加点：各回归等级下限，释放自由点 */
+export function resetAllocAction() {
+  const floor = getFixedStatFloor(state.level)
+  patch({ vit: floor, int: floor, str: floor, agi: floor })
+}
+
+// ── 技能习得 ────────────────────────────────────────────────────────────────
+
 const TIER_GOLD = [480, 560, 720, 880, 1080]
 const TIER_POT  = [180, 220, 320, 420, 560]
 
@@ -157,6 +253,38 @@ export function equipSkillAction(skillId) {
   if (state.equippedSkills.length >= 6) return { ok: false, equipped: false, reason: '技能槽已满（最多6个）' }
   patch({ equippedSkills: [...state.equippedSkills, skillId] })
   return { ok: true, equipped: true }
+}
+
+/**
+ * 战斗胜利后落账奖励：角色经验、宠物经验（按参战宠物均分）、银两。
+ * @param {{ exp: number, petExp: number, gold: number }} rewards
+ * @param {string[]} activePetIds 参战宠物 id 列表（用于确认哪些宠物获得经验）
+ */
+export function applyBattleRewardsAction(rewards, activePetIds = []) {
+  const { exp = 0, petExp = 0, gold = 0 } = rewards
+
+  // ── 角色经验 ──
+  const charResult = applyExpTowardLevelUp(state.level, state.expIntoLevel ?? state.expCur ?? 0, exp)
+  const newLevel       = Math.min(CHARACTER_MAX_LEVEL, charResult.newLevel)
+  const newExpInto     = newLevel >= CHARACTER_MAX_LEVEL ? 0 : charResult.expIntoLevel
+
+  // ── 宠物经验（仅参战宠物，平均分配 petExp） ──
+  const petIds = new Set(activePetIds)
+  const petCount = Math.max(1, petIds.size)
+  const petExpEach = Math.floor(petExp / petCount)
+  const newPetRoster = state.petRoster.map(p => {
+    if (!petIds.has(p.id) || p.level >= PET_MAX_LEVEL) return p
+    const r = applyPetExp(p.level, p.expIntoLevel ?? 0, petExpEach)
+    return { ...p, level: r.level, expIntoLevel: r.expIntoLevel }
+  })
+
+  patch({
+    level:        newLevel,
+    expIntoLevel: newExpInto,
+    expCur:       newExpInto,
+    tael:         (state.tael ?? 0) + gold,
+    petRoster:    newPetRoster,
+  })
 }
 
 export function resetToDefaults() {
