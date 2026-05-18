@@ -1,8 +1,8 @@
-import React, { useSyncExternalStore, useState } from 'react'
+import React, { useSyncExternalStore, useState, useEffect } from 'react'
 import { Seal, Placeholder, CornerDeco, PanelHead, SubHead, Tag } from './common.jsx'
-import { subscribe, getSnapshot } from '../game/characterStore.js'
+import { subscribe, getSnapshot, setPetActiveAction, addPetAttrAction, resetPetAttrAction } from '../game/characterStore.js'
 import { getPetByKey, INNATE_NAMES, INNATE_DESC } from '../game/petCatalog.js'
-import { computeStatsFromGrowth } from '../game/battle/petGrowthTable.js'
+import { computeStatsFromGrowth, getPetFreeAttrTotal, sumPetAllocAttr, getPetAttrRates } from '../game/battle/petGrowthTable.js'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -154,10 +154,25 @@ const SchoolSkillsPanel = ({ affinity }) => {
   )
 }
 
-const PetDetail = ({ pet }) => {
+const ATTR_LABELS = { vit: '体质', int: '灵力', str: '力量', agi: '敏捷' }
+const ATTR_COLORS = { vit: 'var(--vermilion)', int: '#3a5a8a', str: 'var(--rust)', agi: 'var(--bamboo)' }
+// 每维对应的六维加成描述（键与 getPetAttrRates 返回一致）
+const ATTR_RATE_LABELS = {
+  vit: [{ key: 'hp', label: '气血' }, { key: 'def', label: '防御' }],
+  int: [{ key: 'mp', label: '法力' }, { key: 'mAtk', label: '法攻' }],
+  str: [{ key: 'atk', label: '物攻' }],
+  agi: [{ key: 'speed', label: '速度' }],
+}
+
+const PetDetail = ({ pet, onToggleActive, onAddAttr, onResetAttr }) => {
   const catalog = getPetByKey(pet.spawnKey)
   const g = pet.growth
-  const stats = computeStatsFromGrowth(pet.level, g, { baby: pet.kind === '宝宝' })
+  const alloc = pet.allocatedAttr ?? { vit: 0, int: 0, str: 0, agi: 0 }
+  const stats = computeStatsFromGrowth(pet.level, g, { baby: pet.kind === '宝宝', allocatedAttr: alloc })
+  const rates = getPetAttrRates(g, pet.level)
+  const totalAttr = getPetFreeAttrTotal(pet.level)
+  const usedAttr  = sumPetAllocAttr(alloc)
+  const freeAttr  = totalAttr - usedAttr
   const total = sumGrowth(g)
   const [tlo, thi] = g.totalBand
   const tGrade = totalGrade(total, tlo, thi)
@@ -288,6 +303,71 @@ const PetDetail = ({ pet }) => {
           )}
         </div>
 
+        {/* attr allocation */}
+        <div className="paper-bg scroll-frame" style={{ padding: 12, position: 'relative' }}>
+          <CornerDeco />
+          <SubHead
+            title="属性加点"
+            sub={`ATTR POINTS · 每级 5 点`}
+            right={
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: freeAttr > 0 ? 'var(--gold-2)' : 'var(--ink-4)' }}>
+                  剩余 <b>{freeAttr}</b> / {totalAttr}
+                </span>
+                <button
+                  className="btn-ink btn-ink-sm"
+                  style={{ fontSize: 10, padding: '1px 8px' }}
+                  onClick={onResetAttr}
+                  disabled={usedAttr === 0}
+                >
+                  重置
+                </button>
+              </span>
+            }
+          />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
+            {Object.keys(ATTR_LABELS).map(key => {
+              const pts = alloc[key] ?? 0
+              const dimRates = rates[key]
+              return (
+                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="brush" style={{ fontSize: 14, width: 32, color: ATTR_COLORS[key], flexShrink: 0 }}>
+                    {ATTR_LABELS[key]}
+                  </span>
+                  {/* 已加点数 */}
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: pts > 0 ? 'var(--gold-2)' : 'var(--ink-4)', minWidth: 34 }}>
+                    {pts > 0 ? `已+${pts}` : '0点'}
+                  </span>
+                  {/* 每点效果（成长资质决定） */}
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-3)', flex: 1 }}>
+                    {ATTR_RATE_LABELS[key].map(({ key: rk, label }) =>
+                      `${label}+${dimRates[rk]}/点`
+                    ).join('  ')}
+                  </span>
+                  <button
+                    onClick={() => onAddAttr(key)}
+                    disabled={freeAttr <= 0}
+                    style={{
+                      fontSize: 11, padding: '1px 10px',
+                      background: freeAttr > 0 ? ATTR_COLORS[key] : 'var(--ink-2)',
+                      color: freeAttr > 0 ? '#fff' : 'var(--ink-4)',
+                      border: 'none', borderRadius: 2, cursor: freeAttr > 0 ? 'pointer' : 'default',
+                      opacity: freeAttr > 0 ? 1 : 0.5,
+                    }}
+                  >
+                    +1
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+          {totalAttr === 0 && (
+            <p style={{ margin: '6px 0 0', fontSize: 10, color: 'var(--ink-4)' }}>
+              升至 2 级后解锁属性加点（每升一级 +5 点）
+            </p>
+          )}
+        </div>
+
         {/* school skills */}
         <div className="paper-bg scroll-frame" style={{ padding: 12, position: 'relative' }}>
           <CornerDeco />
@@ -300,7 +380,12 @@ const PetDetail = ({ pet }) => {
           <CornerDeco />
           <SubHead title="修炼 · 炼妖" sub="ACTIONS" />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
-            <button className="btn-ink btn-ink-primary">出 战</button>
+            <button
+              className={'btn-ink' + (pet.active ? '' : ' btn-ink-primary')}
+              onClick={onToggleActive}
+            >
+              {pet.active ? '休 息' : '出 战'}
+            </button>
             <button className="btn-ink">修 炼</button>
             <button className="btn-ink">洗 髓</button>
             <button className="btn-ink">炼 妖</button>
@@ -334,11 +419,41 @@ const PetDetail = ({ pet }) => {
 export default function PetsScreen() {
   const char = useSyncExternalStore(subscribe, getSnapshot)
   const roster = char.petRoster ?? []
-  const active = roster.filter((p) => p.active)
-  const vault  = roster.filter((p) => !p.active)
+  const activePets = roster.filter((p) => p.active)
+  const vault      = roster.filter((p) => !p.active)
 
+  const [tab, setTab]           = useState(0) // 0=上阵 1=仓库
   const [selectedId, setSelectedId] = useState(roster[0]?.id ?? null)
+  const [msg, setMsg]           = useState(null) // { text, ok }
+
   const selected = roster.find((p) => p.id === selectedId) ?? roster[0]
+
+  // 提示条 2 秒后自动消失
+  useEffect(() => {
+    if (!msg) return
+    const t = setTimeout(() => setMsg(null), 2000)
+    return () => clearTimeout(t)
+  }, [msg])
+
+  function handleToggle(pet) {
+    if (!pet) return
+    const res = setPetActiveAction(pet.id, !pet.active)
+    setMsg({ text: res.reason ?? (pet.active ? `「${pet.displayName}」已下阵休息` : `「${pet.displayName}」已上阵出战`), ok: res.ok })
+  }
+
+  function handleAddAttr(pet, attr) {
+    if (!pet) return
+    const res = addPetAttrAction(pet.id, attr)
+    if (!res.ok) setMsg({ text: res.reason, ok: false })
+  }
+
+  function handleResetAttr(pet) {
+    if (!pet) return
+    resetPetAttrAction(pet.id)
+    setMsg({ text: `「${pet.displayName}」属性点已重置`, ok: true })
+  }
+
+  const listPets = tab === 0 ? activePets : vault
 
   return (
     <div className="paper-bg" style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', fontFamily: 'var(--font-body)' }}>
@@ -347,44 +462,74 @@ export default function PetsScreen() {
         sub="BEASTS & PETS"
         right={
           <span style={{ display: 'inline-flex', gap: 14, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-2)' }}>
-            <span>携带 <span style={{ color: 'var(--vermilion)', fontWeight: 600 }}>{active.length}</span> / 5</span>
+            <span>携带 <span style={{ color: 'var(--vermilion)', fontWeight: 600 }}>{activePets.length}</span> / 5</span>
             <span>仓库 <span style={{ color: 'var(--ink)', fontWeight: 600 }}>{vault.length}</span> / 30</span>
           </span>
         }
       />
+
+      {/* 提示条 */}
+      {msg && (
+        <div style={{
+          position: 'absolute', top: 64, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 20, padding: '5px 18px',
+          background: msg.ok ? 'rgba(60,100,60,0.92)' : 'rgba(140,40,40,0.92)',
+          color: '#f0e8d0', fontSize: 12, fontFamily: 'var(--font-main)',
+          borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+        }}>
+          {msg.text}
+        </div>
+      )}
+
       <div style={{ position: 'absolute', inset: '60px 20px 20px 20px', display: 'flex', gap: 14 }}>
         {/* left: roster list */}
         <div style={{ width: 280, display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div className="tab-list">
-            {[`上阵 ${active.length}`, `仓库 ${vault.length}`, '宠物书'].map((t, i) => (
-              <div key={t} className={'tab' + (i === 0 ? ' active' : '')} style={{ padding: '4px 12px', fontSize: 11 }}>{t}</div>
+            {[`上阵 ${activePets.length}`, `仓库 ${vault.length}`].map((t, i) => (
+              <div
+                key={t}
+                className={'tab' + (tab === i ? ' active' : '')}
+                style={{ padding: '4px 12px', fontSize: 11, cursor: 'pointer' }}
+                onClick={() => setTab(i)}
+              >
+                {t}
+              </div>
             ))}
           </div>
           <div className="paper-bg" style={{ padding: 8, border: '1px solid var(--ink-4)', flex: 1, display: 'flex', flexDirection: 'column', gap: 5, overflow: 'auto' }}>
-            {active.map((p) => (
+            {listPets.length === 0 ? (
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ink-4)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>
+                {tab === 0 ? '暂无上阵宠物' : '仓库为空'}
+              </div>
+            ) : listPets.map((p) => (
               <PetCard key={p.id} pet={p} isSelected={p.id === selected?.id} onClick={() => setSelectedId(p.id)} />
             ))}
-            {vault.length > 0 && (
-              <>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 6, paddingTop: 6, borderTop: '1px dashed var(--ink-4)' }}>
-                  <span className="brush" style={{ fontSize: 12, color: 'var(--vermilion)' }}>仙府仓</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-3)' }}>VAULT</span>
-                </div>
-                {vault.map((p) => (
-                  <PetCard key={p.id} pet={p} isSelected={p.id === selected?.id} onClick={() => setSelectedId(p.id)} />
-                ))}
-              </>
-            )}
           </div>
+          {/* 底部快捷按钮：针对当前选中宠物 */}
           <div style={{ display: 'flex', gap: 4 }}>
-            <button className="btn-ink btn-ink-sm" style={{ flex: 1 }}>上阵</button>
+            <button
+              className={'btn-ink btn-ink-sm' + (selected?.active ? '' : ' btn-ink-primary')}
+              style={{ flex: 2 }}
+              onClick={() => handleToggle(selected)}
+              disabled={!selected}
+            >
+              {selected?.active ? '下 阵' : '上 阵'}
+            </button>
             <button className="btn-ink btn-ink-sm" style={{ flex: 1 }}>合宠</button>
             <button className="btn-ink btn-ink-sm" style={{ flex: 1 }}>放生</button>
           </div>
         </div>
 
         {/* right: detail */}
-        {selected ? <PetDetail pet={selected} /> : (
+        {selected ? (
+          <PetDetail
+            pet={selected}
+            onToggleActive={() => handleToggle(selected)}
+            onAddAttr={(attr) => handleAddAttr(selected, attr)}
+            onResetAttr={() => handleResetAttr(selected)}
+          />
+        ) : (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ink-4)', fontFamily: 'var(--font-mono)', fontSize: 13 }}>
             选择一只灵兽查看详情
           </div>

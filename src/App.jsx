@@ -5,7 +5,13 @@ import SkillsScreen from './components/SkillsScreen.jsx'
 import PetsScreen from './components/PetsScreen.jsx'
 import BagScreen from './components/BagScreen.jsx'
 import { QuestScreen, ShopScreen, SignScreen, WorldMapScreen } from './components/MiscScreens.jsx'
+import DataScreen from './components/DataScreen.jsx'
+import TestScreen from './components/TestScreen.jsx'
 import { subscribe, getSnapshot } from './game/characterStore.js'
+import { dbReady } from './game/db/sqliteDb.js'
+
+// 提前初始化 DB（非阻塞，DataScreen 内等待 dbReady）
+dbReady.catch(e => console.warn('DB init failed', e))
 
 const SCREENS = [
   { id: 'combat',    label: '战斗',  component: CombatScreen },
@@ -17,6 +23,8 @@ const SCREENS = [
   { id: 'quest',     label: '任务',  component: QuestScreen },
   { id: 'shop',      label: '商城',  component: ShopScreen },
   { id: 'sign',      label: '签到',  component: SignScreen },
+  { id: 'data',      label: '数据',  component: DataScreen },
+  { id: 'test',      label: '测试',  component: TestScreen },
 ]
 
 export default function App() {

@@ -150,37 +150,100 @@ export function rollPetGrowthDetail(spawnKey, rng = Math.random) {
   return detail
 }
 
+/** 五项成长之和（物攻按表可为负，求和时与总成长对照用） */
+export function sumGrowthParts(g) {
+  return g.hp + g.mp + g.spd + g.pAtk + g.mAtk
+}
+
+// ── 宠物属性加点（体质/灵力/力量/敏捷四维，与角色体系一致） ─────────────────
+
+/** 每升一级获得的自由属性点数 */
+export const PET_ATTR_POINTS_PER_LEVEL = 5
+
+/** level 级时累计可分配属性点总数（1 级 = 0） */
+export function getPetFreeAttrTotal(level) {
+  return Math.max(0, (Math.max(1, level) - 1)) * PET_ATTR_POINTS_PER_LEVEL
+}
+
+/** 已分配属性点之和（四维） */
+export function sumPetAllocAttr(a) {
+  if (!a) return 0
+  return (a.vit ?? 0) + (a.int ?? 0) + (a.str ?? 0) + (a.agi ?? 0)
+}
+
+/** 空的 allocatedAttr 对象（四维） */
+export function emptyAllocAttr() {
+  return { vit: 0, int: 0, str: 0, agi: 0 }
+}
+
 /**
- * 由成长档与等级换算六维（文字版近似，非端游逐点公式）
+ * 返回各四维每点在 level 级时对六维的加成（成长资质决定效率）。
+ * 体质→气血+防御；灵力→法力+法攻；力量→物攻；敏捷→速度。
+ * @param {{ hp,mp,spd,pAtk,mAtk }} g
+ * @param {number} level
+ */
+export function getPetAttrRates(g, level = 1) {
+  const L = Math.max(1, level)
+  const r1 = (v) => Math.round(v * L * 10) / 10
+  return {
+    vit: {
+      hp:  r1(0.10 + g.hp * 0.001),
+      def: r1(0.010 + g.hp * 0.0002),
+    },
+    int: {
+      mp:   r1(0.09 + g.mp * 0.001),
+      mAtk: r1(0.020 + Math.max(0, g.mAtk) * 0.0003),
+    },
+    str: {
+      atk: r1(0.025 + Math.max(0, g.pAtk) * 0.0004),
+    },
+    agi: {
+      speed: r1(0.040 + g.spd * 0.0005),
+    },
+  }
+}
+
+/**
+ * 由成长档、等级、四维加点换算六维
  * @param {number} level
  * @param {ReturnType<typeof rollPetGrowthDetail>} g
- * @param {{ baby?: boolean }} opts
+ * @param {{ baby?: boolean, allocatedAttr?: { vit:number,int:number,str:number,agi:number } }} opts
  */
 export function computeStatsFromGrowth(level, g, opts = {}) {
   const L = Math.max(1, level)
   const baby = Boolean(opts.baby)
-  const pa = g.pAtk + 12
+  const a = opts.allocatedAttr ?? emptyAllocAttr()
+  const pa = Math.max(0, g.pAtk) + 12
+
+  const vit  = a.vit ?? 0
+  const int_ = a.int ?? 0
+  const str  = a.str ?? 0
+  const agi  = a.agi ?? 0
+
+  // 每点每级加成系数（与成长资质线性相关）
+  const vitHpR   = 0.10 + g.hp  * 0.001
+  const vitDefR  = 0.010 + g.hp  * 0.0002
+  const intMpR   = 0.09 + g.mp  * 0.001
+  const intMAR   = 0.020 + Math.max(0, g.mAtk) * 0.0003
+  const strAtkR  = 0.025 + Math.max(0, g.pAtk) * 0.0004
+  const agiSpdR  = 0.040 + g.spd * 0.0005
+
   if (baby) {
     return {
-      maxHp: Math.max(18, Math.round(20 + g.hp * 0.48)),
-      maxMp: Math.max(12, Math.round(12 + g.mp * 0.42)),
-      atk: Math.max(4, Math.round(5 + pa * 0.11 + g.mAtk * 0.07)),
-      def: Math.max(3, Math.round(3 + g.hp * 0.055 + Math.max(0, g.pAtk) * 0.04)),
-      speed: Math.max(4, Math.round(4 + g.spd * 0.17)),
-      mAtk: Math.max(2, Math.round(2 + g.mAtk * 0.09)),
+      maxHp: Math.max(18, Math.round(20 + g.hp * 0.48 + vit  * vitHpR  * 0.3)),
+      maxMp: Math.max(12, Math.round(12 + g.mp * 0.42 + int_ * intMpR  * 0.3)),
+      atk:   Math.max(4,  Math.round(5 + pa * 0.11 + g.mAtk * 0.07 + str * strAtkR * 0.3)),
+      def:   Math.max(3,  Math.round(3 + g.hp * 0.055 + Math.max(0, g.pAtk) * 0.04 + vit * vitDefR * 0.3)),
+      speed: Math.max(4,  Math.round(4 + g.spd * 0.17 + agi  * agiSpdR * 0.3)),
+      mAtk:  Math.max(2,  Math.round(2 + g.mAtk * 0.09 + int_ * intMAR * 0.3)),
     }
   }
   return {
-    maxHp: Math.max(22, Math.round(26 + g.hp * L * 0.5 + g.pAtk * L * 0.018)),
-    maxMp: Math.max(14, Math.round(16 + g.mp * L * 0.46)),
-    atk: Math.max(5, Math.round(7 + pa * L * 0.12 + g.mAtk * L * 0.052)),
-    def: Math.max(4, Math.round(4 + g.hp * L * 0.052 + Math.max(0, g.pAtk) * L * 0.032)),
-    speed: Math.max(5, Math.round(5 + g.spd * L * 0.185)),
-    mAtk: Math.max(3, Math.round(3 + g.mAtk * L * 0.09)),
+    maxHp: Math.max(22, Math.round(26 + g.hp * L * 0.5   + Math.max(0, g.pAtk) * L * 0.018 + vit  * L * vitHpR  + vit  * L * vitDefR * 0.1)),
+    maxMp: Math.max(14, Math.round(16 + g.mp * L * 0.46  + int_ * L * intMpR)),
+    atk:   Math.max(5,  Math.round(7  + pa   * L * 0.12  + g.mAtk * L * 0.052  + str  * L * strAtkR)),
+    def:   Math.max(4,  Math.round(4  + g.hp * L * 0.052 + Math.max(0, g.pAtk) * L * 0.032 + vit  * L * vitDefR)),
+    speed: Math.max(5,  Math.round(5  + g.spd * L * 0.185 + agi  * L * agiSpdR)),
+    mAtk:  Math.max(3,  Math.round(3  + g.mAtk * L * 0.09 + int_ * L * intMAR)),
   }
-}
-
-/** 五项成长之和（物攻按表可为负，求和时与总成长对照用） */
-export function sumGrowthParts(g) {
-  return g.hp + g.mp + g.spd + g.pAtk + g.mAtk
 }

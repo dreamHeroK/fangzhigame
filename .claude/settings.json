@@ -37,7 +37,11 @@
       "Bash(Get-ChildItem -Path \"d:\\\\learning\\\\wendao\\\\src\\\\game\\\\data\" -Force)",
       "PowerShell(Get-ChildItem -Path \"d:\\\\learning\\\\wendao\" -File -Depth 0 | Where-Object { $_.Extension -in @\\('.json', '.py'\\) })",
       "PowerShell(New-Item -ItemType Directory -Force \"d:\\\\learning\\\\wendao\\\\src\\\\game\\\\data\")",
-      "PowerShell(Copy-Item \"d:\\\\learning\\\\wendao\\\\python\\\\pet_reference.json\" \"d:\\\\learning\\\\wendao\\\\src\\\\game\\\\data\\\\petCatalog.json\")"
+      "PowerShell(Copy-Item \"d:\\\\learning\\\\wendao\\\\python\\\\pet_reference.json\" \"d:\\\\learning\\\\wendao\\\\src\\\\game\\\\data\\\\petCatalog.json\")",
+      "PowerShell(New-Item -ItemType Directory -Force d:\\\\learning\\\\wendao\\\\public)",
+      "PowerShell(Copy-Item \"d:\\\\learning\\\\wendao\\\\node_modules\\\\sql.js\\\\dist\\\\sql-wasm.wasm\" \"d:\\\\learning\\\\wendao\\\\public\\\\sql-wasm.wasm\" -Force)",
+      "PowerShell(New-Item -ItemType Directory -Force d:\\\\learning\\\\wendao\\\\src\\\\game\\\\db)",
+      "Bash(npx vitest *)"
     ]
   }
 }

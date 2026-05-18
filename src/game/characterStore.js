@@ -20,6 +20,7 @@ import {
   applyPetExp,
   PET_MAX_LEVEL,
 } from './characterLevelConfig.js'
+import { getPetFreeAttrTotal, sumPetAllocAttr } from './battle/petGrowthTable.js'
 
 const STORAGE_KEY = 'wendao_char_v1'
 
@@ -79,36 +80,42 @@ const DEFAULT_STATE = {
       level: 1, expIntoLevel: 0, master: '天行健', active: true,
       growth: { hp: 72, mp: 78, spd: 56, pAtk: 2, mAtk: 58, totalBand: [210, 300] },
       innateIds: ['bianchangmoji', 'shemingyiji'],
+      allocatedAttr: { vit: 0, int: 0, str: 0, agi: 0 },
     },
     {
       id: 'pet2', spawnKey: 'haigui', displayName: '海龟·野生', kind: '野生',
       level: 25, expIntoLevel: 0, master: '听雪楼', active: true,
       growth: { hp: 92, mp: 66, spd: 18, pAtk: 0, mAtk: 40, totalBand: [170, 260] },
       innateIds: ['fangweidujian'],
+      allocatedAttr: { vit: 0, int: 0, str: 0, agi: 0 },
     },
     {
       id: 'pet3', spawnKey: 'huoya', displayName: '火鸦·宝宝', kind: '宝宝',
       level: 1, expIntoLevel: 0, master: '焚青劫', active: true,
       growth: { hp: 60, mp: 80, spd: 62, pAtk: 0, mAtk: 65, totalBand: [210, 300] },
       innateIds: ['shiwanhuoji', 'mantianxuewu'],
+      allocatedAttr: { vit: 0, int: 0, str: 0, agi: 0 },
     },
     {
       id: 'pet4', spawnKey: 'taojing', displayName: '桃精·野生', kind: '野生',
       level: 17, expIntoLevel: 0, master: '一川烟', active: true,
       growth: { hp: 50, mp: 70, spd: 44, pAtk: 0, mAtk: 40, totalBand: [160, 250] },
       innateIds: ['bamiaozhuzhang'],
+      allocatedAttr: { vit: 0, int: 0, str: 0, agi: 0 },
     },
     {
       id: 'pet5', spawnKey: 'baiyuan', displayName: '白猿·野生', kind: '野生',
       level: 22, expIntoLevel: 0, master: '厚土君', active: true,
       growth: { hp: 78, mp: 40, spd: 28, pAtk: 72, mAtk: 0, totalBand: [170, 260] },
       innateIds: ['fanzhuanqiankun'],
+      allocatedAttr: { vit: 0, int: 0, str: 0, agi: 0 },
     },
     {
       id: 'pet6', spawnKey: 'xuenv', displayName: '雪女·野生', kind: '野生',
       level: 75, expIntoLevel: 0, active: false,
       growth: { hp: 90, mp: 64, spd: 60, pAtk: 0, mAtk: 62, totalBand: [230, 320] },
       innateIds: ['fangweidujian', 'siwangchanmian'],
+      allocatedAttr: { vit: 0, int: 0, str: 0, agi: 0 },
     },
   ],
 }
@@ -121,10 +128,17 @@ function load() {
       const merged = { ...DEFAULT_STATE, ...saved }
       // 向前兼容：expCur 旧字段迁移
       if (merged.expIntoLevel == null) merged.expIntoLevel = merged.expCur ?? 0
-      // 宠物缺失 expIntoLevel 时补零
-      merged.petRoster = (merged.petRoster ?? []).map(p =>
-        p.expIntoLevel == null ? { ...p, expIntoLevel: 0 } : p
-      )
+      // 宠物缺失字段时向前兼容补零；旧五维格式（含 hp/mp/spd 键）重置为四维
+      const EMPTY_ALLOC = { vit: 0, int: 0, str: 0, agi: 0 }
+      merged.petRoster = (merged.petRoster ?? []).map(p => {
+        const a = p.allocatedAttr
+        const isOldFmt = a && ('hp' in a || 'mp' in a || 'spd' in a)
+        return {
+          ...p,
+          expIntoLevel:  p.expIntoLevel  ?? 0,
+          allocatedAttr: (!a || isOldFmt) ? { ...EMPTY_ALLOC } : a,
+        }
+      })
       return merged
     }
   } catch {}
@@ -285,6 +299,71 @@ export function applyBattleRewardsAction(rewards, activePetIds = []) {
     tael:         (state.tael ?? 0) + gold,
     petRoster:    newPetRoster,
   })
+}
+
+// ── 宠物上阵 / 休息 ─────────────────────────────────────────────────────────
+
+const ACTIVE_PET_LIMIT = 5
+
+/**
+ * 设置指定宠物的出战状态。
+ * @param {string} petId
+ * @param {boolean} active true=上阵 false=休息
+ * @returns {{ ok: boolean, reason?: string }}
+ */
+export function setPetActiveAction(petId, active) {
+  const pet = state.petRoster.find(p => p.id === petId)
+  if (!pet) return { ok: false, reason: '宠物不存在' }
+  if (pet.active === active) return { ok: false, reason: active ? '已在上阵中' : '已在仓库中' }
+  if (active) {
+    const cur = state.petRoster.filter(p => p.active).length
+    if (cur >= ACTIVE_PET_LIMIT) return { ok: false, reason: `上阵已满（最多 ${ACTIVE_PET_LIMIT} 只）` }
+  }
+  patch({ petRoster: state.petRoster.map(p => p.id === petId ? { ...p, active } : p) })
+  return { ok: true }
+}
+
+/**
+ * 给指定宠物分配 1 点属性（消耗自由点）。
+ * @param {string} petId
+ * @param {'vit'|'int'|'str'|'agi'} attr
+ * @returns {{ ok: boolean, reason?: string }}
+ */
+export function addPetAttrAction(petId, attr) {
+  const VALID = ['vit', 'int', 'str', 'agi']
+  if (!VALID.includes(attr)) return { ok: false, reason: '未知属性' }
+  const pet = state.petRoster.find(p => p.id === petId)
+  if (!pet) return { ok: false, reason: '宠物不存在' }
+  const total = getPetFreeAttrTotal(pet.level)
+  const used  = sumPetAllocAttr(pet.allocatedAttr)
+  if (used >= total) return { ok: false, reason: '无剩余属性点' }
+  const newAlloc = { ...(pet.allocatedAttr ?? { vit:0,int:0,str:0,agi:0 }), [attr]: ((pet.allocatedAttr?.[attr] ?? 0) + 1) }
+  patch({ petRoster: state.petRoster.map(p => p.id === petId ? { ...p, allocatedAttr: newAlloc } : p) })
+  return { ok: true }
+}
+
+/**
+ * 重置指定宠物的属性加点（全部归零，释放自由点）。
+ * @param {string} petId
+ * @returns {{ ok: boolean }}
+ */
+export function resetPetAttrAction(petId) {
+  const pet = state.petRoster.find(p => p.id === petId)
+  if (!pet) return { ok: false, reason: '宠物不存在' }
+  patch({ petRoster: state.petRoster.map(p =>
+    p.id === petId ? { ...p, allocatedAttr: { vit: 0, int: 0, str: 0, agi: 0 } } : p
+  )})
+  return { ok: true }
+}
+
+/**
+ * 从存档对象覆写当前状态（读档用）。
+ */
+export function loadFromObject(charState) {
+  if (!charState || typeof charState !== 'object') return
+  state = { ...DEFAULT_STATE, ...charState }
+  save(state)
+  notify()
 }
 
 export function resetToDefaults() {

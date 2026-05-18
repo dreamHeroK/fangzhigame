@@ -390,6 +390,7 @@ export function tickUntilInputOrEnd(state, rng = Math.random) {
     if (out) {
       if (out === 'victory') return finalizeVictory(s, rng)
       return { ...s, phase: 'end', outcome: out, awaitingActorId: null,
+        defeatNonce: `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
         log: [...s.log, '— — — — — — — — — —', '我方溃败。'].slice(-80) }
     }
     const idx = nextActorIndex(s)

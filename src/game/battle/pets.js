@@ -85,7 +85,7 @@ function buildPetSkillPool(level, affinity) {
  */
 export function createPetAllyUnit(pet) {
   const isBaby = pet.kind === '宝宝'
-  const stats = computeStatsFromGrowth(pet.level, pet.growth, { baby: isBaby })
+  const stats = computeStatsFromGrowth(pet.level, pet.growth, { baby: isBaby, allocatedAttr: pet.allocatedAttr })
   const catalog = getPetByKey(pet.spawnKey)
   const affinity = catalog?.affinity ?? null
   const skillPool = buildPetSkillPool(pet.level, affinity)

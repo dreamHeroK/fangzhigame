@@ -10,6 +10,8 @@ import {
 import { getSkill } from '../game/battle/skills.js'
 import { suggestMapIdForLevel } from '../game/battle/wendaoMapsConfig.js'
 import { getSnapshot as charSnapshot, applyBattleRewardsAction } from '../game/characterStore.js'
+import { dbReady } from '../game/db/sqliteDb.js'
+import { recordBattle } from '../game/db/saveManager.js'
 import { computeHeroDerived } from '../game/playerSheet.js'
 import { createAllyUnit } from '../game/battle/monsters.js'
 import { createPetAllyUnit } from '../game/battle/pets.js'
@@ -546,6 +548,17 @@ export default function CombatScreen() {
       })
       .filter(Boolean)
     applyBattleRewardsAction(battle.victoryRewards, activePetIds)
+    // 战斗历史写入 DB（DB 已就绪时才记录）
+    dbReady.then(() => recordBattle({
+      outcome:       'victory',
+      mapName:       battle.log[0]?.match(/【(.+?)】/)?.[1] ?? '',
+      foeCount:      foes.length,
+      rounds:        Math.max(0, battle.roundIndex),
+      expGained:     battle.victoryRewards?.exp ?? 0,
+      petExpGained:  battle.victoryRewards?.petExp ?? 0,
+      goldGained:    battle.victoryRewards?.gold ?? 0,
+      loot:          battle.lastVictoryLoot ?? [],
+    })).catch(() => {})
   }, [battle.victoryLootNonce])
 
   // Damage floats: diff HP between renders
@@ -646,6 +659,21 @@ export default function CombatScreen() {
     pendingComboKindRef.current = null
     // lastSkillByActorRef 跨战斗保留，不清空
   }
+
+  // 战斗败北 → 记录历史
+  useEffect(() => {
+    if (!battle.defeatNonce) return
+    dbReady.then(() => recordBattle({
+      outcome:      'defeat',
+      mapName:      battle.log[0]?.match(/【(.+?)】/)?.[1] ?? '',
+      foeCount:     foes.length,
+      rounds:       Math.max(0, battle.roundIndex),
+      expGained:    0,
+      petExpGained: 0,
+      goldGained:   0,
+      loot:         [],
+    })).catch(() => {})
+  }, [battle.defeatNonce])
 
   // Turn queue: next 7 actors (skip dead)
   const queueIds = [
