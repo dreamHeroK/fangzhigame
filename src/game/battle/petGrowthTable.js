@@ -134,20 +134,31 @@ function rollClosed(rng, lo, hi) {
 }
 
 /**
+ * @param {string} spawnKey
+ * @param {() => number} rng
+ * @param {{ qualityBoost?: 'elite' }} [opts]
+ *   qualityBoost='elite'：每维在区间高 60%~100% 段内掷骰（幼崽捕获用）
  * @returns {{ hp: number, mp: number, spd: number, pAtk: number, mAtk: number, totalBand: [number, number], ghost?: boolean }}
  */
-export function rollPetGrowthDetail(spawnKey, rng = Math.random) {
+export function rollPetGrowthDetail(spawnKey, rng = Math.random, opts = {}) {
   const c = getPetGrowthConfig(spawnKey)
-  const detail = {
-    hp: rollClosed(rng, c.hp[0], c.hp[1]),
-    mp: rollClosed(rng, c.mp[0], c.mp[1]),
-    spd: rollClosed(rng, c.spd[0], c.spd[1]),
-    pAtk: rollClosed(rng, c.pAtk[0], c.pAtk[1]),
-    mAtk: rollClosed(rng, c.mAtk[0], c.mAtk[1]),
+  const elite = opts.qualityBoost === 'elite'
+  function rollDim(lo, hi) {
+    if (elite) {
+      const eliteLo = Math.round(lo + (hi - lo) * 0.6)
+      return rollClosed(rng, eliteLo, hi)
+    }
+    return rollClosed(rng, lo, hi)
+  }
+  return {
+    hp:   rollDim(c.hp[0],   c.hp[1]),
+    mp:   rollDim(c.mp[0],   c.mp[1]),
+    spd:  rollDim(c.spd[0],  c.spd[1]),
+    pAtk: rollDim(c.pAtk[0], c.pAtk[1]),
+    mAtk: rollDim(c.mAtk[0], c.mAtk[1]),
     totalBand: [...c.total],
     ghost: Boolean(c.ghost),
   }
-  return detail
 }
 
 /** 五项成长之和（物攻按表可为负，求和时与总成长对照用） */
@@ -187,18 +198,18 @@ export function getPetAttrRates(g, level = 1) {
   const r1 = (v) => Math.round(v * L * 10) / 10
   return {
     vit: {
-      hp:  r1(0.10 + g.hp * 0.001),
-      def: r1(0.010 + g.hp * 0.0002),
+      hp:  r1(g.hp  * 0.003),
+      def: r1(g.hp  * 0.0005),
     },
     int: {
-      mp:   r1(0.09 + g.mp * 0.001),
-      mAtk: r1(0.020 + Math.max(0, g.mAtk) * 0.0003),
+      mp:   r1(g.mp  * 0.003),
+      mAtk: r1(Math.max(0, g.mAtk) * 0.002),
     },
     str: {
-      atk: r1(0.025 + Math.max(0, g.pAtk) * 0.0004),
+      atk: r1(Math.max(0, g.pAtk) * 0.002),
     },
     agi: {
-      speed: r1(0.040 + g.spd * 0.0005),
+      speed: r1(g.spd * 0.001),
     },
   }
 }
@@ -220,22 +231,24 @@ export function computeStatsFromGrowth(level, g, opts = {}) {
   const str  = a.str ?? 0
   const agi  = a.agi ?? 0
 
-  // 每点每级加成系数（与成长资质线性相关）
-  const vitHpR   = 0.10 + g.hp  * 0.001
-  const vitDefR  = 0.010 + g.hp  * 0.0002
-  const intMpR   = 0.09 + g.mp  * 0.001
-  const intMAR   = 0.020 + Math.max(0, g.mAtk) * 0.0003
-  const strAtkR  = 0.025 + Math.max(0, g.pAtk) * 0.0004
-  const agiSpdR  = 0.040 + g.spd * 0.0005
+  // 端游机制：成长资质直接决定加点效率，无基础常数
+  // 物攻型宠物(g.mAtk≈0)加灵力不增法攻；法攻型宠物(g.pAtk≈0)加力量不增物攻
+  const vitHpR   = g.hp  * 0.003
+  const vitDefR  = g.hp  * 0.0005
+  const intMpR   = g.mp  * 0.003
+  const intMAR   = Math.max(0, g.mAtk) * 0.002
+  const strAtkR  = Math.max(0, g.pAtk) * 0.002
+  const agiSpdR  = g.spd * 0.001
 
-  if (baby) {
+  // 宝宝公式仅用于1级展示（无等级系数），升级后统一走带L的普通公式
+  if (baby && L === 1) {
     return {
-      maxHp: Math.max(18, Math.round(20 + g.hp * 0.48 + vit  * vitHpR  * 0.3)),
-      maxMp: Math.max(12, Math.round(12 + g.mp * 0.42 + int_ * intMpR  * 0.3)),
-      atk:   Math.max(4,  Math.round(5 + pa * 0.11 + g.mAtk * 0.07 + str * strAtkR * 0.3)),
-      def:   Math.max(3,  Math.round(3 + g.hp * 0.055 + Math.max(0, g.pAtk) * 0.04 + vit * vitDefR * 0.3)),
-      speed: Math.max(4,  Math.round(4 + g.spd * 0.17 + agi  * agiSpdR * 0.3)),
-      mAtk:  Math.max(2,  Math.round(2 + g.mAtk * 0.09 + int_ * intMAR * 0.3)),
+      maxHp: Math.max(18, Math.round(20 + g.hp * 0.48)),
+      maxMp: Math.max(12, Math.round(12 + g.mp * 0.42)),
+      atk:   Math.max(4,  Math.round(5  + pa  * 0.11 + g.mAtk * 0.07)),
+      def:   Math.max(3,  Math.round(3  + g.hp * 0.055 + Math.max(0, g.pAtk) * 0.04)),
+      speed: Math.max(4,  Math.round(4  + g.spd * 0.17)),
+      mAtk:  Math.max(2,  Math.round(2  + g.mAtk * 0.09)),
     }
   }
   return {

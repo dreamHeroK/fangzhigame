@@ -18,24 +18,26 @@ export function rollDropsForFoe(foe, rng = Math.random) {
   const L = foe.level ?? 1
   const tier = tierFromMonsterLevel(L)
   const potIds = potionIdsForTier(tier)
-  const boss = !!foe.isWorldBoss
+  const boss      = !!foe.isWorldBoss
+  const fieldBoss = !!foe.isFieldBoss
 
   const hpPotIds = potIds.filter((id) => CONSUMABLE_BY_ID[id]?.kind === 'hp')
   const mpPotIds = potIds.filter((id) => CONSUMABLE_BY_ID[id]?.kind === 'mp')
 
-  if (hpPotIds.length && rng() < (boss ? 0.85 : 0.42)) {
-    out.push({ itemId: pick(hpPotIds, rng), qty: boss ? 2 + Math.floor(rng() * 3) : 1 + Math.floor(rng() * 2) })
-  }
-  if (mpPotIds.length && rng() < (boss ? 0.85 : 0.38)) {
-    out.push({ itemId: pick(mpPotIds, rng), qty: boss ? 2 + Math.floor(rng() * 3) : 1 + Math.floor(rng() * 2) })
-  }
+  const hpChance = boss ? 0.85 : fieldBoss ? 0.65 : 0.42
+  const mpChance = boss ? 0.85 : fieldBoss ? 0.60 : 0.38
+  const potQty   = boss ? 2 + Math.floor(rng() * 3) : 1 + Math.floor(rng() * 2)
+
+  if (hpPotIds.length && rng() < hpChance) out.push({ itemId: pick(hpPotIds, rng), qty: potQty })
+  if (mpPotIds.length && rng() < mpChance) out.push({ itemId: pick(mpPotIds, rng), qty: potQty })
 
   if (boss) {
     if (rng() < 0.35) out.push({ itemId: 'xuelinglong', qty: 1 })
     if (rng() < 0.35) out.push({ itemId: 'falinglong', qty: 1 })
   } else {
-    if (rng() < 0.02 + tier * 0.008) out.push({ itemId: 'xuelinglong', qty: 1 })
-    if (rng() < 0.02 + tier * 0.008) out.push({ itemId: 'falinglong', qty: 1 })
+    const linglongChance = fieldBoss ? 0.15 + tier * 0.01 : 0.02 + tier * 0.008
+    if (rng() < linglongChance) out.push({ itemId: 'xuelinglong', qty: 1 })
+    if (rng() < linglongChance) out.push({ itemId: 'falinglong', qty: 1 })
   }
 
   return mergeLootStacks(out)

@@ -129,9 +129,9 @@ describe('getAffinityPointsTotal', () => {
 
 describe('getFreeAttributePointsTotal', () => {
   it('level 1 = 0', () => expect(getFreeAttributePointsTotal(1)).toBe(0))
-  it('level 2 = 4', ()  => expect(getFreeAttributePointsTotal(2)).toBe(4))
-  it('level 50 = 196', () => expect(getFreeAttributePointsTotal(50)).toBe(196))
-  it('level 100 = 396', () => expect(getFreeAttributePointsTotal(100)).toBe(396))
+  it('level 2 = 5', ()  => expect(getFreeAttributePointsTotal(2)).toBe(5))
+  it('level 50 = 245', () => expect(getFreeAttributePointsTotal(50)).toBe(245))
+  it('level 100 = 495', () => expect(getFreeAttributePointsTotal(100)).toBe(495))
 })
 
 describe('petExpRequiredToNextLevel', () => {

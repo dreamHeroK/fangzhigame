@@ -217,10 +217,10 @@ export function expRemainingToNext(totalExp) {
   return Math.max(0, need - cur)
 }
 
-/** 累计自由属性点（1 级为 0，之后每升一级 +4） */
+/** 累计自由属性点（1 级为 0，之后每升一级 +5） */
 export function getFreeAttributePointsTotal(level) {
   const L = clampLevel(level)
-  return Math.max(0, (L - 1) * 4)
+  return Math.max(0, (L - 1) * 5)
 }
 
 /**

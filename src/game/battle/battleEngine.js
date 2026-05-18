@@ -49,9 +49,10 @@ function calcVictoryRewards(foes, rng) {
   let gold   = 0
   for (const f of foes) {
     const L = Math.max(1, f.level)
-    exp    += Math.max(10, Math.floor(expRequiredToNextLevel(L) * 0.002))
-    petExp += Math.max(5,  Math.floor(petExpRequiredToNextLevel(L) * 0.002))
-    gold   += Math.floor(L * (2 + rng() * 3))
+    const bm = f.isFieldBoss ? 3 : 1
+    exp    += Math.max(10, Math.floor(expRequiredToNextLevel(L) * 0.002 * bm))
+    petExp += Math.max(5,  Math.floor(petExpRequiredToNextLevel(L) * 0.002 * bm))
+    gold   += Math.floor(L * (2 + rng() * 3) * bm)
   }
   return { exp, petExp, gold }
 }
@@ -363,12 +364,15 @@ export function createBattle(opts = {}) {
     bossFoes.length > 0
       ? bossFoes
       : buildEncounter(partySize, { rng, scale: opts.foeScale ?? 1, mapId })
-  const isBossFight = bossFoes.length > 0
+  const isBossFight  = bossFoes.length > 0
+  const fieldBossUnit = foes.find(f => f.isFieldBoss)
+  const babyUnit      = foes.find(f => f.isBabyMonster)
+  const specialNote   = fieldBossUnit ? `　★首领「${fieldBossUnit.name}」出没！` : babyUnit ? `　☆发现幼崽「${babyUnit.name}」！` : ''
   const open = isBossFight
     ? `【${foes[0].worldBossMapName ?? foes[0].mapName ?? '世界BOSS'}】挑战「${foes[0].name}」Lv${foes[0].level}：我方 ${partySize} 人（首领战固定 1 只）。`
     : wantsBoss
       ? `【${map.name}】世界 BOSS 键无效，已回退为野怪。我方 ${partySize} 人，敌方 ${foes.length} 只（[${partySize}×, ${partySize}×2]）。`
-      : `【${map.name}】遭遇战：我方 ${partySize} 人，敌方 ${foes.length} 只（野怪数在 [${partySize}×, ${partySize}×2] 内随机）。`
+      : `【${map.name}】遭遇战：我方 ${partySize} 人，敌方 ${foes.length} 只。${specialNote}`
   const units = [...allies, ...foes]
   let state = {
     units,

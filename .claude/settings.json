@@ -41,7 +41,10 @@
       "PowerShell(New-Item -ItemType Directory -Force d:\\\\learning\\\\wendao\\\\public)",
       "PowerShell(Copy-Item \"d:\\\\learning\\\\wendao\\\\node_modules\\\\sql.js\\\\dist\\\\sql-wasm.wasm\" \"d:\\\\learning\\\\wendao\\\\public\\\\sql-wasm.wasm\" -Force)",
       "PowerShell(New-Item -ItemType Directory -Force d:\\\\learning\\\\wendao\\\\src\\\\game\\\\db)",
-      "Bash(npx vitest *)"
+      "Bash(npx vitest *)",
+      "Bash(xargs basename -a)",
+      "Bash(Get-ChildItem -Path \"d:\\\\learning\\\\wendao\" -Recurse -Filter \"*.json\")",
+      "Bash(Select-String \"\\(package|tsconfig|wendao\\)\")"
     ]
   }
 }

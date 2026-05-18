@@ -24,16 +24,15 @@ import {
 
 export const AFFINITY_CAP_PER_ELEMENT = 30
 
-/** 每升一级，四维各有 1 点固定成长（重置时保留） */
-export function getFixedStatFloor(level) {
-  const L = Math.min(CHARACTER_MAX_LEVEL, Math.max(1, Math.floor(Number(level) || 1)))
-  return L
+/** 四维最低值（端游无强制底盘，最低 1） */
+export function getFixedStatFloor(_level) {
+  return 1
 }
 
-/** 四维可分配总点数（与图例 Lv.65≈270 对齐：14 + 每级前累计自由点） */
+/** 四维可分配总点数（端游：每级 5 点，1 级为 0） */
 export function getAttributePointBudget(level) {
   const L = Math.min(CHARACTER_MAX_LEVEL, Math.max(1, Math.floor(Number(level) || 1)))
-  return 14 + getFreeAttributePointsTotal(L)
+  return getFreeAttributePointsTotal(L)
 }
 
 /** 相性点总预算（与 characterLevelConfig 一致） */

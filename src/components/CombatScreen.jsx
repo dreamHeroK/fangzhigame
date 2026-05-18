@@ -71,8 +71,10 @@ const enemyPos = [
 
 // isCenter = 主选目标（完整准星）；isAffected = 在群攻范围内（次要高亮）
 const CombatUnit = ({ unit, pos, side, isCenter, isAffected, onClick }) => {
-  const isEnemy = side === 'enemy'
-  const isBoss = unit.isWorldBoss ?? false
+  const isEnemy   = side === 'enemy'
+  const isBoss      = unit.isWorldBoss  ?? false
+  const isFieldBoss = unit.isFieldBoss  ?? false
+  const isBaby      = unit.isBabyMonster ?? false
   const baseW = isBoss ? 110 : 96
   const baseH = isBoss ? 146 : 128
   const w = baseW * pos.scale
@@ -83,14 +85,22 @@ const CombatUnit = ({ unit, pos, side, isCenter, isAffected, onClick }) => {
     ? 'var(--vermilion)'
     : isAffected
       ? 'var(--gold)'
-      : isBoss ? 'var(--vermilion)' : isEnemy ? 'var(--vermilion-2)' : 'var(--ink-2)'
+      : isBoss       ? 'var(--vermilion)'
+      : isFieldBoss  ? '#c8860a'
+      : isBaby       ? '#3a8040'
+      : isEnemy      ? 'var(--vermilion-2)'
+      : 'var(--ink-2)'
   const boxShadow = isCenter
     ? '0 0 0 2px var(--vermilion), 0 0 12px rgba(163,55,58,0.4)'
     : isAffected
       ? '0 0 0 2px var(--gold), 0 0 8px rgba(184,142,68,0.35)'
       : isBoss
         ? '0 0 0 2px var(--vermilion), 0 4px 12px rgba(163,55,58,0.25)'
-        : '0 2px 6px rgba(40,30,20,0.25)'
+        : isFieldBoss
+          ? '0 0 0 2px #c8860a, 0 4px 12px rgba(200,134,10,0.25)'
+          : isBaby
+            ? '0 0 0 2px #3a8040, 0 4px 8px rgba(58,128,64,0.20)'
+            : '0 2px 6px rgba(40,30,20,0.25)'
 
   return (
     <div
@@ -110,7 +120,12 @@ const CombatUnit = ({ unit, pos, side, isCenter, isAffected, onClick }) => {
         textAlign: 'center',
         fontFamily: 'var(--font-brush)',
         fontSize: (13 * pos.scale + 3),
-        color: isEnemy ? (isBoss ? 'var(--vermilion)' : 'var(--ink)') : 'var(--vermilion)',
+        color: isEnemy
+          ? isBoss      ? 'var(--vermilion)'
+          : isFieldBoss ? '#c8860a'
+          : isBaby      ? '#3a8040'
+          : 'var(--ink)'
+          : 'var(--vermilion)',
         marginBottom: 3,
         textShadow: '0 1px 0 var(--paper)',
         letterSpacing: isBoss ? '0.1em' : 0,
@@ -121,6 +136,12 @@ const CombatUnit = ({ unit, pos, side, isCenter, isAffected, onClick }) => {
         </span>
         {isBoss && (
           <span style={{ marginLeft: 4, fontFamily: 'var(--font-display)', fontSize: 10, color: 'var(--vermilion)', padding: '1px 4px', background: 'var(--paper)', border: '1px solid var(--vermilion)' }}>BOSS</span>
+        )}
+        {isFieldBoss && (
+          <span style={{ marginLeft: 4, fontFamily: 'var(--font-display)', fontSize: 10, color: '#c8860a', padding: '1px 4px', background: 'var(--paper)', border: '1px solid #c8860a' }}>首领</span>
+        )}
+        {isBaby && (
+          <span style={{ marginLeft: 4, fontFamily: 'var(--font-display)', fontSize: 10, color: '#3a8040', padding: '1px 4px', background: 'var(--paper)', border: '1px solid #3a8040' }}>幼崽</span>
         )}
       </div>
       <div style={{ width: w, height: h, position: 'relative' }}>
@@ -547,7 +568,7 @@ export default function CombatScreen() {
         return char.petRoster.find(p => `petunit_${p.id}` === u.id)?.id
       })
       .filter(Boolean)
-    applyBattleRewardsAction(battle.victoryRewards, activePetIds)
+    applyBattleRewardsAction(battle.victoryRewards, activePetIds, battle.lastVictoryLoot ?? [])
     // 战斗历史写入 DB（DB 已就绪时才记录）
     dbReady.then(() => recordBattle({
       outcome:       'victory',

@@ -156,12 +156,12 @@ const SchoolSkillsPanel = ({ affinity }) => {
 
 const ATTR_LABELS = { vit: '体质', int: '灵力', str: '力量', agi: '敏捷' }
 const ATTR_COLORS = { vit: 'var(--vermilion)', int: '#3a5a8a', str: 'var(--rust)', agi: 'var(--bamboo)' }
-// 每维对应的六维加成描述（键与 getPetAttrRates 返回一致）
+// 每维对应的六维加成（rate key → 实际 stats key → 显示名）
 const ATTR_RATE_LABELS = {
-  vit: [{ key: 'hp', label: '气血' }, { key: 'def', label: '防御' }],
-  int: [{ key: 'mp', label: '法力' }, { key: 'mAtk', label: '法攻' }],
-  str: [{ key: 'atk', label: '物攻' }],
-  agi: [{ key: 'speed', label: '速度' }],
+  vit: [{ key: 'hp', statKey: 'maxHp', label: '气血' }, { key: 'def', statKey: 'def', label: '防御' }],
+  int: [{ key: 'mp', statKey: 'maxMp', label: '法力' }, { key: 'mAtk', statKey: 'mAtk', label: '法攻' }],
+  str: [{ key: 'atk', statKey: 'atk', label: '物攻' }],
+  agi: [{ key: 'speed', statKey: 'speed', label: '速度' }],
 }
 
 const PetDetail = ({ pet, onToggleActive, onAddAttr, onResetAttr }) => {
@@ -325,30 +325,44 @@ const PetDetail = ({ pet, onToggleActive, onAddAttr, onResetAttr }) => {
               </span>
             }
           />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 6 }}>
             {Object.keys(ATTR_LABELS).map(key => {
               const pts = alloc[key] ?? 0
               const dimRates = rates[key]
+              const subStats = ATTR_RATE_LABELS[key]
               return (
                 <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {/* 维度名 + 已分配点数 */}
                   <span className="brush" style={{ fontSize: 14, width: 32, color: ATTR_COLORS[key], flexShrink: 0 }}>
                     {ATTR_LABELS[key]}
                   </span>
-                  {/* 已加点数 */}
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: pts > 0 ? 'var(--gold-2)' : 'var(--ink-4)', minWidth: 34 }}>
-                    {pts > 0 ? `已+${pts}` : '0点'}
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: pts > 0 ? 'var(--gold-2)' : 'var(--ink-4)', minWidth: 32, flexShrink: 0 }}>
+                    {pts > 0 ? `+${pts}` : '—'}
                   </span>
-                  {/* 每点效果（成长资质决定） */}
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-3)', flex: 1 }}>
-                    {ATTR_RATE_LABELS[key].map(({ key: rk, label }) =>
-                      `${label}+${dimRates[rk]}/点`
-                    ).join('  ')}
-                  </span>
+                  {/* 当前属性值 + 每点收益（rate=0 的属性不显示） */}
+                  <div style={{ flex: 1, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    {subStats.filter(({ key: rk }) => dimRates[rk] > 0).map(({ key: rk, statKey, label }) => (
+                      <span key={rk} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-2)', whiteSpace: 'nowrap' }}>
+                        {label}
+                        <span style={{ color: 'var(--ink)', fontWeight: 600, marginLeft: 2 }}>
+                          {stats[statKey]?.toLocaleString?.() ?? stats[statKey]}
+                        </span>
+                        <span style={{ color: 'var(--bamboo)', fontSize: 9, marginLeft: 2 }}>
+                          (+{dimRates[rk]}/点)
+                        </span>
+                      </span>
+                    ))}
+                    {subStats.every(({ key: rk }) => dimRates[rk] === 0) && (
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-4)' }}>
+                        此宠成长不匹配
+                      </span>
+                    )}
+                  </div>
                   <button
                     onClick={() => onAddAttr(key)}
                     disabled={freeAttr <= 0}
                     style={{
-                      fontSize: 11, padding: '1px 10px',
+                      fontSize: 11, padding: '1px 10px', flexShrink: 0,
                       background: freeAttr > 0 ? ATTR_COLORS[key] : 'var(--ink-2)',
                       color: freeAttr > 0 ? '#fff' : 'var(--ink-4)',
                       border: 'none', borderRadius: 2, cursor: freeAttr > 0 ? 'pointer' : 'default',

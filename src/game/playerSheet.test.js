@@ -22,16 +22,16 @@ const BASE_SHEET = {
 
 describe('getFixedStatFloor', () => {
   it('level 1 → 1', () => expect(getFixedStatFloor(1)).toBe(1))
-  it('level 50 → 50', () => expect(getFixedStatFloor(50)).toBe(50))
-  it('level 100 → 100', () => expect(getFixedStatFloor(100)).toBe(100))
-  it('clamps at CHARACTER_MAX_LEVEL', () => expect(getFixedStatFloor(999)).toBeLessThanOrEqual(140))
+  it('level 50 → 1', () => expect(getFixedStatFloor(50)).toBe(1))
+  it('level 100 → 1', () => expect(getFixedStatFloor(100)).toBe(1))
+  it('clamps at CHARACTER_MAX_LEVEL', () => expect(getFixedStatFloor(999)).toBe(1))
 })
 
 describe('getAttributePointBudget', () => {
-  it('level 1 = 14 (14 + 0 free)', () => expect(getAttributePointBudget(1)).toBe(14))
-  it('level 2 = 18 (14 + 4 free)', () => expect(getAttributePointBudget(2)).toBe(18))
-  it('level 50 = 210', () => expect(getAttributePointBudget(50)).toBe(210))
-  it('level 100 = 410', () => expect(getAttributePointBudget(100)).toBe(410))
+  it('level 1 = 0 (无自由点)', () => expect(getAttributePointBudget(1)).toBe(0))
+  it('level 2 = 5 (5 × 1)', () => expect(getAttributePointBudget(2)).toBe(5))
+  it('level 50 = 245 (5 × 49)', () => expect(getAttributePointBudget(50)).toBe(245))
+  it('level 100 = 495 (5 × 99)', () => expect(getAttributePointBudget(100)).toBe(495))
   it('monotonically increasing 1→100', () => {
     for (let L = 1; L < 100; L++) {
       expect(getAttributePointBudget(L)).toBeLessThanOrEqual(getAttributePointBudget(L + 1))

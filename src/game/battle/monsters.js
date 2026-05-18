@@ -6,16 +6,20 @@ function uid(prefix) {
 }
 
 /** 由等级推导六维（文字版平衡用，非官方数值） */
-export function deriveStatsFromLevel(level, { isBoss = false } = {}) {
+export function deriveStatsFromLevel(level, { isBoss = false, fieldBoss = false } = {}) {
   const L = Math.max(1, level)
-  const B = isBoss ? 2.75 : 1
+  const hpMul  = isBoss ? 2.75 : fieldBoss ? 1.8  : 1
+  const mpMul  = isBoss ? 1.45 : fieldBoss ? 1.25 : 1
+  const atkMul = isBoss ? 1.22 : fieldBoss ? 1.12 : 1
+  const defMul = isBoss ? 1.18 : fieldBoss ? 1.10 : 1
+  const spdMul = isBoss ? 0.94 : fieldBoss ? 0.96 : 1
   return {
     level: L,
-    hp: Math.round((52 + L * 20.5) * B),
-    mp: Math.round((28 + L * 5.2) * (isBoss ? 1.45 : 1)),
-    atk: Math.round((10 + L * 2.05) * (isBoss ? 1.22 : 1)),
-    def: Math.round((5 + L * 0.82) * (isBoss ? 1.18 : 1)),
-    speed: Math.round((8 + L * 0.6) * (isBoss ? 0.94 : 1)),
+    hp:    Math.round((52 + L * 20.5) * hpMul),
+    mp:    Math.round((28 + L * 5.2)  * mpMul),
+    atk:   Math.round((10 + L * 2.05) * atkMul),
+    def:   Math.round((5  + L * 0.82) * defMul),
+    speed: Math.round((8  + L * 0.6)  * spdMul),
   }
 }
 
@@ -59,14 +63,14 @@ export function inferSkillPool(spawn, isBoss = false) {
  * @param {{ key: string, name: string, level: number, tags?: string[], skillPool?: string[] }} spawn
  */
 export function spawnFromWendaoSpawn(spawn, options = {}) {
-  const { scale = 1, isBoss = false } = options
-  const stats = deriveStatsFromLevel(spawn.level, { isBoss })
+  const { scale = 1, isBoss = false, fieldBoss = false } = options
+  const stats = deriveStatsFromLevel(spawn.level, { isBoss, fieldBoss })
   const prof = getMonsterProfile(spawn.key)
   const skillPool =
-    spawn.skillPool?.length > 0 ? [...spawn.skillPool] : inferSkillPool(spawn, isBoss)
+    spawn.skillPool?.length > 0 ? [...spawn.skillPool] : inferSkillPool(spawn, isBoss || fieldBoss)
   const template = {
     key: spawn.key,
-    name: spawn.name,
+    name: fieldBoss ? `${spawn.name}（首领）` : spawn.name,
     level: spawn.level,
     hp: stats.hp,
     mp: stats.mp,
@@ -77,6 +81,13 @@ export function spawnFromWendaoSpawn(spawn, options = {}) {
     affinity: prof.affinity,
   }
   return spawnMonster(template, scale)
+}
+
+/** 幼崽：等级固定为 1，属性极弱，捕获后成长资质更优 */
+function spawnBabyMonsterUnit(spawn, options = {}) {
+  const { scale = 1 } = options
+  const babySpawn = { ...spawn, level: 1, name: `${spawn.name}（幼崽）` }
+  return spawnFromWendaoSpawn(babySpawn, { scale: scale * 0.5 })
 }
 
 export function spawnMonster(template, scale = 1) {
@@ -136,15 +147,33 @@ export function buildEncounter(partySize, options = {}) {
   const map = getMapById(mapId)
   const count = rollFoeCount(partySize, rng)
   const foes = []
+
+  // 每场遭遇：10% 出现野外首领，5% 出现幼崽（互斥，占第一个位置）
+  const spawnFieldBoss = rng() < 0.10
+  const spawnBaby      = !spawnFieldBoss && rng() < 0.05
+
   for (let k = 0; k < count; k++) {
     const spawn = map.spawns[Math.floor(rng() * map.spawns.length)]
-    const unit = spawnFromWendaoSpawn(spawn, { scale, rng })
+    const isFieldBossSlot = k === 0 && spawnFieldBoss
+    const isBabySlot      = k === 0 && spawnBaby
+
+    let unit
+    if (isFieldBossSlot) {
+      unit = spawnFromWendaoSpawn(spawn, { scale, fieldBoss: true })
+    } else if (isBabySlot) {
+      unit = spawnBabyMonsterUnit(spawn, { scale })
+    } else {
+      unit = spawnFromWendaoSpawn(spawn, { scale })
+    }
+
     foes.push({
       ...unit,
       mapId: map.id,
       mapName: map.name,
       spawnKey: spawn.key,
       isWorldBoss: false,
+      isFieldBoss:   isFieldBossSlot,
+      isBabyMonster: isBabySlot,
     })
   }
   return foes

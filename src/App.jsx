@@ -30,7 +30,6 @@ const SCREENS = [
 export default function App() {
   const [active, setActive] = useState('combat')
   const char = useSyncExternalStore(subscribe, getSnapshot)
-  const Screen = SCREENS.find((s) => s.id === active)?.component ?? CombatScreen
 
   return (
     <>
@@ -51,7 +50,14 @@ export default function App() {
         </div>
       </nav>
       <div className="screen-wrap">
-        <Screen />
+        {SCREENS.map((s) => {
+          const Comp = s.component
+          return (
+            <div key={s.id} style={active === s.id ? { width: '100%', height: '100%' } : { display: 'none' }}>
+              <Comp />
+            </div>
+          )
+        })}
       </div>
     </>
   )

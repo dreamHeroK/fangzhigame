@@ -31,12 +31,12 @@ const DEFAULT_STATE = {
   tael: 248800,
   potential: 4820,
 
-  // ── 四维加点（自由点按等级预算分配，最低 = 等级值 per stat）──
-  // Lv50 budget=210, floor=50 each → 10 free (all into int)
-  vit: 50,
-  int: 60,
-  str: 50,
-  agi: 50,
+  // ── 四维加点（端游每级 5 点，最低 1）──
+  // Lv50 budget=245，法金 build：灵力为主
+  vit: 40,
+  int: 155,
+  str: 5,
+  agi: 45,
 
   // ── 相性（每系 0-30，总和受等级预算限制）──
   // Lv50 budget=25 → 金系满25
@@ -118,6 +118,9 @@ const DEFAULT_STATE = {
       allocatedAttr: { vit: 0, int: 0, str: 0, agi: 0 },
     },
   ],
+
+  /** 背包：[{ itemId: string, qty: number }]，玲珑也以 qty 计颗数 */
+  bag: [],
 }
 
 function load() {
@@ -139,6 +142,7 @@ function load() {
           allocatedAttr: (!a || isOldFmt) ? { ...EMPTY_ALLOC } : a,
         }
       })
+      if (!Array.isArray(merged.bag)) merged.bag = []
       return merged
     }
   } catch {}
@@ -270,11 +274,12 @@ export function equipSkillAction(skillId) {
 }
 
 /**
- * 战斗胜利后落账奖励：角色经验、宠物经验（按参战宠物均分）、银两。
+ * 战斗胜利后落账奖励：角色经验、宠物经验（按参战宠物均分）、银两、掉落物品。
  * @param {{ exp: number, petExp: number, gold: number }} rewards
- * @param {string[]} activePetIds 参战宠物 id 列表（用于确认哪些宠物获得经验）
+ * @param {string[]} activePetIds 参战宠物 id 列表
+ * @param {{ itemId: string, qty: number }[]} loot 掉落物品列表
  */
-export function applyBattleRewardsAction(rewards, activePetIds = []) {
+export function applyBattleRewardsAction(rewards, activePetIds = [], loot = []) {
   const { exp = 0, petExp = 0, gold = 0 } = rewards
 
   // ── 角色经验 ──
@@ -292,13 +297,30 @@ export function applyBattleRewardsAction(rewards, activePetIds = []) {
     return { ...p, level: r.level, expIntoLevel: r.expIntoLevel }
   })
 
+  // ── 掉落物品入背包 ──
+  const newBag = mergeBagLoot(state.bag ?? [], loot)
+
   patch({
     level:        newLevel,
     expIntoLevel: newExpInto,
     expCur:       newExpInto,
     tael:         (state.tael ?? 0) + gold,
     petRoster:    newPetRoster,
+    bag:          newBag,
   })
+}
+
+/** 将 loot 合并入现有背包（同 itemId 叠加数量） */
+function mergeBagLoot(bag, loot) {
+  if (!loot?.length) return bag
+  const result = bag.map(s => ({ ...s }))
+  for (const { itemId, qty } of loot) {
+    if (!qty || qty <= 0) continue
+    const idx = result.findIndex(s => s.itemId === itemId)
+    if (idx >= 0) result[idx].qty += qty
+    else result.push({ itemId, qty })
+  }
+  return result
 }
 
 // ── 宠物上阵 / 休息 ─────────────────────────────────────────────────────────

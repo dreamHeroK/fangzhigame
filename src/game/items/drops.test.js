@@ -16,16 +16,16 @@ const neverDrop  = () => 0.999  // 高于所有门槛 → 不掉落
 describe('mergeLootStacks', () => {
   it('merges same itemId', () => {
     const result = mergeLootStacks([
-      { itemId: 'zhixuecao', qty: 2 },
-      { itemId: 'zhixuecao', qty: 3 },
+      { itemId: 'xiao_huanhun', qty: 2 },
+      { itemId: 'xiao_huanhun', qty: 3 },
     ])
     expect(result).toHaveLength(1)
     expect(result[0].qty).toBe(5)
   })
   it('keeps distinct items separate', () => {
     const result = mergeLootStacks([
-      { itemId: 'zhixuecao', qty: 1 },
-      { itemId: 'baiguo', qty: 1 },
+      { itemId: 'xiao_huanhun', qty: 1 },
+      { itemId: 'xiao_juling', qty: 1 },
     ])
     expect(result).toHaveLength(2)
   })
@@ -35,7 +35,7 @@ describe('mergeLootStacks', () => {
   })
   it('qty=0 is rounded up to 1 by Math.max(1,...)', () => {
     // mergeLootStacks uses Math.max(1, floor(qty)) → qty 0 becomes 1
-    const result = mergeLootStacks([{ itemId: 'zhixuecao', qty: 0 }])
+    const result = mergeLootStacks([{ itemId: 'xiao_huanhun', qty: 0 }])
     expect(result).toHaveLength(1)
     expect(result[0].qty).toBe(1)
   })

@@ -1,26 +1,35 @@
-import React, { useState } from 'react'
+import React, { useState, useSyncExternalStore } from 'react'
 import { Seal, PanelHead, Tag } from './common.jsx'
+import { subscribe, getSnapshot } from '../game/characterStore.js'
+import { getConsumable, isQuotaOrb, LINGLONG_DEFAULT_QUOTA } from '../game/items/catalog.js'
 
-const MOCK_ITEMS = [
-  { id: 'qiyelian', n: '七叶莲', qty: 23, q: 'common', t: 'T2', k: 'HP +1,000', glyph: '莲', note: 'Lv30-60 中期补血药，单口回复 1,000 气血。携带轻便，常作为群秒期主药。' },
-  { id: 'qisehua',  n: '七色花', qty: 8,  q: 'common', t: 'T2', k: 'HP +1,500', glyph: '花', note: '单口回复 1,500 气血，药效略优于七叶莲，产自花海秘境。' },
-  { id: 'buqidan',  n: '补气丹', qty: 17, q: 'common', t: 'T2', k: 'MP +1,200', glyph: '丹', note: '回复 1,200 法力，中期施法者常用随身补给。' },
-  { id: 'yunxiang', n: '云香精', qty: 6,  q: 'common', t: 'T2', k: 'MP +1,500', glyph: '香', note: '回复 1,500 法力，效果优于补气丹，从云雾仙境采集提炼。' },
-  { id: 'jinchuang',n: '金创药', qty: 4,  q: 'rare',   t: 'T3', k: 'HP +3,000', glyph: '药', note: '高效补血药，回复 3,000 气血，稀有品，适合高难副本备用。' },
-  { id: 'huishen',  n: '回神丹', qty: 3,  q: 'rare',   t: 'T3', k: 'MP +2,500', glyph: '神', note: '稀有法力药，回复 2,500 法力，施法量大时效率显著。' },
-  { id: 'xueling',  n: '血玲珑', q: 'epic',   t: '玲珑', k: '补满·12.84M/20M', glyph: '血', note: '极品气血玲珑，补满气血上限。额度独立，已用 12.84M / 上限 20M。' },
-  { id: 'faling',   n: '法玲珑', q: 'epic',   t: '玲珑', k: '补满·18.42M/20M', glyph: '法', note: '极品法力玲珑，补满法力上限。额度独立，已用 18.42M / 上限 20M。' },
-  { id: 'zhixue',   n: '止血草', qty: 32, q: 'common', t: 'T1', k: 'HP +100',   glyph: '草', note: '入门级补血草药，回复 100 气血，低级区域常见。' },
-  { id: 'baiguo',   n: '白果',   qty: 28, q: 'common', t: 'T1', k: 'MP +80',    glyph: '果', note: '入门级法力恢复，回复 80 法力，树林中随手可采。' },
-  { id: 'yiyecao',  n: '一叶草', qty: 11, q: 'common', t: 'T1', k: 'HP +200',   glyph: '叶', note: '回复 200 气血，效果略优于止血草，生于溪边。' },
-  { id: 'shedan',   n: '蛇胆',   qty: 5,  q: 'common', t: 'T1', k: 'MP +150',   glyph: '胆', note: '从蛇类怪物掉落，回复 150 法力，略有腥气。' },
-  { id: 'shuxin',   n: '舒心丸', qty: 2,  q: 'rare',   t: 'T3', k: 'MP +3,000', glyph: '舒', note: '稀有高效法药，单口回复 3,000 法力，产自仙门秘方。' },
-  { id: 'renshen',  n: '人参',   qty: 1,  q: 'epic',   t: 'T4', k: 'HP +10,000',glyph: '参', note: '珍贵灵药，回复 10,000 气血，百年以上老参，入口即化。' },
-  { id: 'skbook',   n: '技书残页',qty: 18,q: 'rare',   t: '材', k: '升技消耗',  glyph: '书', note: '用于提升技能修炼等级，18 张可提升一阶，来源：怪物掉落。' },
-  { id: 'shumen',   n: '蜀山令牌',qty: 1, q: 'legend', t: '任', k: '任务道具',  glyph: '令', note: '蜀山派主线任务道具，不可丢弃。持有此牌可入蜀山秘境。' },
-]
+// 按 tier 映射品质样式
+const TIER_QUALITY = { 1: 'common', 2: 'common', 3: 'rare', 4: 'epic', 5: 'legend', 6: 'epic' }
 
-const MEDICINE_TIERS = new Set(['T1', 'T2', 'T3', 'T4'])
+/** 将背包条目转换为 UI 显示格式 */
+function bagEntryToDisplay(entry) {
+  const def = getConsumable(entry.itemId)
+  if (!def) return null
+  const isOrb = isQuotaOrb(def)
+  const tier  = def.tier ?? 6
+  const q     = TIER_QUALITY[tier] ?? 'common'
+  const tLabel = isOrb ? '玲珑' : `T${tier}`
+  const effect = def.kind === 'hp'
+    ? (isOrb ? '补满气血' : `HP +${def.amount.toLocaleString()}`)
+    : (isOrb ? '补满法力' : `MP +${def.amount.toLocaleString()}`)
+  return {
+    id:    entry.itemId,
+    n:     def.name,
+    glyph: def.glyph ?? def.name[0],
+    qty:   entry.qty,
+    q,
+    t:     tLabel,
+    k:     effect,
+    note:  def.note ?? '',
+  }
+}
+
+const MEDICINE_TIERS = new Set(['T1', 'T2', 'T3', 'T4', 'T5'])
 
 const TAB_FILTERS = [
   () => true,
@@ -59,18 +68,21 @@ function buildSlots(items) {
 }
 
 export default function BagScreen() {
+  const char = useSyncExternalStore(subscribe, getSnapshot)
   const [activeTab, setActiveTab]   = useState(0)
   const [selectedId, setSelectedId] = useState(null)
-  const [tooltip, setTooltip]       = useState(null) // { item, left, top }
+  const [tooltip, setTooltip]       = useState(null)
 
-  const filtered = MOCK_ITEMS.filter(TAB_FILTERS[activeTab])
+  // 将 store 中的 bag 条目转为 UI 显示格式（过滤无效 ID）
+  const allItems = (char.bag ?? []).map(bagEntryToDisplay).filter(Boolean)
+
+  const filtered = allItems.filter(TAB_FILTERS[activeTab])
   const slots = buildSlots(filtered)
-  const tabs = tabLabel(MOCK_ITEMS)
+  const tabs = tabLabel(allItems)
 
   function handleMouseEnter(e, item) {
     const r = e.currentTarget.getBoundingClientRect()
-    const TW = 234
-    const TH = 148
+    const TW = 234, TH = 148
     let left = r.left
     let top  = r.top - TH - 6
     if (left + TW > window.innerWidth - 6) left = window.innerWidth - TW - 6
@@ -89,7 +101,7 @@ export default function BagScreen() {
         sub="INVENTORY"
         right={
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-2)' }}>
-            负重 <span style={{ color: 'var(--vermilion)', fontWeight: 600 }}>{MOCK_ITEMS.length}</span> / {PAGE_SIZE} 格
+            负重 <span style={{ color: 'var(--vermilion)', fontWeight: 600 }}>{allItems.length}</span> / {PAGE_SIZE} 格
           </span>
         }
       />
@@ -112,7 +124,7 @@ export default function BagScreen() {
           ))}
         </div>
 
-        {/* Grid — fills remaining height */}
+        {/* Grid */}
         <div style={{
           flex: 1,
           display: 'grid',
@@ -124,7 +136,7 @@ export default function BagScreen() {
           {slots.map((it, i) =>
             it ? (
               <div
-                key={it.id}
+                key={it.id + '_' + i}
                 className={'slot q-' + it.q}
                 style={{
                   padding: '3px 3px 4px',
@@ -137,15 +149,12 @@ export default function BagScreen() {
                   overflow: 'hidden',
                   background: selectedId === it.id ? '#fff8ea' : undefined,
                   borderColor: selectedId === it.id ? 'var(--vermilion)' : undefined,
-                  boxShadow: selectedId === it.id
-                    ? '0 0 0 2px rgba(163,55,58,0.2)'
-                    : undefined,
+                  boxShadow: selectedId === it.id ? '0 0 0 2px rgba(163,55,58,0.2)' : undefined,
                 }}
                 onClick={() => setSelectedId(it.id === selectedId ? null : it.id)}
                 onMouseEnter={(e) => handleMouseEnter(e, it)}
                 onMouseLeave={() => setTooltip(null)}
               >
-                {/* 品质 / 类型标签 */}
                 <div style={{
                   position: 'absolute', top: 2, left: 3,
                   fontFamily: 'var(--font-mono)', fontSize: 7,
@@ -153,7 +162,6 @@ export default function BagScreen() {
                 }}>
                   {it.t}
                 </div>
-                {/* 数量 */}
                 {it.qty != null && (
                   <span className="slot-count">×{it.qty}</span>
                 )}
@@ -176,6 +184,19 @@ export default function BagScreen() {
           )}
         </div>
 
+        {/* 空背包提示 */}
+        {allItems.length === 0 && (
+          <div style={{
+            position: 'absolute', inset: 0, display: 'flex',
+            alignItems: 'center', justifyContent: 'center',
+            pointerEvents: 'none',
+          }}>
+            <span style={{ fontFamily: 'var(--font-brush)', fontSize: 15, color: 'var(--ink-4)' }}>
+              囊中空空，出门打怪去
+            </span>
+          </div>
+        )}
+
         {/* Pagination */}
         <div style={{
           flexShrink: 0,
@@ -190,7 +211,7 @@ export default function BagScreen() {
         </div>
       </div>
 
-      {/* Hover tooltip — fixed overlay, pointer-events:none */}
+      {/* Hover tooltip */}
       {tooltip && (
         <div style={{
           position: 'fixed',
@@ -206,15 +227,10 @@ export default function BagScreen() {
           padding: '10px 12px',
           fontFamily: 'var(--font-body)',
         }}>
-          {/* Header row */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
             <div
               className={'slot q-' + tooltip.item.q}
-              style={{
-                width: 44, height: 44, flexShrink: 0,
-                flexDirection: 'column', alignItems: 'center',
-                justifyContent: 'center', gap: 1,
-              }}
+              style={{ width: 44, height: 44, flexShrink: 0, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1 }}
             >
               <Seal size={24} round>{tooltip.item.glyph}</Seal>
             </div>
@@ -232,19 +248,11 @@ export default function BagScreen() {
               </div>
             </div>
           </div>
-          {/* Effect */}
-          <div style={{
-            fontFamily: 'var(--font-mono)', fontSize: 10,
-            color: '#3a5a8a', marginBottom: 5,
-          }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#3a5a8a', marginBottom: 5 }}>
             {tooltip.item.k}
           </div>
-          {/* Description */}
           {tooltip.item.note && (
-            <div style={{
-              fontSize: 11, color: 'var(--ink-2)', lineHeight: 1.65,
-              borderTop: '1px dashed var(--ink-4)', paddingTop: 6,
-            }}>
+            <div style={{ fontSize: 11, color: 'var(--ink-2)', lineHeight: 1.65, borderTop: '1px dashed var(--ink-4)', paddingTop: 6 }}>
               {tooltip.item.note}
             </div>
           )}
