@@ -1,20 +1,33 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react'
+import React, { useState, useEffect, useRef, useMemo, useSyncExternalStore } from 'react'
 import { Seal, Placeholder, Bar, Taiji, InkMountain, SubHead } from './common.jsx'
 import {
   createBattle,
   submitPlayerAction,
   submitCapture,
+  submitUseConsumable,
+  executeNextStep,
   getActor,
   STATUS_LABELS,
 } from '../game/battle/battleEngine.js'
 import { getSkill } from '../game/battle/skills.js'
 import { suggestMapIdForLevel } from '../game/battle/wendaoMapsConfig.js'
-import { getSnapshot as charSnapshot, applyBattleRewardsAction } from '../game/characterStore.js'
+import {
+  subscribe as charSubscribe,
+  getSnapshot as charSnapshot,
+  applyBattleRewardsAction,
+  saveBattleEndAction,
+  deductBagItemAction,
+  toggleAutoRestoreAction,
+  addCapturedPetAction,
+} from '../game/characterStore.js'
 import { dbReady } from '../game/db/sqliteDb.js'
-import { recordBattle } from '../game/db/saveManager.js'
+import { recordBattle, loadSkillMemory, saveSkillEntry } from '../game/db/saveManager.js'
 import { computeHeroDerived } from '../game/playerSheet.js'
 import { createAllyUnit } from '../game/battle/monsters.js'
 import { createPetAllyUnit } from '../game/battle/pets.js'
+import { getConsumable } from '../game/items/catalog.js'
+import { getEquipByCode } from '../game/items/equipCatalog.js'
+import { QUALITY } from '../game/items/equipQuality.js'
 
 function makeNewBattle() {
   const char = charSnapshot()
@@ -26,11 +39,14 @@ function makeNewBattle() {
   const playerUnit = createAllyUnit(char.name, {
     level:       char.level,
     maxHp:       d.maxHp,
+    hpCur:       char.hpCur,
     maxMp:       d.maxMp,
+    mpCur:       char.mpCur,
     atk:         d.phyDmg,
     mAtk:        d.magDmg,
     def:         d.def,
     speed:       d.speed,
+    piercingPct: d.piercingPct ?? 0,
     skillLevels: char.skillLevels,
   }, skillPool)
 
@@ -141,7 +157,7 @@ const CombatUnit = ({ unit, pos, side, isCenter, isAffected, onClick }) => {
           <span style={{ marginLeft: 4, fontFamily: 'var(--font-display)', fontSize: 10, color: '#c8860a', padding: '1px 4px', background: 'var(--paper)', border: '1px solid #c8860a' }}>首领</span>
         )}
         {isBaby && (
-          <span style={{ marginLeft: 4, fontFamily: 'var(--font-display)', fontSize: 10, color: '#3a8040', padding: '1px 4px', background: 'var(--paper)', border: '1px solid #3a8040' }}>幼崽</span>
+          <span style={{ marginLeft: 4, fontFamily: 'var(--font-display)', fontSize: 10, color: '#3a8040', padding: '1px 4px', background: 'var(--paper)', border: '1px solid #3a8040' }}>宝宝</span>
         )}
       </div>
       <div style={{ width: w, height: h, position: 'relative' }}>
@@ -356,7 +372,59 @@ const SkillCard = ({ sk, skillLevel = 0, selected, disabled, forgotten, onClick 
   </div>
 )
 
-const ActionPanel = ({ actor, selectedSkillId, onSelectSkill, mode, onMode }) => {
+const ItemPanel = ({ char, actor, onUseItem }) => {
+  const bag = char.bag ?? []
+  const consumables = bag
+    .map(entry => {
+      const def = getConsumable(entry.itemId)
+      if (!def) return null
+      return { itemId: entry.itemId, qty: entry.qty, def }
+    })
+    .filter(Boolean)
+
+  if (consumables.length === 0) {
+    return (
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ color: 'var(--ink-4)', fontSize: 13, fontFamily: 'var(--font-brush)' }}>
+          囊中无药
+        </span>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, overflowY: 'auto' }}>
+      <SubHead title="道具" sub="ITEMS · USE ON SELF" />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, overflowY: 'auto', flex: 1 }}>
+        {consumables.map(({ itemId, qty, def }) => {
+          const isHp = def.kind === 'hp'
+          const alreadyFull = actor ? (isHp ? actor.hp >= actor.maxHp : actor.mp >= actor.maxMp) : true
+          const disabled = !actor || alreadyFull
+          return (
+            <button
+              key={itemId}
+              className="btn-ink"
+              disabled={disabled}
+              onClick={() => !disabled && onUseItem(itemId)}
+              style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '5px 10px', fontSize: 11, opacity: disabled ? 0.4 : 1,
+                cursor: disabled ? 'not-allowed' : 'pointer',
+              }}
+            >
+              <span className="brush" style={{ fontSize: 13 }}>{def.name}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: isHp ? 'var(--vermilion)' : '#3a5a8a' }}>
+                {isHp ? '气血' : '法力'} ×{qty}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+const ActionPanel = ({ actor, selectedSkillId, onSelectSkill, mode, onMode, plannedCount = 0, totalPlanners = 1 }) => {
   const modes = [
     { k: 'skill',   n: '技能', t: '技' },
     { k: 'catch',   n: '捕捉', t: '捕' },
@@ -375,10 +443,10 @@ const ActionPanel = ({ actor, selectedSkillId, onSelectSkill, mode, onMode }) =>
     <div style={{ width: 380, display: 'flex', flexDirection: 'column', gap: 8 }}>
       <SubHead
         title="行动"
-        sub="COMMAND · YOUR TURN"
+        sub={totalPlanners > 1 ? `PLAN · ${plannedCount + 1}/${totalPlanners}` : 'COMMAND'}
         right={
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-3)' }}>
-            {actor ? `当前 · ${actor.name} · MP ${actor.mp}/${actor.maxMp}` : '等待中…'}
+            {actor ? `${actor.name} · MP ${actor.mp}/${actor.maxMp}` : '等待中…'}
           </span>
         }
       />
@@ -415,7 +483,7 @@ const ActionPanel = ({ actor, selectedSkillId, onSelectSkill, mode, onMode }) =>
   )
 }
 
-const TargetPanel = ({ foes, selectedTargetId, affectedTargetIds, onSelectTarget, onAction, onCapture, mode, canAct, targetCount }) => (
+const TargetPanel = ({ foes, selectedTargetId, affectedTargetIds, onSelectTarget, onAction, onCapture, mode, canAct, targetCount, autoCombat, onToggleAutoCombat, isLastPlanner }) => (
   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
     <SubHead
       title="选 敌"
@@ -481,14 +549,21 @@ const TargetPanel = ({ foes, selectedTargetId, affectedTargetIds, onSelectTarget
         </button>
       ) : (
         <>
-          <button className="btn-ink" style={{ flex: 1, fontSize: 12 }}>自 动</button>
+          <button
+            className={'btn-ink' + (autoCombat ? ' btn-ink-primary' : '')}
+            onClick={onToggleAutoCombat}
+            style={{ flex: 1, fontSize: 11, flexDirection: 'column', gap: 1 }}
+          >
+            <span>自动</span>
+            <span style={{ fontSize: 8, opacity: 0.8 }}>{autoCombat ? '●开' : '○关'}</span>
+          </button>
           <button
             className="btn-ink btn-ink-primary"
             onClick={onAction}
-            disabled={!canAct}
-            style={{ flex: 2, fontSize: 14, padding: '8px 0', opacity: canAct ? 1 : 0.5 }}
+            disabled={!canAct || autoCombat}
+            style={{ flex: 2, fontSize: 14, padding: '8px 0', opacity: (canAct && !autoCombat) ? 1 : 0.5 }}
           >
-            出 手
+            {isLastPlanner ? '出 手' : '确 认'}
           </button>
         </>
       )}
@@ -502,10 +577,18 @@ export default function CombatScreen() {
   const [selectedTargetId, setSelectedTargetId] = useState(null)
   const [mode, setMode] = useState('skill')
   const [floats, setFloats] = useState([])
+  const [autoCombat, setAutoCombat] = useState(false)  // 自动战斗：记忆行动自动出手
+  const [autoStart, setAutoStart]   = useState(false)  // 自动开战：胜利后自动重新开战
+  const [babyAlert, setBabyAlert]   = useState(false)  // 发现宝宝时的暂停提示
   const prevUnitsRef = useRef(null)
-  const lastActionKindRef = useRef(null)   // 上一次玩家出手的技能类型
-  const pendingComboKindRef = useRef(null) // 本次出手是否触发连击（在 useEffect 里消费）
-  const lastSkillByActorRef = useRef({})   // 每个 actor 上次选择的技能
+  const lastActionKindRef = useRef(null)
+  const pendingComboKindRef = useRef(null)
+  const lastSkillByActorRef = useRef({})
+  const autoCombatRef = useRef(false)  // ref 供异步回调读取最新值
+  const autoStartRef  = useRef(false)
+  useEffect(() => { autoCombatRef.current = autoCombat }, [autoCombat])
+  useEffect(() => { autoStartRef.current  = autoStart  }, [autoStart])
+  const char = useSyncExternalStore(charSubscribe, charSnapshot)
 
   const allies = battle.units.filter((u) => u.side === 'ally')
   const foes = battle.units.filter((u) => u.side === 'foe')
@@ -538,6 +621,14 @@ export default function CombatScreen() {
     return [selectedTargetId, ...others]
   }, [selectedTargetId, targetCount, foes.map((f) => f.id + f.hp).join()])
 
+  // 挂载时从 DB 恢复行动记忆
+  useEffect(() => {
+    dbReady.then(() => {
+      const memory = loadSkillMemory()
+      if (Object.keys(memory).length > 0) lastSkillByActorRef.current = memory
+    })
+  }, [])
+
   // actor 切换时恢复上次为该 actor 选择的技能
   useEffect(() => {
     if (!actor) return
@@ -557,18 +648,19 @@ export default function CombatScreen() {
     }
   }, [battle])
 
-  // 战斗胜利 → 落账经验 / 宠物经验 / 银两
+  // 战斗胜利 → 落账经验 / 宠物经验 / 银两 / 持久化剩余HP/MP
   useEffect(() => {
     if (!battle.victoryLootNonce || !battle.victoryRewards) return
     const activePetIds = allies
       .filter(u => u.kind === 'pet')
       .map(u => {
-        // petunit_<petId> → 取 petRoster 对应 id
-        const char = charSnapshot()
-        return char.petRoster.find(p => `petunit_${p.id}` === u.id)?.id
+        return charSnapshot().petRoster.find(p => `petunit_${p.id}` === u.id)?.id
       })
       .filter(Boolean)
-    applyBattleRewardsAction(battle.victoryRewards, activePetIds, battle.lastVictoryLoot ?? [])
+    const playerUnit = allies.find(u => !u.kind)
+    const remainingHp = playerUnit ? playerUnit.hp : null
+    const remainingMp = playerUnit ? playerUnit.mp : null
+    applyBattleRewardsAction(battle.victoryRewards, activePetIds, battle.lastVictoryLoot ?? [], battle.lastEquipDrops ?? [], remainingHp, remainingMp)
     // 战斗历史写入 DB（DB 已就绪时才记录）
     dbReady.then(() => recordBattle({
       outcome:       'victory',
@@ -644,7 +736,10 @@ export default function CombatScreen() {
 
   function handleSelectSkill(skillId) {
     setSelectedSkillId(skillId)
-    if (actor) lastSkillByActorRef.current[actor.templateKey] = skillId
+    if (actor) {
+      lastSkillByActorRef.current[actor.templateKey] = skillId
+      saveSkillEntry(actor.templateKey, skillId).catch(() => {})
+    }
   }
 
   function handleAction() {
@@ -665,12 +760,22 @@ export default function CombatScreen() {
   function handleCapture() {
     if (!actor || !selectedTargetId || battle.phase === 'end') return
     lastActionKindRef.current = null  // 捕捉不计入连击链
-    const { state } = submitCapture(battle, { actorId: actor.id, foeId: selectedTargetId })
+    const { state, pet } = submitCapture(battle, { actorId: actor.id, foeId: selectedTargetId })
     setBattle(state)
+    if (pet) addCapturedPetAction(pet)
   }
 
-  function handleNewBattle() {
-    setBattle(makeNewBattle())
+  function handleUseItem(itemId) {
+    if (!actor || battle.phase === 'end') return
+    const result = submitUseConsumable(battle, { actorId: actor.id, targetId: actor.id, itemId })
+    if (!result.ok) return
+    setBattle(result.state)
+    deductBagItemAction(itemId)
+    setMode('skill')
+  }
+
+  function handleNewBattle(preBattle = null) {
+    setBattle(preBattle ?? makeNewBattle())
     setSelectedSkillId('normal_attack')
     setSelectedTargetId(null)
     setMode('skill')
@@ -681,9 +786,13 @@ export default function CombatScreen() {
     // lastSkillByActorRef 跨战斗保留，不清空
   }
 
-  // 战斗败北 → 记录历史
+  // 战斗败北 → 记录历史 + 持久化状态（HP=1 作为败北惩罚）
   useEffect(() => {
     if (!battle.defeatNonce) return
+    saveBattleEndAction(1, 0)
+    // 败北时停止自动模式
+    setAutoCombat(false)
+    setAutoStart(false)
     dbReady.then(() => recordBattle({
       outcome:      'defeat',
       mapName:      battle.log[0]?.match(/【(.+?)】/)?.[1] ?? '',
@@ -696,19 +805,70 @@ export default function CombatScreen() {
     })).catch(() => {})
   }, [battle.defeatNonce])
 
-  // Turn queue: next 7 actors (skip dead)
-  const queueIds = [
-    ...battle.roundOrder.slice(battle.roundIndex),
-    ...battle.roundOrder.slice(0, battle.roundIndex),
-  ]
-  const turnQueue = queueIds
-    .map((id) => battle.units.find((u) => u.id === id))
-    .filter((u) => u && u.hp > 0)
+  // 自动开战：胜利后延迟 1.5s 发起新战斗（若遇宝宝则暂停并提示）
+  useEffect(() => {
+    if (!autoStart || battle.phase !== 'end' || battle.outcome !== 'victory') return
+    const timer = setTimeout(() => {
+      if (!autoStartRef.current) return
+      const newBattle = makeNewBattle()
+      const hasBaby = newBattle.units.some(u => u.side === 'foe' && u.isBabyMonster && u.hp > 0)
+      if (hasBaby) {
+        handleNewBattle(newBattle)
+        setAutoStart(false)
+        setAutoCombat(false)
+        setBabyAlert(true)
+      } else {
+        handleNewBattle(newBattle)
+      }
+    }, 1500)
+    return () => clearTimeout(timer)
+  }, [battle.victoryLootNonce, autoStart])
+
+  // 自动战斗：轮到己方单位时，按记忆行动延迟出手
+  useEffect(() => {
+    if (!autoCombat || !actor || battle.phase === 'end') return
+    const capturedBattle = battle
+    const capturedActor  = actor
+    const timer = setTimeout(() => {
+      if (!autoCombatRef.current) return
+      const lFoes = capturedBattle.units.filter(u => u.side === 'foe' && u.hp > 0)
+      if (!lFoes.length) return
+      const skillId  = lastSkillByActorRef.current[capturedActor.templateKey] ?? 'normal_attack'
+      const skillDef = getSkill(skillId, capturedActor.skillLevels?.[skillId] ?? 0)
+      const maxTgts  = skillDef?.maxTargets ?? 1
+      const targetIds = maxTgts <= 1 ? [lFoes[0].id] : lFoes.slice(0, maxTgts).map(f => f.id)
+      const next = submitPlayerAction(capturedBattle, {
+        actorId: capturedActor.id, skillId, targetIds,
+      })
+      setBattle(next)
+      setSelectedTargetId(lFoes[0].id)
+      lastActionKindRef.current = skillDef?.kind ?? null
+    }, 650)
+    return () => clearTimeout(timer)
+  }, [actor?.id, battle.roundNum, autoCombat])
+
+  // 执行阶段：每隔 500ms 推进一个单位的行动，产生逐步出手的节奏
+  useEffect(() => {
+    if (battle.phase !== 'executing') return
+    const timer = setTimeout(() => {
+      setBattle(prev => prev.phase === 'executing' ? executeNextStep(prev) : prev)
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [battle.phase, battle.executionIndex])
+
+  // 行动顺序：按速度排列的全部存活单位（规划阶段显示本回合预期执行顺序）
+  const turnQueue = battle.roundOrder
+    .map(id => battle.units.find(u => u.id === id))
+    .filter(u => u && u.hp > 0)
     .slice(0, 7)
 
-  const canAct = !!actor && battle.phase === 'running'
+  const canAct = !!actor && battle.phase !== 'end'
   const mapName = battle.log[0]?.match(/【(.+?)】/)?.[1] ?? '遭遇战'
-  const roundNum = Math.floor(battle.roundOrder.length > 0 ? battle.roundIndex / Math.max(1, battle.roundOrder.length) : 0) + 1
+  const roundNum = battle.roundNum ?? 1
+  const plannedCount  = Object.keys(battle.pendingAllyActions ?? {}).length
+  const totalPlanners = (battle.planningQueue ?? []).length
+  const remainingPlanners = (battle.planningQueue ?? []).filter(id => !(battle.pendingAllyActions ?? {})[id])
+  const isLastPlanner = remainingPlanners.length <= 1
 
   return (
     <div className="paper-bg ink-wash-bg" style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', fontFamily: 'var(--font-body)', color: 'var(--ink)' }}>
@@ -732,10 +892,36 @@ export default function CombatScreen() {
         <div style={{ flex: 1 }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontFamily: 'var(--font-display)', fontSize: 12, color: 'var(--ink-2)', letterSpacing: 1 }}>
           <span>阶段 · <span style={{ color: battle.phase === 'end' ? 'var(--vermilion)' : 'var(--bamboo)' }}>
-            {battle.phase === 'end' ? (battle.outcome === 'victory' ? '胜利' : '落败') : (actor ? `${actor.name}出手` : '运转中')}
+            {battle.phase === 'end'
+              ? (battle.outcome === 'victory' ? '胜利' : '落败')
+              : battle.phase === 'executing'
+                ? '出手中'
+                : (actor ? `规划·${actor.name}` : '出手中')}
           </span></span>
           <span style={{ opacity: 0.4 }}>|</span>
           <span>五行 · 木旺</span>
+          <span style={{ opacity: 0.4 }}>|</span>
+          <button
+            className={'btn-ink btn-ink-sm' + (autoCombat ? ' btn-ink-primary' : '')}
+            onClick={() => setAutoCombat(v => !v)}
+            style={{ fontSize: 10, padding: '3px 8px', letterSpacing: 0.5 }}
+          >
+            {autoCombat ? '自动战斗 ●' : '自动战斗 ○'}
+          </button>
+          <button
+            className={'btn-ink btn-ink-sm' + (autoStart ? ' btn-ink-primary' : '')}
+            onClick={() => setAutoStart(v => !v)}
+            style={{ fontSize: 10, padding: '3px 8px', letterSpacing: 0.5 }}
+          >
+            {autoStart ? '自动开战 ●' : '自动开战 ○'}
+          </button>
+          <button
+            className={'btn-ink btn-ink-sm' + (char.autoRestore ? ' btn-ink-primary' : '')}
+            onClick={toggleAutoRestoreAction}
+            style={{ fontSize: 10, padding: '3px 8px', letterSpacing: 0.5 }}
+          >
+            {char.autoRestore ? '自动回满 ●' : '自动回满 ○'}
+          </button>
         </div>
       </div>
 
@@ -886,15 +1072,44 @@ export default function CombatScreen() {
                     })}
                   </div>
                 )}
+                {battle.lastEquipDrops?.length > 0 && (
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+                    {battle.lastEquipDrops.map((e, i) => {
+                      const it = getEquipByCode(e.baseCode)
+                      const q = QUALITY[e.quality]
+                      return (
+                        <span key={i} style={{
+                          fontFamily: 'var(--font-mono)', fontSize: 11,
+                          padding: '2px 7px', borderRadius: 2,
+                          background: 'rgba(58,91,161,0.10)',
+                          border: `1px solid ${q?.borderColor ?? '#3a5ba1'}`,
+                          color: q?.color ?? 'var(--ink)',
+                        }}>
+                          {it?.item_name ?? '?'} Lv{it?.item_level}
+                          {e.quality !== 'white' && <span style={{ opacity: 0.7 }}> [{q?.label}]</span>}
+                        </span>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             )}
-            <button
-              className="btn-ink btn-ink-primary"
-              onClick={handleNewBattle}
-              style={{ fontSize: 15, padding: '10px 28px', flexShrink: 0 }}
-            >
-              再 战
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0, alignItems: 'center' }}>
+              <button
+                className="btn-ink btn-ink-primary"
+                onClick={() => handleNewBattle()}
+                style={{ fontSize: 15, padding: '10px 28px' }}
+              >
+                再 战
+              </button>
+              <button
+                className={'btn-ink btn-ink-sm' + (autoStart ? ' btn-ink-primary' : '')}
+                onClick={() => setAutoStart(v => !v)}
+                style={{ fontSize: 10, padding: '3px 12px' }}
+              >
+                {autoStart ? '自动开战 ●' : '自动开战 ○'}
+              </button>
+            </div>
           </div>
         ) : (
           <>
@@ -904,18 +1119,27 @@ export default function CombatScreen() {
               onSelectSkill={handleSelectSkill}
               mode={mode}
               onMode={setMode}
+              plannedCount={plannedCount}
+              totalPlanners={totalPlanners}
             />
-            <TargetPanel
-              foes={foes}
-              selectedTargetId={selectedTargetId}
-              affectedTargetIds={affectedTargetIds}
-              targetCount={targetCount}
-              onSelectTarget={setSelectedTargetId}
-              onAction={handleAction}
-              onCapture={handleCapture}
-              mode={mode}
-              canAct={canAct && (mode === 'catch' ? !!selectedTargetId : !!(selectedSkillId && selectedTargetId))}
-            />
+            {mode === 'item' ? (
+              <ItemPanel char={char} actor={actor} onUseItem={handleUseItem} />
+            ) : (
+              <TargetPanel
+                foes={foes}
+                selectedTargetId={selectedTargetId}
+                affectedTargetIds={affectedTargetIds}
+                targetCount={targetCount}
+                onSelectTarget={setSelectedTargetId}
+                onAction={handleAction}
+                onCapture={handleCapture}
+                mode={mode}
+                canAct={canAct && (mode === 'catch' ? !!selectedTargetId : !!(selectedSkillId && selectedTargetId))}
+                autoCombat={autoCombat}
+                onToggleAutoCombat={() => setAutoCombat(v => !v)}
+                isLastPlanner={isLastPlanner}
+              />
+            )}
           </>
         )}
       </div>
@@ -974,6 +1198,71 @@ export default function CombatScreen() {
           </div>
         ))}
       </div>
+
+      {/* 自动开战倒计时提示（胜利且 autoStart 开启时显示） */}
+      {autoStart && battle.phase === 'end' && battle.outcome === 'victory' && (
+        <div style={{
+          position: 'absolute', bottom: 360, left: 24, zIndex: 20,
+          fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--bamboo)',
+          background: 'rgba(243,237,224,0.88)', padding: '4px 10px',
+          border: '1px solid var(--bamboo)',
+        }}>
+          ⟳ 1.5 秒后自动开战…
+        </div>
+      )}
+
+      {/* 宝宝刷新提示遮罩 */}
+      {babyAlert && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 200,
+          background: 'rgba(30,22,10,0.70)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            background: 'var(--paper)',
+            border: '2px solid var(--gold-2)',
+            padding: '32px 40px',
+            maxWidth: 380, textAlign: 'center',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.45)',
+          }}>
+            <div className="brush" style={{ fontSize: 28, color: 'var(--gold-2)', marginBottom: 10, letterSpacing: '0.12em' }}>
+              ☆ 发现宝宝
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ink-2)', marginBottom: 24, lineHeight: 1.8 }}>
+              当前战场出现宝宝宠物。<br />
+              自动战斗已暂停，请选择操作。
+            </div>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button
+                className="btn-ink btn-ink-primary"
+                style={{ padding: '8px 18px' }}
+                onClick={() => { setBabyAlert(false); setMode('catch') }}
+              >
+                留守捕捉
+              </button>
+              <button
+                className="btn-ink"
+                style={{ padding: '8px 18px' }}
+                onClick={() => {
+                  setBabyAlert(false)
+                  setAutoCombat(true)
+                  setAutoStart(true)
+                  handleNewBattle()
+                }}
+              >
+                跳过·继续自动
+              </button>
+              <button
+                className="btn-ink"
+                style={{ padding: '8px 18px' }}
+                onClick={() => setBabyAlert(false)}
+              >
+                手动继续
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

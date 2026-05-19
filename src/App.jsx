@@ -4,6 +4,7 @@ import CharacterScreen from './components/CharacterScreen.jsx'
 import SkillsScreen from './components/SkillsScreen.jsx'
 import PetsScreen from './components/PetsScreen.jsx'
 import BagScreen from './components/BagScreen.jsx'
+
 import { QuestScreen, ShopScreen, SignScreen, WorldMapScreen } from './components/MiscScreens.jsx'
 import DataScreen from './components/DataScreen.jsx'
 import TestScreen from './components/TestScreen.jsx'
@@ -20,6 +21,7 @@ const SCREENS = [
   { id: 'skills',    label: '技能',  component: SkillsScreen },
   { id: 'pets',      label: '灵兽',  component: PetsScreen },
   { id: 'bag',       label: '背包',  component: BagScreen },
+
   { id: 'quest',     label: '任务',  component: QuestScreen },
   { id: 'shop',      label: '商城',  component: ShopScreen },
   { id: 'sign',      label: '签到',  component: SignScreen },

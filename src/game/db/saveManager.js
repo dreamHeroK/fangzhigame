@@ -118,6 +118,31 @@ export function getBattleHistory(saveId, limit = 100) {
   )
 }
 
+// ── 行动记忆 ────────────────────────────────────────────────────────────────
+
+/**
+ * 读取全部行动记忆，返回 { [templateKey]: skillId }。
+ */
+export function loadSkillMemory() {
+  try {
+    const rows = queryAll('SELECT template_key, skill_id FROM skill_memory')
+    return Object.fromEntries(rows.map(r => [r.template_key, r.skill_id]))
+  } catch { return {} }
+}
+
+/**
+ * 写入单条行动记忆（upsert），异步刷盘。
+ * @param {string} templateKey
+ * @param {string} skillId
+ */
+export async function saveSkillEntry(templateKey, skillId) {
+  run(
+    'INSERT OR REPLACE INTO skill_memory (template_key, skill_id, updated_at) VALUES (?,?,?)',
+    [templateKey, skillId, Date.now()],
+  )
+  await persistDb()
+}
+
 /**
  * 当前存档战斗统计汇总。
  */

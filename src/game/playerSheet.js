@@ -21,6 +21,8 @@ import {
   getAffinityPointsTotal,
   getFreeAttributePointsTotal,
 } from './characterLevelConfig.js'
+import { getEquipBonuses, getEquippedInstances } from './items/equipCatalog.js'
+import { compileExtraBonuses } from './items/equipQuality.js'
 
 export const AFFINITY_CAP_PER_ELEMENT = 30
 
@@ -199,18 +201,43 @@ export function computeHeroDerived(level, sheet) {
   const chassisDef = 10 + L * 1.8
   const chassisSpd = 8 + L * 1.2
 
-  const maxHp = Math.round(chassisHp + vit * r.hpPerVit)
-  const maxMp = Math.round(chassisMp + int * r.mpPerInt)
-  const magDmg = Math.round(chassisMag + int * r.magPerInt)
-  const phyDmg = Math.round(chassisPhy + str * r.phyPerStr)
-  const def = Math.round(chassisDef + vit * r.defPerVit)
-  const speed = Math.round(chassisSpd + agi * r.spdPerAgi)
+  /** 装备基础加成 + 额外词条加成 */
+  const eq = getEquipBonuses(sheet.equipped, sheet.equipBag)
+  const instances = getEquippedInstances(sheet.equipped, sheet.equipBag)
+  const ex = compileExtraBonuses(instances)
+
+  // 装备词条中的四维加成叠入基础属性，再经相性放大
+  const vitEff = vit + ex.vitAdd
+  const intEff = int + ex.intAdd
+  const strEff = str + ex.strAdd
+  const agiEff = agi + ex.agiAdd
+
+  // 基础值（底盘 + 属性点 + 装备固定 + 额外固定）
+  // ex.hurt / ex.hurtPct 保留供旧存档兼容（同时加物攻/法攻）
+  const baseMaxHp  = Math.round(chassisHp  + vitEff * r.hpPerVit)   + eq.blood   + ex.blood
+  const baseMaxMp  = Math.round(chassisMp  + intEff * r.mpPerInt)   + eq.magic   + ex.magic
+  const baseMagDmg = Math.round(chassisMag + intEff * r.magPerInt)  + eq.hurt    + ex.hurt + ex.magAtk
+  const basePhyDmg = Math.round(chassisPhy + strEff * r.phyPerStr)  + eq.hurt    + ex.hurt + ex.phyAtk
+  const baseDef    = Math.round(chassisDef + vitEff * r.defPerVit)  + eq.defense + ex.defense
+  const baseSpeed  = Math.round(chassisSpd + agiEff * r.spdPerAgi)  + eq.speed   + ex.speed
+
+  // 应用百分比加成（装备额外词条）；物攻/法攻各自独立
+  const maxHp  = Math.round(baseMaxHp  * (1 + ex.bloodPct   / 100))
+  const maxMp  = Math.round(baseMaxMp  * (1 + ex.magicPct   / 100))
+  const magDmg = Math.round(baseMagDmg * (1 + (ex.hurtPct + ex.magAtkPct) / 100))
+  const phyDmg = Math.round(basePhyDmg * (1 + (ex.hurtPct + ex.phyAtkPct) / 100))
+  const def    = Math.round(baseDef    * (1 + ex.defensePct  / 100))
+  const speed  = baseSpeed
+
+  // 破甲率（上限 30%，降低目标有效防御）
+  const piercingPct = Math.min(30, ex.piercing)
+
   const acc = Math.round(36 + L * 0.55 + str * r.accPerStr + agi * 0.15)
 
-  const dodgePct = Math.min(45, Math.round((agi * 0.12 + vit * 0.04) * 10) / 10)
-  const critPct = Math.min(40, Math.round((str * 0.06 + agi * 0.04) * 10) / 10)
-  const comboPct = Math.min(35, Math.round((agi * 0.05 + str * 0.03) * 10) / 10)
-  const counterPct = Math.min(25, Math.round(vit * 0.08 * 10) / 10)
+  const dodgePct   = Math.min(45, Math.round((agi * 0.12 + vit * 0.04  + ex.dodgeAdd)   * 10) / 10)
+  const critPct    = Math.min(40, Math.round((str * 0.06 + agi * 0.04  + ex.critAdd)    * 10) / 10)
+  const comboPct   = Math.min(35, Math.round((agi * 0.05 + str * 0.03  + ex.comboAdd)   * 10) / 10)
+  const counterPct = Math.min(25, Math.round((vit * 0.08                + ex.counterAdd) * 10) / 10)
   const reflectPct = Math.min(20, Math.round(vit * 0.06 * 10) / 10)
 
   const strongMetal = Math.min(8, affMetal * 0.22)
@@ -273,6 +300,11 @@ export function computeHeroDerived(level, sheet) {
     daoBarrierBonus: daoB,
     /** 当前每点属性有效收益（展示） */
     rates: r,
+    piercingPct,
+    /** 当前装备基础加成（展示用） */
+    equipBonus: eq,
+    /** 装备额外词条加成（展示用） */
+    extraBonus: ex,
   }
 }
 

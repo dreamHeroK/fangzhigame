@@ -18,7 +18,8 @@ import {
 } from './monsters.js'
 import { computeCaptureProbability, createWildPetFromFoe } from './pets.js'
 import { getConsumable } from '../items/catalog.js'
-import { formatLootLine, mergeLootStacks, rollBattleDrops, rollDropsForFoe } from '../items/drops.js'
+import { formatLootLine, mergeLootStacks, rollBattleDrops, rollBattleEquipDrops, rollDropsForFoe } from '../items/drops.js'
+import { getEquipByCode } from '../items/equipCatalog.js'
 import { applyConsumableToUnit } from './itemEffects.js'
 
 function clamp(n, lo, hi) {
@@ -62,18 +63,22 @@ function finalizeVictory(s, rng, extraLoot = []) {
   const foes = s.units.filter((u) => u.side === 'foe')
   const fromField = rollBattleDrops(foes, rng)
   const lastVictoryLoot = mergeLootStacks([...fromField, ...extraLoot])
+  const lastEquipDrops = rollBattleEquipDrops(foes, rng)
   const { exp, petExp, gold } = calcVictoryRewards(foes, rng)
-  // 给每条 loot 附上可读名称，方便 UI 直接渲染
   const lastVictoryLootNamed = lastVictoryLoot.map(l => ({
     ...l, name: getConsumable(l.itemId)?.name ?? l.itemId,
   }))
   const lootMsg = formatLootLine(lastVictoryLoot)
+  const equipMsg = lastEquipDrops.length
+    ? `装备：${lastEquipDrops.map(e => { const it = getEquipByCode(e.baseCode); return `${it?.item_name ?? '?'}(Lv${it?.item_level ?? '?'})` }).join('、')}`
+    : ''
   const rewardLines = [
     '— — — — — — — — — —',
     '战斗胜利。',
     `人物经验 +${exp.toLocaleString()}　宠物经验 +${petExp.toLocaleString()}`,
     `银两 +${gold.toLocaleString()}`,
     lootMsg,
+    ...(equipMsg ? [equipMsg] : []),
   ]
   return {
     ...s,
@@ -81,6 +86,7 @@ function finalizeVictory(s, rng, extraLoot = []) {
     outcome: 'victory',
     awaitingActorId: null,
     lastVictoryLoot: lastVictoryLootNamed,
+    lastEquipDrops,
     victoryRewards: { exp, petExp, gold },
     victoryLootNonce: `${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
     log: [...s.log, ...rewardLines].slice(-80),
@@ -126,7 +132,11 @@ function baseDamage(attacker, defender, skillId, rng = Math.random) {
   const defTemp = defender.side === 'ally' ? 1 + (defender.innateTempDefBonus ?? 0) : 1
   const physAtk = attacker.atk * (attacker.passiveAtkMul ?? 1) * atkTemp
   const magAtk = (attacker.mAtk ?? attacker.atk) * (attacker.passiveAtkMul ?? 1) * atkTemp
-  const def = Math.max(1, defender.def * (defender.passiveDefMul ?? 1) * defTemp)
+  // 破甲：降低目标有效防御（上限 30%）
+  const pierceMul = attacker.side === 'ally' && (attacker.piercingPct ?? 0) > 0
+    ? 1 - Math.min(0.30, attacker.piercingPct / 100)
+    : 1
+  const def = Math.max(1, defender.def * (defender.passiveDefMul ?? 1) * defTemp * pierceMul)
   let raw
   if (sk.kind === 'magic') {
     raw = (magAtk * 0.55 + 18) * sk.power - def * 0.35
@@ -316,6 +326,202 @@ function defaultAllyName(i) {
   return names[i % names.length]
 }
 
+// ── 规划→执行 战斗系统 ────────────────────────────────────────────────────
+
+function makeDefeat(state) {
+  return {
+    ...state,
+    phase: 'end',
+    outcome: 'defeat',
+    awaitingActorId: null,
+    defeatNonce: `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+    log: [...state.log, '— — — — — — — — — —', '我方溃败。'].slice(-80),
+  }
+}
+
+/** 进入规划阶段：让玩家依次为所有存活己方单位选择行动 */
+function startPlanningPhase(state) {
+  const outcome = battleOutcome(state)
+  if (outcome === 'victory') return finalizeVictory(state, Math.random)
+  if (outcome === 'defeat')  return makeDefeat(state)
+
+  const planningQueue = state.units
+    .filter(u => u.side === 'ally' && u.hp > 0)
+    .map(u => u.id)
+  const roundOrder = sortBySpeed(state.units).map(u => u.id)
+  return {
+    ...state,
+    phase: 'planning',
+    awaitingActorId: planningQueue[0] ?? null,
+    planningQueue,
+    pendingAllyActions: {},
+    roundOrder,
+    roundIndex: 0,
+  }
+}
+
+/** 存入一个己方行动计划，若全员已规划则进入逐步执行阶段 */
+function advancePlanning(state, submittedId, plan, rng) {
+  const pending = { ...(state.pendingAllyActions ?? {}), [submittedId]: plan }
+  const remaining = (state.planningQueue ?? []).filter(id => !pending[id])
+  if (remaining.length > 0) {
+    return { ...state, pendingAllyActions: pending, awaitingActorId: remaining[0] }
+  }
+  return startExecutionPhase({ ...state, pendingAllyActions: pending }, rng)
+}
+
+/** 进入执行阶段：按速度生成队列，等待 React 侧逐步推进 */
+function startExecutionPhase(state, rng) {
+  const outcome = battleOutcome(state)
+  if (outcome === 'victory') return finalizeVictory(state, rng)
+  if (outcome === 'defeat')  return makeDefeat(state)
+  const executionQueue = sortBySpeed(state.units).map(u => u.id)
+  return {
+    ...state,
+    phase: 'executing',
+    awaitingActorId: null,
+    executionQueue,
+    executionIndex: 0,
+  }
+}
+
+/** 执行单个己方单位的技能攻击（含遗忘/MP不足降级为普攻、目标死亡自动改判） */
+function executeAllySkill(state, actor, skill, targetIds, rng) {
+  const hasForget = actor.statusEffects?.some(e => e.type === 'forget')
+  let effectiveSkill = (hasForget && skill.id !== 'normal_attack') ? getSkill('normal_attack') : skill
+  if (actor.mp < effectiveSkill.mpCost) effectiveSkill = getSkill('normal_attack')
+
+  let s = spendMp(state, actor.id, effectiveSkill.mpCost)
+
+  let validTargets = (targetIds ?? [])
+    .map(id => getActor(s, id))
+    .filter(t => t && t.hp > 0)
+  if (validTargets.length === 0) {
+    const firstFoe = living(s, 'foe')[0]
+    if (!firstFoe) return s
+    validTargets = [firstFoe]
+  }
+
+  const hits = []
+  for (const tgt of validTargets) {
+    const res = applyStrike(s, actor.id, tgt.id, effectiveSkill.id, rng)
+    s = res.state
+    hits.push({ name: getActor(s, tgt.id)?.name ?? tgt.name, damage: res.damage, id: tgt.id })
+  }
+
+  const forceNote = hasForget && skill.id !== 'normal_attack' ? '（遗忘·强制普攻）' : ''
+  const mpNote    = effectiveSkill.mpCost > 0 ? `（耗 MP ${effectiveSkill.mpCost}）` : ''
+  const totalDmg  = hits.reduce((a, h) => a + h.damage, 0)
+  if (totalDmg > 0) {
+    const hitDesc = hits.length === 1
+      ? `${hits[0].name} 受到 ${hits[0].damage} 点伤害`
+      : `${hits.map(h => h.name).join('、')} 各受 ${hits.map(h => h.damage).join('、')} 点伤害（合计 ${totalDmg}）`
+    s = pushLog(s, `${actor.name}${forceNote} 使用【${effectiveSkill.name}】${mpNote} → ${hitDesc}。`)
+  } else {
+    s = pushLog(s, `${actor.name}${forceNote} 对 ${hits.map(h => h.name).join('、')} 施放【${effectiveSkill.name}】${mpNote}。`)
+  }
+  if (effectiveSkill.statusEffect) {
+    for (const hit of hits) {
+      const tgtNow = getActor(s, hit.id)
+      if (tgtNow && tgtNow.hp > 0) s = tryApplyStatus(s, actor.id, hit.id, effectiveSkill, rng)
+    }
+  }
+  return s
+}
+
+/** 回合执行：所有单位按速度排序依次行动，己方使用预规划动作，敌方 AI 自动选择 */
+function executeRound(state, rng) {
+  const executionOrder = sortBySpeed(state.units)
+  let s = { ...state, awaitingActorId: null }
+
+  for (const unitSnap of executionOrder) {
+    const preOut = battleOutcome(s)
+    if (preOut === 'victory') return finalizeVictory(s, rng)
+    if (preOut === 'defeat')  return makeDefeat(s)
+
+    const u = getActor(s, unitSnap.id)
+    if (!u || u.hp <= 0) continue
+
+    if (u.side === 'ally') {
+      s = startOfTurnHooks(s, u.id, rng)
+      const uA = getActor(s, u.id)
+      if (!uA || uA.hp <= 0) continue
+      const { state: s2, skipTurn, actRandomly } = processStatusTick(s, u.id, rng)
+      s = s2
+      const uA2 = getActor(s, u.id)
+      if (!uA2 || uA2.hp <= 0) continue
+      if (skipTurn) continue
+      if (actRandomly) { s = executeConfusedTurn(s, uA2, rng); continue }
+
+      const plan = state.pendingAllyActions?.[u.id]
+      if (!plan || plan.kind === 'noop') continue
+      const skill = getSkill(plan.skillId, uA2.skillLevels?.[plan.skillId] ?? 0)
+      s = executeAllySkill(s, uA2, skill, plan.targetIds, rng)
+    } else {
+      const u2 = getActor(s, unitSnap.id)
+      if (!u2 || u2.hp <= 0) continue
+      s = executeFoeTurn(s, u2, rng)
+    }
+  }
+
+  const out = battleOutcome(s)
+  if (out === 'victory') return finalizeVictory(s, rng)
+  if (out === 'defeat')  return makeDefeat(s)
+  return startPlanningPhase({ ...s, roundNum: (state.roundNum ?? 1) + 1 })
+}
+
+/**
+ * 推进执行队列中的下一个单位行动（由 React 侧定时调用）。
+ * - 已阵亡单位：直接跳过，不暂停
+ * - noop 计划（道具/捕捉）：跳过，不暂停
+ * - 状态导致跳过回合 / 混乱 / 正常行动：执行后返回，由调用方决定何时调下一步
+ * - 队列耗尽：自动进入下一回合规划阶段
+ */
+export function executeNextStep(state, rng = Math.random) {
+  if (state.phase !== 'executing') return state
+  const queue = state.executionQueue ?? []
+  let s = state
+  let idx = state.executionIndex ?? 0
+
+  while (idx < queue.length) {
+    const preOut = battleOutcome(s)
+    if (preOut === 'victory') return finalizeVictory(s, rng)
+    if (preOut === 'defeat')  return makeDefeat(s)
+
+    const unitId = queue[idx]
+    const u = getActor(s, unitId)
+    if (!u || u.hp <= 0) { idx++; continue }  // 已阵亡，跳过
+
+    if (u.side === 'ally') {
+      s = startOfTurnHooks(s, u.id, rng)
+      const uA = getActor(s, u.id)
+      if (!uA || uA.hp <= 0) { idx++; continue }
+      const { state: s2, skipTurn, actRandomly } = processStatusTick(s, u.id, rng)
+      s = s2
+      const uA2 = getActor(s, u.id)
+      if (!uA2 || uA2.hp <= 0) { idx++; continue }
+      if (skipTurn)   { idx++; break }  // 显示状态消息后停顿
+      if (actRandomly){ s = executeConfusedTurn(s, uA2, rng); idx++; break }
+      const plan = state.pendingAllyActions?.[u.id]
+      if (!plan || plan.kind === 'noop') { idx++; continue }  // 道具/捕捉已在规划阶段处理
+      const skill = getSkill(plan.skillId, uA2.skillLevels?.[plan.skillId] ?? 0)
+      s = executeAllySkill(s, uA2, skill, plan.targetIds, rng)
+      idx++; break
+    } else {
+      s = executeFoeTurn(s, u, rng)
+      idx++; break
+    }
+  }
+
+  const postOut = battleOutcome(s)
+  if (postOut === 'victory') return finalizeVictory(s, rng)
+  if (postOut === 'defeat')  return makeDefeat(s)
+  if (idx >= queue.length) {
+    return startPlanningPhase({ ...s, roundNum: (state.roundNum ?? 1) + 1 })
+  }
+  return { ...s, executionIndex: idx }
+}
+
 /**
  * @param {{
  *   partySize?: number,
@@ -367,7 +573,7 @@ export function createBattle(opts = {}) {
   const isBossFight  = bossFoes.length > 0
   const fieldBossUnit = foes.find(f => f.isFieldBoss)
   const babyUnit      = foes.find(f => f.isBabyMonster)
-  const specialNote   = fieldBossUnit ? `　★首领「${fieldBossUnit.name}」出没！` : babyUnit ? `　☆发现幼崽「${babyUnit.name}」！` : ''
+  const specialNote   = fieldBossUnit ? `　★首领「${fieldBossUnit.name}」出没！` : babyUnit ? `　☆发现宝宝「${babyUnit.name}」！` : ''
   const open = isBossFight
     ? `【${foes[0].worldBossMapName ?? foes[0].mapName ?? '世界BOSS'}】挑战「${foes[0].name}」Lv${foes[0].level}：我方 ${partySize} 人（首领战固定 1 只）。`
     : wantsBoss
@@ -377,13 +583,15 @@ export function createBattle(opts = {}) {
   let state = {
     units,
     log: [open],
-    phase: 'running',
+    phase: 'planning',
     awaitingActorId: null,
     roundOrder: [],
     roundIndex: 0,
+    roundNum: 1,
+    pendingAllyActions: {},
+    planningQueue: [],
   }
-  state = rebuildRoundQueue(state)
-  state = tickUntilInputOrEnd(state, rng)
+  state = startPlanningPhase(state)
   return state
 }
 
@@ -488,9 +696,8 @@ export function submitUseConsumable(
     restoreHp != null ? { restoreHp } : restoreMp != null ? { restoreMp } : /** @type {undefined} */ (undefined)
   const applied = applyConsumableToUnit(state, targetId, itemId, patchUnit, pushLog, opts)
   if (!applied.ok) return { state, ok: false, hpDelta: 0, mpDelta: 0 }
-  let s = { ...applied.state, awaitingActorId: null }
-  s = advanceRoundPointer(s)
-  s = tickUntilInputOrEnd(s, rng)
+  // 道具立即生效，该单位本回合行动视为 noop
+  const s = advancePlanning(applied.state, actorId, { kind: 'noop' }, rng)
   return { state: s, ok: true, hpDelta: applied.hpDelta, mpDelta: applied.mpDelta }
 }
 
@@ -504,52 +711,15 @@ export function submitPlayerAction(state, { actorId, skillId, targetId, targetId
   const actor = getActor(state, actorId)
   if (!actor || actor.side !== 'ally') return state
 
-  // 遗忘：无法使用消耗灵力的技能，强制普通攻击
-  const hasForget = actor.statusEffects?.some(e => e.type === 'forget')
-  const effectiveSkillId = hasForget && skillId !== 'normal_attack' ? 'normal_attack' : skillId
-  const skill = getSkill(effectiveSkillId)
-
+  const skill = getSkill(skillId)
   if (!actor.skillPool.includes(skill.id)) return state
   if (actor.mp < skill.mpCost) return state
 
-  // 解析目标列表：优先 targetIds，否则退回 targetId 单体
   const ids = targetIds?.length > 0 ? targetIds : targetId ? [targetId] : []
-  const validTargets = ids.map((id) => getActor(state, id)).filter((t) => t && t.hp > 0)
-  if (validTargets.length === 0) return state
+  if (ids.length === 0) return state
 
-  let s = spendMp(state, actor.id, skill.mpCost)
-  const hits = []
-  for (const tgt of validTargets) {
-    const res = applyStrike(s, actor.id, tgt.id, skill.id, rng)
-    s = res.state
-    hits.push({ name: getActor(s, tgt.id)?.name ?? tgt.name, damage: res.damage, id: tgt.id })
-  }
-
-  const forceNote = hasForget && skillId !== 'normal_attack' ? '（遗忘·强制普攻）' : ''
-  const mpNote = skill.mpCost > 0 ? `（耗 MP ${skill.mpCost}）` : ''
-  const totalDmg = hits.reduce((a, h) => a + h.damage, 0)
-  if (totalDmg > 0) {
-    const hitDesc = hits.length === 1
-      ? `${hits[0].name} 受到 ${hits[0].damage} 点伤害`
-      : `${hits.map((h) => h.name).join('、')} 各受 ${hits.map((h) => h.damage).join('、')} 点伤害（合计 ${totalDmg}）`
-    s = pushLog(s, `${actor.name}${forceNote} 使用【${skill.name}】${mpNote} → ${hitDesc}。`)
-  } else {
-    const targetNames = hits.map(h => h.name).join('、')
-    s = pushLog(s, `${actor.name}${forceNote} 对 ${targetNames} 施放【${skill.name}】${mpNote}。`)
-  }
-
-  // 障碍技能：尝试对存活目标施加状态效果
-  if (skill.statusEffect) {
-    for (const hit of hits) {
-      const tgtNow = getActor(s, hit.id)
-      if (tgtNow && tgtNow.hp > 0) s = tryApplyStatus(s, actor.id, hit.id, skill, rng)
-    }
-  }
-
-  s = { ...s, awaitingActorId: null }
-  s = advanceRoundPointer(s)
-  s = tickUntilInputOrEnd(s, rng)
-  return s
+  // 存储该单位的规划动作；若全员已规划则触发回合执行
+  return advancePlanning(state, actorId, { skillId, targetIds: ids }, rng)
 }
 
 /**
@@ -567,9 +737,7 @@ export function submitCapture(state, { actorId, foeId }, rng = Math.random) {
 
   if (foe.isWorldBoss) {
     let s = pushLog(state, `${actor.name} 尝试捕捉，世界 BOSS 无法收服。`)
-    s = { ...s, awaitingActorId: null }
-    s = advanceRoundPointer(s)
-    s = tickUntilInputOrEnd(s, rng)
+    s = advancePlanning(s, actorId, { kind: 'noop' }, rng)
     return { state: s, pet: null }
   }
 
@@ -577,26 +745,19 @@ export function submitCapture(state, { actorId, foeId }, rng = Math.random) {
   if (rng() < p) {
     const pet = createWildPetFromFoe(foe, rng)
     const newUnits = state.units.filter((u) => u.id !== foe.id)
-    let s = { ...state, units: newUnits, awaitingActorId: null }
-    s = pushLog(
-      s,
-      `${actor.name} 捕捉成功！获得「${pet.displayName}」。当次成功率 ${(p * 100).toFixed(0)}%。`
-    )
+    let s = pushLog({ ...state, units: newUnits },
+      `${actor.name} 捕捉成功！获得「${pet.displayName}」。当次成功率 ${(p * 100).toFixed(0)}%。`)
     if (living(s, 'foe').length === 0) {
       const captureLoot = rollDropsForFoe(foe, rng)
       s = finalizeVictory(s, rng, captureLoot)
       return { state: s, pet }
     }
-    s = rebuildRoundQueue(s)
-    s = advanceRoundPointer(s)
-    s = tickUntilInputOrEnd(s, rng)
+    s = advancePlanning(s, actorId, { kind: 'noop' }, rng)
     return { state: s, pet }
   }
 
   let s = pushLog(state, `${actor.name} 捕捉失败。当次成功率 ${(p * 100).toFixed(0)}%。`)
-  s = { ...s, awaitingActorId: null }
-  s = advanceRoundPointer(s)
-  s = tickUntilInputOrEnd(s, rng)
+  s = advancePlanning(s, actorId, { kind: 'noop' }, rng)
   return { state: s, pet: null }
 }
 

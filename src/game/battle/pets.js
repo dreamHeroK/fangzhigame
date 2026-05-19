@@ -26,7 +26,7 @@ function uid(prefix) {
  */
 export function computeCaptureProbability(foe, opts = {}) {
   if (foe.isWorldBoss) return 0
-  // 幼崽：高基础捕捉率，血量低时几乎必抓
+  // 宝宝：高基础捕捉率，血量低时几乎必抓
   const pMin = opts.pMin ?? (foe.isBabyMonster ? 0.30 : 0.04)
   const pMax = opts.pMax ?? (foe.isBabyMonster ? 0.90 : 0.55)
   const bp = opts.hpBreakpoint ?? 0.3
@@ -41,11 +41,11 @@ export function createWildPetFromFoe(foe, rng = Math.random) {
   const prof = getMonsterProfile(key)
   const innateSkillIds = rollInnateIds(prof.innatePool, { rng, isBoss: false })
   const L = Math.max(1, foe.level)
-  // 幼崽捕获：精英品质掷骰（在区间高 60% 段内），并标记 kind 为宝宝
+  // 宝宝捕获：精英品质掷骰（在区间高 60% 段内），并标记 kind 为宝宝
   const isCaptureBaby = !!foe.isBabyMonster
   const growthDetail = rollPetGrowthDetail(key, rng, isCaptureBaby ? { qualityBoost: 'elite' } : {})
   const st = computeStatsFromGrowth(L, growthDetail, { baby: isCaptureBaby })
-  const baseName = foe.name.replace(/（幼崽）$/, '')
+  const baseName = foe.name.replace(/（宝宝）$/, '')
   return {
     id: uid('pet'),
     kind: isCaptureBaby ? 'baby' : 'wild',
@@ -66,7 +66,7 @@ export function createWildPetFromFoe(foe, rng = Math.random) {
     speed: st.speed,
     mAtk: st.mAtk,
     notes: isCaptureBaby
-      ? '幼崽捕获：精英品质成长，宝宝系数，可出战升级。'
+      ? '宝宝捕获：精英品质成长，宝宝系数，可出战升级。'
       : '战斗中怪物无天生；成长资质见 growthDetail。宠物可勾选启用天生（后续出战）。',
   }
 }

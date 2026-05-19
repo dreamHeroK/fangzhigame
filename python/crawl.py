@@ -542,6 +542,27 @@ def main() -> None:
     parser.add_argument("--no-weapon", action="store_true")
     parser.add_argument("--no-pet", action="store_true")
     parser.add_argument("--save-itemtypes", action="store_true")
+    # ── 等级扫描参数 ──────────────────────────────────────────────────────────
+    parser.add_argument(
+        "--level-min", type=int, default=10,
+        help="扫描起始等级（含）；默认 10",
+    )
+    parser.add_argument(
+        "--level-max", type=int, default=150,
+        help="扫描结束等级（含）；默认 150",
+    )
+    parser.add_argument(
+        "--level-step", type=int, default=10,
+        help="逐级扫描步长；默认 10（问道装备以 10 级一档）",
+    )
+    parser.add_argument(
+        "--no-level-sweep", action="store_true",
+        help="跳过逐级扫描，仅用「不限」查询（旧行为）",
+    )
+    parser.add_argument(
+        "--no-level-filter", action="store_true",
+        help="保留所有等级数据，不按 level-min/level-max 过滤最终结果",
+    )
     args = parser.parse_args()
 
     server_id, server_label = resolve_server_id(args.server, args.server_name)
@@ -549,55 +570,75 @@ def main() -> None:
     page_size = max(5, int(args.page_size))
     max_pages = max(0, int(args.max_pages))
 
+    # 构建等级查询序列：逐级 [10, 20, ..., 150] + 兜底「不限」
+    if args.no_level_sweep:
+        level_queries: List[str] = [LEVEL_ANY]
+    else:
+        step = max(1, args.level_step)
+        level_queries = [
+            str(lv)
+            for lv in range(args.level_min, args.level_max + 1, step)
+        ]
+        level_queries.append(LEVEL_ANY)  # 兜底：捕获不整除步长的散装等级
+    print(
+        f"等级扫描序列：{level_queries[:-1]} + 不限（共 {len(level_queries)} 次查询/类别）"
+        if not args.no_level_sweep
+        else "等级扫描：已跳过，仅查「不限」"
+    )
+
     seen_pairs: set = set()  # (item_name, item_level)
     all_rows: List[Dict[str, Any]] = []
 
     if not args.no_equip:
-        print("抓取装备（itemTypeID=0、等级不限、全页）…")
+        for lv_str in level_queries:
+            label = f"装备 Lv{lv_str}" if lv_str != LEVEL_ANY else "装备 不限"
+            print(f"抓取 {label}…")
 
-        def equip_params(page: int) -> Dict[str, Any]:
-            return base_list_params(server_id, page, page_size, 0, LEVEL_ANY)
+            def _equip_params(page: int, _lv: str = lv_str) -> Dict[str, Any]:
+                return base_list_params(server_id, page, page_size, 0, _lv)
 
-        all_rows.extend(
-            fetch_all_list_pages(
-                LIST_EQUIP,
-                equip_params,
-                args.sleep,
-                seen_pairs,
-                lambda r: raw_to_record(r, "装备", "装备", LEVEL_ANY),
-                "装备",
-                max_pages,
+            all_rows.extend(
+                fetch_all_list_pages(
+                    LIST_EQUIP,
+                    _equip_params,
+                    args.sleep,
+                    seen_pairs,
+                    lambda r, _lv=lv_str: raw_to_record(r, "装备", "装备", _lv),
+                    label,
+                    max_pages,
+                )
             )
-        )
 
     if not args.no_weapon:
-        print("抓取武器（itemTypeID=0、等级不限、全页）…")
+        for lv_str in level_queries:
+            label = f"武器 Lv{lv_str}" if lv_str != LEVEL_ANY else "武器 不限"
+            print(f"抓取 {label}…")
 
-        def weapon_params(page: int) -> Dict[str, Any]:
-            return base_list_params(server_id, page, page_size, 0, LEVEL_ANY)
+            def _weapon_params(page: int, _lv: str = lv_str) -> Dict[str, Any]:
+                return base_list_params(server_id, page, page_size, 0, _lv)
 
-        all_rows.extend(
-            fetch_all_list_pages(
-                LIST_WEAPON,
-                weapon_params,
-                args.sleep,
-                seen_pairs,
-                lambda r: raw_to_record(r, "武器", "武器", LEVEL_ANY),
-                "武器",
-                max_pages,
+            all_rows.extend(
+                fetch_all_list_pages(
+                    LIST_WEAPON,
+                    _weapon_params,
+                    args.sleep,
+                    seen_pairs,
+                    lambda r, _lv=lv_str: raw_to_record(r, "武器", "武器", _lv),
+                    label,
+                    max_pages,
+                )
             )
-        )
 
     if not args.no_pet:
         print("抓取宠物（种类不限、等级不限、全页）…")
 
-        def pet_params_page(page: int) -> Dict[str, Any]:
+        def _pet_params(page: int) -> Dict[str, Any]:
             return pet_list_params(server_id, page, page_size, 0, LEVEL_ANY)
 
         all_rows.extend(
             fetch_all_list_pages(
                 LIST_PET,
-                pet_params_page,
+                _pet_params,
                 args.sleep,
                 seen_pairs,
                 lambda r: pet_raw_to_record(r, "宠物", LEVEL_ANY),
@@ -607,6 +648,19 @@ def main() -> None:
         )
 
     all_rows = dedupe_records(all_rows)
+
+    # 按等级区间过滤（宠物不受此过滤影响，category != "宠物" 才限等级）
+    if not args.no_level_filter and not args.no_level_sweep:
+        before = len(all_rows)
+        all_rows = [
+            r for r in all_rows
+            if r.get("category") == "宠物"
+            or args.level_min <= (r.get("item_level") or 0) <= args.level_max
+        ]
+        print(
+            f"等级过滤（Lv{args.level_min}-Lv{args.level_max}）："
+            f"{before} → {len(all_rows)} 条"
+        )
 
     # 可选：拉取 XML 详情填充随机属性
     if args.fetch_xml:

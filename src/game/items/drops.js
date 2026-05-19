@@ -1,4 +1,49 @@
 ﻿import { CONSUMABLE_BY_ID, getConsumable, potionIdsForTier, tierFromMonsterLevel } from './catalog.js'
+import { EQUIP_CATALOG } from './equipCatalog.js'
+import { generateEquipInstance } from './equipQuality.js'
+
+// ── 装备掉落池（按等级索引）───────────────────────────────────────────────
+function nearestEquipLevel(monsterLevel) {
+  if (monsterLevel <= 5) return 1
+  return Math.min(150, Math.round(monsterLevel / 10) * 10)
+}
+
+const EQUIP_BY_LEVEL = (() => {
+  const m = new Map()
+  for (const item of EQUIP_CATALOG) {
+    const lv = item.item_level
+    if (!m.has(lv)) m.set(lv, [])
+    m.get(lv).push(item)
+  }
+  return m
+})()
+
+/**
+ * 单只怪物的装备掉落（随机1件或null）
+ * @param {{ level: number, isWorldBoss?: boolean, isFieldBoss?: boolean }} foe
+ * @returns {object|null}
+ */
+export function rollEquipDrop(foe, rng = Math.random) {
+  const L = foe.level ?? 1
+  const boss      = !!foe.isWorldBoss
+  const fieldBoss = !!foe.isFieldBoss
+  const chance = boss ? 0.70 : fieldBoss ? 0.30 : 0.06
+  if (rng() >= chance) return null
+  const pool = EQUIP_BY_LEVEL.get(nearestEquipLevel(L)) ?? []
+  if (!pool.length) return null
+  const baseItem = pool[Math.floor(rng() * pool.length)]
+  return generateEquipInstance(baseItem, rng)
+}
+
+/**
+ * 战斗中所有敌方的装备掉落汇总
+ */
+export function rollBattleEquipDrops(foes, rng = Math.random) {
+  return foes
+    .filter(f => f.side === 'foe')
+    .map(f => rollEquipDrop(f, rng))
+    .filter(Boolean)
+}
 
 function pick(arr, rng) {
   return arr[Math.floor(rng() * arr.length)]

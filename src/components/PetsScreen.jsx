@@ -32,6 +32,11 @@ function sumGrowth(g) {
   return g.hp + g.mp + g.spd + g.pAtk + g.mAtk
 }
 
+/** 兼容旧字段名 growth 和新捕捉宠物的 growthDetail */
+function petGrowth(pet) {
+  return pet.growth ?? pet.growthDetail
+}
+
 // ── sub-components ────────────────────────────────────────────────────────────
 
 const KV = ({ k, v, c }) => (
@@ -63,8 +68,8 @@ const AptRow = ({ label, val, lo, hi, color }) => {
 
 const PetCard = ({ pet, isSelected, onClick }) => {
   const catalog = getPetByKey(pet.spawnKey)
-  const total = sumGrowth(pet.growth)
-  const [lo, hi] = pet.growth.totalBand
+  const total = sumGrowth(petGrowth(pet))
+  const [lo, hi] = petGrowth(pet).totalBand
   const grade = totalGrade(total, lo, hi)
   return (
     <div
@@ -166,7 +171,7 @@ const ATTR_RATE_LABELS = {
 
 const PetDetail = ({ pet, onToggleActive, onAddAttr, onResetAttr }) => {
   const catalog = getPetByKey(pet.spawnKey)
-  const g = pet.growth
+  const g = petGrowth(pet)
   const alloc = pet.allocatedAttr ?? { vit: 0, int: 0, str: 0, agi: 0 }
   const stats = computeStatsFromGrowth(pet.level, g, { baby: pet.kind === '宝宝', allocatedAttr: alloc })
   const rates = getPetAttrRates(g, pet.level)

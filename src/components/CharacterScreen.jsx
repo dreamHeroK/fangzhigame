@@ -1,6 +1,6 @@
-import React, { useSyncExternalStore } from 'react'
+import React, { useState, useSyncExternalStore } from 'react'
 import { Seal, Placeholder, CornerDeco, PanelHead, SubHead, Cell, Tag } from './common.jsx'
-import { subscribe, getSnapshot, addStatAction, addAffinityAction, autoAllocateAction, resetAllocAction } from '../game/characterStore.js'
+import { subscribe, getSnapshot, addStatAction, addAffinityAction, autoAllocateAction, resetAllocAction, equipItemAction, unequipItemAction } from '../game/characterStore.js'
 import {
   computeHeroDerived,
   getAttributePointBudget,
@@ -11,26 +11,114 @@ import {
   getEffectiveAttributeRates,
 } from '../game/playerSheet.js'
 import { expRequiredToNextLevel } from '../game/characterLevelConfig.js'
+import { EQUIP_SLOT_DEFS, getEquipByCode } from '../game/items/equipCatalog.js'
+import { QUALITY } from '../game/items/equipQuality.js'
 
-const equipSlots = [
-  { id: 'head',     label: '头盔', n: '紫府金冠',    q: 'epic',   refine: 9,  side: 'left' },
-  { id: 'robe',     label: '衣服', n: '蜀山·云锦袍', q: 'legend', refine: 12, side: 'left' },
-  { id: 'necklace', label: '项链', n: '苍璃玉佩',    q: 'rare',   refine: 8,  side: 'left' },
-  { id: 'belt',     label: '腰带', n: '紫电流苏',    q: 'rare',   refine: 7,  side: 'left' },
-  { id: 'weapon',   label: '武器', n: '诛仙·寒锋',   q: 'legend', refine: 12, side: 'right' },
-  { id: 'shoes',    label: '靴履', n: '踏云履',      q: 'rare',   refine: 8,  side: 'right' },
-  { id: 'amulet',   label: '暗器', n: '—',          q: 'common', empty: true, side: 'right' },
-]
+// ── 装备槽布局（左4右4，首饰独占一行）────────────────────────────────────
+const LEFT_SLOTS  = ['weapon', 'hat', 'cloth', 'shoe']
+const RIGHT_SLOTS = ['belt', 'lingbao', 'bracelet1', 'bracelet2']
+const BOTTOM_SLOTS = ['necklace', 'pendant']
 
-const EquipSlot = ({ s }) => (
-  <div className={'slot q-' + s.q + (s.empty ? ' slot-empty' : '')} style={{ aspectRatio: 'auto', height: 64, padding: 4, flexDirection: 'column', gap: 1 }}>
-    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-3)' }}>{s.label}</div>
-    <div className="brush" style={{ fontSize: 11, color: s.empty ? 'var(--ink-4)' : 'var(--ink)', lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
-      {s.empty ? '未配' : s.n}
+/**
+ * slotKey    - 槽位 key
+ * equippedUid - equipped[slotKey]（可为 uid 字符串、旧存 baseCode 数字或 null）
+ * equipBag   - 全部装备实例数组
+ * equippedUids - Set<uid> 当前所有已装备的 uid
+ */
+function EquipSlotBtn({ slotKey, equippedUid, equipBag, equippedUids }) {
+  const [open, setOpen] = useState(false)
+  const def = EQUIP_SLOT_DEFS.find(s => s.key === slotKey)
+
+  // 解析当前槽位已装备的实例和 catalog 条目
+  let equippedInst = null
+  let equippedItem = null
+  if (typeof equippedUid === 'string') {
+    equippedInst = equipBag.find(i => i.uid === equippedUid) ?? null
+    if (equippedInst) equippedItem = getEquipByCode(equippedInst.baseCode)
+  } else if (typeof equippedUid === 'number') {
+    equippedItem = getEquipByCode(equippedUid)  // 旧存档兼容
+  }
+
+  const q = equippedInst ? QUALITY[equippedInst.quality] : null
+  const borderColor = q?.borderColor ?? (equippedItem ? '#3a6bb5' : 'var(--ink-3)')
+  const nameColor   = q?.color ?? (equippedItem ? 'var(--ink)' : 'var(--ink-4)')
+
+  // 候选列表：未装备实例中符合此槽位的，按等级降序
+  const candidates = equipBag
+    .filter(inst => !equippedUids.has(inst.uid))
+    .map(inst => ({ inst, item: getEquipByCode(inst.baseCode) }))
+    .filter(({ item }) => item && def?.filter(item))
+    .sort((a, b) => b.item.item_level - a.item.item_level)
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <div
+        onClick={() => setOpen(o => !o)}
+        style={{
+          height: 58, padding: '3px 5px', display: 'flex', flexDirection: 'column', gap: 1,
+          border: `1px solid ${borderColor}`,
+          background: equippedItem ? 'rgba(58,107,181,0.07)' : 'var(--paper)',
+          cursor: 'pointer', userSelect: 'none',
+        }}
+      >
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-3)' }}>
+          {def?.name}
+        </div>
+        <div className="brush" style={{
+          fontSize: 11, lineHeight: 1.2, color: nameColor,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%',
+        }}>
+          {equippedItem ? equippedItem.item_name : '未配'}
+        </div>
+        {equippedItem && (
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-3)' }}>
+            Lv{equippedItem.item_level}{q && q.key !== 'white' ? ` [${q.label}]` : ''}
+          </div>
+        )}
+      </div>
+      {open && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, zIndex: 50,
+          background: 'var(--paper-dark)', border: '1px solid var(--ink-2)',
+          minWidth: 170, maxHeight: 220, overflowY: 'auto', boxShadow: '2px 4px 12px rgba(0,0,0,0.25)',
+        }}>
+          {equippedItem && (
+            <div
+              onClick={() => { unequipItemAction(slotKey); setOpen(false) }}
+              style={{ padding: '5px 8px', cursor: 'pointer', color: 'var(--vermilion)', fontSize: 11, borderBottom: '1px solid var(--ink-3)', fontFamily: 'var(--font-mono)' }}
+            >
+              卸除
+            </div>
+          )}
+          {candidates.length === 0 && (
+            <div style={{ padding: '5px 8px', fontSize: 11, color: 'var(--ink-4)', fontFamily: 'var(--font-mono)' }}>
+              背包中无可用装备
+            </div>
+          )}
+          {candidates.map(({ inst, item: it }) => {
+            const cq = QUALITY[inst.quality]
+            return (
+              <div
+                key={inst.uid}
+                onClick={() => { equipItemAction(slotKey, inst.uid); setOpen(false) }}
+                style={{
+                  padding: '4px 8px', cursor: 'pointer', fontSize: 11,
+                  borderBottom: '1px solid rgba(0,0,0,0.08)',
+                  background: inst.uid === equippedUid ? 'rgba(58,107,181,0.12)' : 'transparent',
+                  fontFamily: 'var(--font-mono)',
+                }}
+              >
+                <span style={{ color: cq?.color ?? 'var(--ink)' }}>{it.item_name}</span>
+                {cq?.key !== 'white' && <span style={{ fontSize: 9, marginLeft: 3, color: cq?.color, opacity: 0.8 }}>[{cq?.label}]</span>}
+                <span style={{ color: 'var(--ink-3)', marginLeft: 4 }}>Lv{it.item_level}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
-    {!s.empty && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--gold-2)' }}>+{s.refine}</span>}
-  </div>
-)
+  )
+}
 
 const Grid5 = ({ children, cols = 5 }) => (
   <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, border: '1px solid var(--ink-3)', background: 'var(--paper)' }}>
@@ -69,6 +157,10 @@ const AllocCell = ({ label, value, sub, accent, onAdd, canAdd }) => (
 
 export default function CharacterScreen() {
   const s = useSyncExternalStore(subscribe, getSnapshot)
+
+  const equippedUids = new Set(
+    Object.values(s.equipped ?? {}).filter(v => typeof v === 'string')
+  )
 
   const level = s.level
   const budget4 = getAttributePointBudget(level)
@@ -128,23 +220,30 @@ export default function CharacterScreen() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 8, flex: 1, minHeight: 0 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: 72 }}>
-              {equipSlots.filter((s) => s.side === 'left').map((sl) => <EquipSlot key={sl.id} s={sl} />)}
+          {/* 装备区：左4 + 中（立绘占位） + 右4，下方项链/玉佩 */}
+          <div style={{ display: 'flex', gap: 6, flex: 1, minHeight: 0 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: 82 }}>
+              {LEFT_SLOTS.map(k => (
+                <EquipSlotBtn key={k} slotKey={k} equippedUid={s.equipped?.[k]} equipBag={s.equipBag ?? []} equippedUids={equippedUids} onSelect={() => {}} />
+              ))}
             </div>
             <div style={{ flex: 1, position: 'relative' }}>
-              <Placeholder label="CHARACTER 3D" sub="角色立绘 / 360°" style={{ position: 'absolute', inset: 0, borderStyle: 'solid' }} />
-              <svg viewBox="0 0 200 60" style={{ position: 'absolute', bottom: 4, left: 4, right: 4, width: 'calc(100% - 8px)', height: 50, opacity: 0.4 }}>
-                <ellipse cx="100" cy="30" rx="90" ry="13" fill="none" stroke="var(--ink-2)" />
-                <ellipse cx="100" cy="30" rx="68" ry="10" fill="none" stroke="var(--ink-3)" strokeDasharray="3 2" />
-              </svg>
+              <Placeholder label="CHARACTER" sub="角色立绘" style={{ position: 'absolute', inset: 0, borderStyle: 'solid' }} />
               <div style={{ position: 'absolute', top: 6, right: 6 }}>
                 <Seal size={32} round school={s.school}>{s.school}</Seal>
               </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: 72 }}>
-              {equipSlots.filter((sl) => sl.side === 'right').map((sl) => <EquipSlot key={sl.id} s={sl} />)}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: 82 }}>
+              {RIGHT_SLOTS.map(k => (
+                <EquipSlotBtn key={k} slotKey={k} equippedUid={s.equipped?.[k]} equipBag={s.equipBag ?? []} equippedUids={equippedUids} onSelect={() => {}} />
+              ))}
             </div>
+          </div>
+          {/* 下排：项链 + 玉佩 */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+            {BOTTOM_SLOTS.map(k => (
+              <EquipSlotBtn key={k} slotKey={k} equippedUid={s.equipped?.[k]} equipBag={s.equipBag ?? []} equippedUids={equippedUids} onSelect={() => {}} />
+            ))}
           </div>
 
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '8px 12px', background: 'var(--paper)', border: '1px solid var(--ink-3)' }}>

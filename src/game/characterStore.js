@@ -21,6 +21,9 @@ import {
   PET_MAX_LEVEL,
 } from './characterLevelConfig.js'
 import { getPetFreeAttrTotal, sumPetAllocAttr } from './battle/petGrowthTable.js'
+import { computeHeroDerived } from './playerSheet.js'
+import { getConsumable, isQuotaOrb, getRestoreAmount } from './items/catalog.js'
+import { EMPTY_EQUIPPED, getEquipByCode, EQUIP_SLOT_KEYS, EQUIP_SLOT_DEFS } from './items/equipCatalog.js'
 
 const STORAGE_KEY = 'wendao_char_v1'
 
@@ -121,6 +124,20 @@ const DEFAULT_STATE = {
 
   /** 背包：[{ itemId: string, qty: number }]，玲珑也以 qty 计颗数 */
   bag: [],
+
+  /** 装备背包：[{ uid, baseCode, quality, extra }]，包含已装和未装的全部装备实例 */
+  equipBag: [],
+
+  /** 当前气血（null = 满血）；战斗结束后写回 */
+  hpCur: null,
+  /** 当前法力（null = 满法）；战斗结束后写回 */
+  mpCur: null,
+
+  /** 战后自动消耗背包药品回满（优先低级药） */
+  autoRestore: false,
+
+  /** 已装备物品：slotKey → item_info_code (number) | null */
+  equipped: { ...EMPTY_EQUIPPED },
 }
 
 function load() {
@@ -133,16 +150,46 @@ function load() {
       if (merged.expIntoLevel == null) merged.expIntoLevel = merged.expCur ?? 0
       // 宠物缺失字段时向前兼容补零；旧五维格式（含 hp/mp/spd 键）重置为四维
       const EMPTY_ALLOC = { vit: 0, int: 0, str: 0, agi: 0 }
+      const KIND_MAP = { baby: '宝宝', wild: '野生' }
       merged.petRoster = (merged.petRoster ?? []).map(p => {
         const a = p.allocatedAttr
         const isOldFmt = a && ('hp' in a || 'mp' in a || 'spd' in a)
         return {
           ...p,
+          growth:        p.growth    ?? p.growthDetail,
+          innateIds:     p.innateIds ?? p.innateSkillIds ?? [],
+          kind:          KIND_MAP[p.kind] ?? p.kind,
           expIntoLevel:  p.expIntoLevel  ?? 0,
           allocatedAttr: (!a || isOldFmt) ? { ...EMPTY_ALLOC } : a,
         }
       })
       if (!Array.isArray(merged.bag)) merged.bag = []
+      if (!Array.isArray(merged.equipBag)) merged.equipBag = []
+      // 迁移：旧存档把装备存在 bag（itemId 为数字串），移到 equipBag 作兼容实例
+      const migratedBag = []
+      let migrSeq = 0
+      for (const entry of merged.bag) {
+        const code = Number(entry.itemId)
+        if (Number.isInteger(code) && code > 0 && getEquipByCode(code)) {
+          for (let q = 0; q < (entry.qty || 1); q++) {
+            merged.equipBag.push({ uid: `migr_${code}_${Date.now()}_${migrSeq++}`, baseCode: code, quality: 'white', extra: [] })
+          }
+        } else {
+          migratedBag.push(entry)
+        }
+      }
+      merged.bag = migratedBag
+      if (merged.hpCur === undefined) merged.hpCur = null
+      if (merged.mpCur === undefined) merged.mpCur = null
+      if (merged.autoRestore === undefined) merged.autoRestore = false
+      if (!merged.equipped || typeof merged.equipped !== 'object') {
+        merged.equipped = { ...EMPTY_EQUIPPED }
+      } else {
+        // 补齐新增槽位
+        for (const k of EQUIP_SLOT_KEYS) {
+          if (!(k in merged.equipped)) merged.equipped[k] = null
+        }
+      }
       return merged
     }
   } catch {}
@@ -277,12 +324,16 @@ export function equipSkillAction(skillId) {
  * 战斗胜利后落账奖励：角色经验、宠物经验（按参战宠物均分）、银两、掉落物品。
  * @param {{ exp: number, petExp: number, gold: number }} rewards
  * @param {string[]} activePetIds 参战宠物 id 列表
- * @param {{ itemId: string, qty: number }[]} loot 掉落物品列表
+ * @param {{ itemId: string, qty: number }[]} loot 药品掉落列表
+ * @param {object[]} equipLoot 装备掉落列表（catalog 条目）
+ * @param {number|null} remainingHp
+ * @param {number|null} remainingMp
  */
-export function applyBattleRewardsAction(rewards, activePetIds = [], loot = []) {
+export function applyBattleRewardsAction(rewards, activePetIds = [], loot = [], equipLoot = [], remainingHp = null, remainingMp = null) {
   const { exp = 0, petExp = 0, gold = 0 } = rewards
 
   // ── 角色经验 ──
+  const oldLevel = state.level
   const charResult = applyExpTowardLevelUp(state.level, state.expIntoLevel ?? state.expCur ?? 0, exp)
   const newLevel       = Math.min(CHARACTER_MAX_LEVEL, charResult.newLevel)
   const newExpInto     = newLevel >= CHARACTER_MAX_LEVEL ? 0 : charResult.expIntoLevel
@@ -297,8 +348,23 @@ export function applyBattleRewardsAction(rewards, activePetIds = [], loot = []) 
     return { ...p, level: r.level, expIntoLevel: r.expIntoLevel }
   })
 
-  // ── 掉落物品入背包 ──
+  // ── 掉落物品入背包（药品进 bag，装备实例进 equipBag）──
   const newBag = mergeBagLoot(state.bag ?? [], loot)
+  const newEquipBag = [...(state.equipBag ?? []), ...(equipLoot ?? [])]
+
+  // ── HP/MP 持久化（升级则补满；否则保留战后剩余并按需自动回满） ──
+  const leveled = newLevel > oldLevel
+  let finalHp  = leveled ? null : remainingHp
+  let finalMp  = leveled ? null : remainingMp
+  let finalBag = newBag
+
+  if (!leveled && state.autoRestore) {
+    const d = computeHeroDerived(newLevel, state)
+    const res = autoRestoreWithPotions(finalHp, finalMp, d.maxHp, d.maxMp, newBag)
+    finalHp  = res.newHpCur
+    finalMp  = res.newMpCur
+    finalBag = res.newBag
+  }
 
   patch({
     level:        newLevel,
@@ -306,7 +372,10 @@ export function applyBattleRewardsAction(rewards, activePetIds = [], loot = []) 
     expCur:       newExpInto,
     tael:         (state.tael ?? 0) + gold,
     petRoster:    newPetRoster,
-    bag:          newBag,
+    bag:          finalBag,
+    equipBag:     newEquipBag,
+    hpCur:        finalHp,
+    mpCur:        finalMp,
   })
 }
 
@@ -321,6 +390,58 @@ function mergeBagLoot(bag, loot) {
     else result.push({ itemId, qty })
   }
   return result
+}
+
+/**
+ * 用背包药品将 HP/MP 回满，优先消耗低 tier 药品（玲珑最后用）。
+ * @returns {{ newHpCur: number|null, newMpCur: number|null, newBag: Array }}
+ */
+function autoRestoreWithPotions(hpCur, mpCur, maxHp, maxMp, bag) {
+  let hp = hpCur ?? maxHp
+  let mp = mpCur ?? maxMp
+  if (hp >= maxHp && mp >= maxMp) return { newHpCur: null, newMpCur: null, newBag: bag }
+
+  // qty 工作副本（itemId → qty）
+  const qtyMap = {}
+  for (const e of bag) qtyMap[e.itemId] = e.qty
+
+  function restoreKind(kind, curVal, maxVal) {
+    if (curVal >= maxVal) return curVal
+    // 按 tier 升序排序（玲珑 tier=100 最后）
+    const potions = Object.entries(qtyMap)
+      .map(([itemId, qty]) => ({ itemId, qty, def: getConsumable(itemId) }))
+      .filter(({ def, qty }) => def && def.kind === kind && qty > 0)
+      .sort((a, b) => {
+        const ta = isQuotaOrb(a.def) ? 100 : (a.def.tier ?? 99)
+        const tb = isQuotaOrb(b.def) ? 100 : (b.def.tier ?? 99)
+        return ta - tb
+      })
+    for (const { itemId, def } of potions) {
+      if (curVal >= maxVal) break
+      if ((qtyMap[itemId] ?? 0) <= 0) continue
+      if (isQuotaOrb(def)) {
+        curVal = maxVal
+        qtyMap[itemId]--
+        break
+      }
+      const amount = getRestoreAmount(def)
+      const needed = Math.ceil((maxVal - curVal) / amount)
+      const useCount = Math.min(needed, qtyMap[itemId])
+      curVal = Math.min(maxVal, curVal + amount * useCount)
+      qtyMap[itemId] -= useCount
+    }
+    return curVal
+  }
+
+  hp = restoreKind('hp', hp, maxHp)
+  mp = restoreKind('mp', mp, maxMp)
+
+  const newBag = bag.map(e => ({ ...e, qty: qtyMap[e.itemId] ?? 0 })).filter(e => e.qty > 0)
+  return {
+    newHpCur: hp >= maxHp ? null : hp,
+    newMpCur: mp >= maxMp ? null : mp,
+    newBag,
+  }
 }
 
 // ── 宠物上阵 / 休息 ─────────────────────────────────────────────────────────
@@ -375,6 +496,152 @@ export function resetPetAttrAction(petId) {
   patch({ petRoster: state.petRoster.map(p =>
     p.id === petId ? { ...p, allocatedAttr: { vit: 0, int: 0, str: 0, agi: 0 } } : p
   )})
+  return { ok: true }
+}
+
+/**
+ * 将捕捉到的宠物加入仓库（未上阵）。
+ * @param {object} pet  来自 createWildPetFromFoe 的宠物对象
+ * @returns {{ ok: boolean }}
+ */
+export function addCapturedPetAction(pet) {
+  if (!pet?.id) return { ok: false }
+  const roster = state.petRoster ?? []
+  if (roster.some(p => p.id === pet.id)) return { ok: false }
+  // 规范化字段名：createWildPetFromFoe 用的是引擎内部命名，仓库统一用 PetsScreen 期望的格式
+  const kindMap = { baby: '宝宝', wild: '野生' }
+  const entry = {
+    ...pet,
+    growth:    pet.growth    ?? pet.growthDetail,
+    innateIds: pet.innateIds ?? pet.innateSkillIds ?? [],
+    kind:      kindMap[pet.kind] ?? pet.kind,
+    active: false,
+    expIntoLevel: 0,
+    allocatedAttr: { vit: 0, int: 0, str: 0, agi: 0 },
+    equippedSkills: [],
+    skillLevels: {},
+  }
+  patch({ petRoster: [...roster, entry] })
+  return { ok: true }
+}
+
+/**
+ * 战斗败北后写回气血（HP=1，MP=0）；若开启自动回满则消耗药品补全。
+ */
+export function saveBattleEndAction(hpCur, mpCur) {
+  if (state.autoRestore) {
+    const d = computeHeroDerived(state.level, state)
+    const res = autoRestoreWithPotions(hpCur ?? null, mpCur ?? null, d.maxHp, d.maxMp, state.bag ?? [])
+    patch({ hpCur: res.newHpCur, mpCur: res.newMpCur, bag: res.newBag })
+  } else {
+    patch({ hpCur: hpCur ?? null, mpCur: mpCur ?? null })
+  }
+}
+
+/** 切换战后自动回满开关。 */
+export function toggleAutoRestoreAction() {
+  patch({ autoRestore: !state.autoRestore })
+}
+
+/**
+ * 从背包扣减 1 个物品（战斗中使用后调用）。
+ * @param {string} itemId
+ * @returns {{ ok: boolean }}
+ */
+export function deductBagItemAction(itemId) {
+  const bag = state.bag ?? []
+  const idx = bag.findIndex(s => s.itemId === itemId)
+  if (idx < 0) return { ok: false }
+  const entry = bag[idx]
+  const newBag = entry.qty <= 1
+    ? bag.filter((_, i) => i !== idx)
+    : bag.map((s, i) => i === idx ? { ...s, qty: s.qty - 1 } : s)
+  patch({ bag: newBag })
+  return { ok: true }
+}
+
+/**
+ * 在背包界面（非战斗中）使用消耗品恢复气血/法力。
+ * @param {string} itemId
+ * @returns {{ ok: boolean, reason?: string, hpDelta?: number, mpDelta?: number }}
+ */
+export function useItemFromBagAction(itemId) {
+  const def = getConsumable(itemId)
+  if (!def) return { ok: false, reason: '未知物品' }
+  const bag = state.bag ?? []
+  const idx = bag.findIndex(s => s.itemId === itemId)
+  if (idx < 0) return { ok: false, reason: '背包中没有此物品' }
+
+  const d = computeHeroDerived(state.level, state)
+  const maxHp = d.maxHp
+  const maxMp = d.maxMp
+  const curHp = state.hpCur ?? maxHp
+  const curMp = state.mpCur ?? maxMp
+
+  let newHp = curHp
+  let newMp = curMp
+
+  if (isQuotaOrb(def)) {
+    if (def.kind === 'hp') {
+      if (curHp >= maxHp) return { ok: false, reason: '气血已满' }
+      newHp = maxHp
+    } else {
+      if (curMp >= maxMp) return { ok: false, reason: '法力已满' }
+      newMp = maxMp
+    }
+  } else {
+    const amount = getRestoreAmount(def)
+    if (def.kind === 'hp') {
+      if (curHp >= maxHp) return { ok: false, reason: '气血已满' }
+      newHp = Math.min(maxHp, curHp + amount)
+    } else {
+      if (curMp >= maxMp) return { ok: false, reason: '法力已满' }
+      newMp = Math.min(maxMp, curMp + amount)
+    }
+  }
+
+  const entry = bag[idx]
+  const newBag = entry.qty <= 1
+    ? bag.filter((_, i) => i !== idx)
+    : bag.map((s, i) => i === idx ? { ...s, qty: s.qty - 1 } : s)
+
+  patch({
+    hpCur: newHp >= maxHp ? null : newHp,
+    mpCur: newMp >= maxMp ? null : newMp,
+    bag: newBag,
+  })
+  return { ok: true, hpDelta: newHp - curHp, mpDelta: newMp - curMp }
+}
+
+/**
+ * 将 equipBag 中的实例（uid）装备到指定槽位。
+ * equipBag 保存全部实例（已装/未装），equipped 仅标记哪个 uid 在哪个槽。
+ * @param {string} slotKey
+ * @param {string} uid  装备实例 uid
+ * @returns {{ ok: boolean, reason?: string }}
+ */
+export function equipItemAction(slotKey, uid) {
+  if (!EQUIP_SLOT_KEYS.includes(slotKey)) return { ok: false, reason: '未知槽位' }
+  const inst = (state.equipBag ?? []).find(i => i.uid === uid)
+  if (!inst) return { ok: false, reason: '装备背包中没有此实例' }
+  const item = getEquipByCode(inst.baseCode)
+  if (!item) return { ok: false, reason: '未知装备' }
+  const slotDef = EQUIP_SLOT_DEFS.find(s => s.key === slotKey)
+  if (!slotDef?.filter(item)) return { ok: false, reason: '该装备不适合此槽位' }
+  patch({ equipped: { ...(state.equipped ?? EMPTY_EQUIPPED), [slotKey]: uid } })
+  return { ok: true }
+}
+
+/**
+ * 卸除指定槽位装备（实例仍留在 equipBag，仅清空槽位标记）。
+ * @param {string} slotKey
+ * @returns {{ ok: boolean }}
+ */
+export function unequipItemAction(slotKey) {
+  if (!EQUIP_SLOT_KEYS.includes(slotKey)) return { ok: false, reason: '未知槽位' }
+  const oldUid = (state.equipped ?? {})[slotKey]
+  if (!oldUid) return { ok: false, reason: '该槽位未装备任何物品' }
+  patch({ equipped: { ...(state.equipped ?? EMPTY_EQUIPPED), [slotKey]: null } })
   return { ok: true }
 }
 

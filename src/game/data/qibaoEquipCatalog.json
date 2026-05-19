@@ -1,0 +1,3538 @@
+[
+  {
+    "category": "武器",
+    "item_subtype_zh": "枪",
+    "item_info_code": 800001,
+    "item_type_id": 201,
+    "item_name": "长枪",
+    "item_level": 1,
+    "base_attrs": {
+      "hurt": 28,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "枪",
+    "item_info_code": 800002,
+    "item_type_id": 201,
+    "item_name": "铁枪",
+    "item_level": 10,
+    "base_attrs": {
+      "hurt": 318,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "枪",
+    "item_info_code": 800003,
+    "item_type_id": 201,
+    "item_name": "点钢枪",
+    "item_level": 20,
+    "base_attrs": {
+      "hurt": 658,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "枪",
+    "item_info_code": 800004,
+    "item_type_id": 201,
+    "item_name": "乌金枪",
+    "item_level": 30,
+    "base_attrs": {
+      "hurt": 1008,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "枪",
+    "item_info_code": 800005,
+    "item_type_id": 201,
+    "item_name": "火焰枪",
+    "item_level": 40,
+    "base_attrs": {
+      "hurt": 1363,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "枪",
+    "item_info_code": 800006,
+    "item_type_id": 201,
+    "item_name": "双头枪",
+    "item_level": 50,
+    "base_attrs": {
+      "hurt": 1723,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "枪",
+    "item_info_code": 800007,
+    "item_type_id": 201,
+    "item_name": "寒风枪",
+    "item_level": 60,
+    "base_attrs": {
+      "hurt": 2087,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "枪",
+    "item_info_code": 800008,
+    "item_type_id": 201,
+    "item_name": "暴雨梨花枪",
+    "item_level": 70,
+    "base_attrs": {
+      "hurt": 2453,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "枪",
+    "item_info_code": 800009,
+    "item_type_id": 201,
+    "item_name": "云龙枪",
+    "item_level": 80,
+    "base_attrs": {
+      "hurt": 2823,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "枪",
+    "item_info_code": 800010,
+    "item_type_id": 201,
+    "item_name": "蕴雷枪",
+    "item_level": 90,
+    "base_attrs": {
+      "hurt": 3194,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "枪",
+    "item_info_code": 800011,
+    "item_type_id": 201,
+    "item_name": "风火游龙枪",
+    "item_level": 100,
+    "base_attrs": {
+      "hurt": 3568,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "枪",
+    "item_info_code": 800012,
+    "item_type_id": 201,
+    "item_name": "九转金刚刃",
+    "item_level": 110,
+    "base_attrs": {
+      "hurt": 3943,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "枪",
+    "item_info_code": 800013,
+    "item_type_id": 201,
+    "item_name": "混元斩龙戟",
+    "item_level": 120,
+    "base_attrs": {
+      "hurt": 4321,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "枪",
+    "item_info_code": 800014,
+    "item_type_id": 201,
+    "item_name": "赤眼神龙枪",
+    "item_level": 130,
+    "base_attrs": {
+      "hurt": 4699,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "枪",
+    "item_info_code": 800015,
+    "item_type_id": 201,
+    "item_name": "九天祥云戟",
+    "item_level": 140,
+    "base_attrs": {
+      "hurt": 5080,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "枪",
+    "item_info_code": 800016,
+    "item_type_id": 201,
+    "item_name": "天帝霸王枪",
+    "item_level": 150,
+    "base_attrs": {
+      "hurt": 5461,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "爪",
+    "item_info_code": 800017,
+    "item_type_id": 201,
+    "item_name": "铁爪",
+    "item_level": 1,
+    "base_attrs": {
+      "hurt": 28,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "爪",
+    "item_info_code": 800018,
+    "item_type_id": 201,
+    "item_name": "虎爪",
+    "item_level": 10,
+    "base_attrs": {
+      "hurt": 318,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "爪",
+    "item_info_code": 800019,
+    "item_type_id": 201,
+    "item_name": "赤炼爪",
+    "item_level": 20,
+    "base_attrs": {
+      "hurt": 658,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "爪",
+    "item_info_code": 800020,
+    "item_type_id": 201,
+    "item_name": "残青爪",
+    "item_level": 30,
+    "base_attrs": {
+      "hurt": 1008,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "爪",
+    "item_info_code": 800021,
+    "item_type_id": 201,
+    "item_name": "阴风爪",
+    "item_level": 40,
+    "base_attrs": {
+      "hurt": 1363,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "爪",
+    "item_info_code": 800022,
+    "item_type_id": 201,
+    "item_name": "寒冰刺",
+    "item_level": 50,
+    "base_attrs": {
+      "hurt": 1723,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "爪",
+    "item_info_code": 800023,
+    "item_type_id": 201,
+    "item_name": "骷髅爪",
+    "item_level": 60,
+    "base_attrs": {
+      "hurt": 2087,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "爪",
+    "item_info_code": 800024,
+    "item_type_id": 201,
+    "item_name": "幽冥鬼爪",
+    "item_level": 70,
+    "base_attrs": {
+      "hurt": 2453,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "爪",
+    "item_info_code": 800025,
+    "item_type_id": 201,
+    "item_name": "噬魂魔爪",
+    "item_level": 80,
+    "base_attrs": {
+      "hurt": 2823,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "爪",
+    "item_info_code": 800026,
+    "item_type_id": 201,
+    "item_name": "拂兰指",
+    "item_level": 90,
+    "base_attrs": {
+      "hurt": 3194,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "爪",
+    "item_info_code": 800027,
+    "item_type_id": 201,
+    "item_name": "啼血爪",
+    "item_level": 100,
+    "base_attrs": {
+      "hurt": 3568,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "爪",
+    "item_info_code": 800028,
+    "item_type_id": 201,
+    "item_name": "七巧玲珑爪",
+    "item_level": 110,
+    "base_attrs": {
+      "hurt": 3943,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "爪",
+    "item_info_code": 800029,
+    "item_type_id": 201,
+    "item_name": "镇魂摄天刺",
+    "item_level": 120,
+    "base_attrs": {
+      "hurt": 4321,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "爪",
+    "item_info_code": 800030,
+    "item_type_id": 201,
+    "item_name": "红绫火毒爪",
+    "item_level": 130,
+    "base_attrs": {
+      "hurt": 4699,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "爪",
+    "item_info_code": 800031,
+    "item_type_id": 201,
+    "item_name": "九幽伏魔爪",
+    "item_level": 140,
+    "base_attrs": {
+      "hurt": 5080,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "爪",
+    "item_info_code": 800032,
+    "item_type_id": 201,
+    "item_name": "万古噬神爪",
+    "item_level": 150,
+    "base_attrs": {
+      "hurt": 5461,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "剑",
+    "item_info_code": 800033,
+    "item_type_id": 201,
+    "item_name": "长剑",
+    "item_level": 1,
+    "base_attrs": {
+      "hurt": 28,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "剑",
+    "item_info_code": 800034,
+    "item_type_id": 201,
+    "item_name": "青锋剑",
+    "item_level": 10,
+    "base_attrs": {
+      "hurt": 318,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "剑",
+    "item_info_code": 800035,
+    "item_type_id": 201,
+    "item_name": "沉香剑",
+    "item_level": 20,
+    "base_attrs": {
+      "hurt": 658,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "剑",
+    "item_info_code": 800036,
+    "item_type_id": 201,
+    "item_name": "飞虹剑",
+    "item_level": 30,
+    "base_attrs": {
+      "hurt": 1008,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "剑",
+    "item_info_code": 800037,
+    "item_type_id": 201,
+    "item_name": "乾元剑",
+    "item_level": 40,
+    "base_attrs": {
+      "hurt": 1363,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "剑",
+    "item_info_code": 800038,
+    "item_type_id": 201,
+    "item_name": "斩妖剑",
+    "item_level": 50,
+    "base_attrs": {
+      "hurt": 1723,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "剑",
+    "item_info_code": 800039,
+    "item_type_id": 201,
+    "item_name": "昆吾剑",
+    "item_level": 60,
+    "base_attrs": {
+      "hurt": 2087,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "剑",
+    "item_info_code": 800040,
+    "item_type_id": 201,
+    "item_name": "追魂剑",
+    "item_level": 70,
+    "base_attrs": {
+      "hurt": 2453,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "剑",
+    "item_info_code": 800041,
+    "item_type_id": 201,
+    "item_name": "九黎剑",
+    "item_level": 80,
+    "base_attrs": {
+      "hurt": 2823,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "剑",
+    "item_info_code": 800042,
+    "item_type_id": 201,
+    "item_name": "轩辕剑",
+    "item_level": 90,
+    "base_attrs": {
+      "hurt": 3194,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "剑",
+    "item_info_code": 800043,
+    "item_type_id": 201,
+    "item_name": "乙木神剑",
+    "item_level": 100,
+    "base_attrs": {
+      "hurt": 3568,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "剑",
+    "item_info_code": 800044,
+    "item_type_id": 201,
+    "item_name": "紫青玄魔剑",
+    "item_level": 110,
+    "base_attrs": {
+      "hurt": 3943,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "剑",
+    "item_info_code": 800045,
+    "item_type_id": 201,
+    "item_name": "封神诛仙剑",
+    "item_level": 120,
+    "base_attrs": {
+      "hurt": 4321,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "剑",
+    "item_info_code": 800046,
+    "item_type_id": 201,
+    "item_name": "九天玄冥剑",
+    "item_level": 130,
+    "base_attrs": {
+      "hurt": 4699,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "剑",
+    "item_info_code": 800047,
+    "item_type_id": 201,
+    "item_name": "赤魇遁龙剑",
+    "item_level": 140,
+    "base_attrs": {
+      "hurt": 5080,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "剑",
+    "item_info_code": 800048,
+    "item_type_id": 201,
+    "item_name": "诛天斩神剑",
+    "item_level": 150,
+    "base_attrs": {
+      "hurt": 5461,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "扇",
+    "item_info_code": 800049,
+    "item_type_id": 201,
+    "item_name": "折扇",
+    "item_level": 1,
+    "base_attrs": {
+      "hurt": 28,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "扇",
+    "item_info_code": 800050,
+    "item_type_id": 201,
+    "item_name": "精铁扇",
+    "item_level": 10,
+    "base_attrs": {
+      "hurt": 318,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "扇",
+    "item_info_code": 800051,
+    "item_type_id": 201,
+    "item_name": "逍遥扇",
+    "item_level": 20,
+    "base_attrs": {
+      "hurt": 658,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "扇",
+    "item_info_code": 800052,
+    "item_type_id": 201,
+    "item_name": "玉骨扇",
+    "item_level": 30,
+    "base_attrs": {
+      "hurt": 1008,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "扇",
+    "item_info_code": 800053,
+    "item_type_id": 201,
+    "item_name": "阴阳扇",
+    "item_level": 40,
+    "base_attrs": {
+      "hurt": 1363,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "扇",
+    "item_info_code": 800054,
+    "item_type_id": 201,
+    "item_name": "凤羽扇",
+    "item_level": 50,
+    "base_attrs": {
+      "hurt": 1723,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "扇",
+    "item_info_code": 800055,
+    "item_type_id": 201,
+    "item_name": "百花扇",
+    "item_level": 60,
+    "base_attrs": {
+      "hurt": 2087,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "扇",
+    "item_info_code": 800056,
+    "item_type_id": 201,
+    "item_name": "流云扇",
+    "item_level": 70,
+    "base_attrs": {
+      "hurt": 2453,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "扇",
+    "item_info_code": 800057,
+    "item_type_id": 201,
+    "item_name": "蔽日扇",
+    "item_level": 80,
+    "base_attrs": {
+      "hurt": 2823,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "扇",
+    "item_info_code": 800058,
+    "item_type_id": 201,
+    "item_name": "乾坤扇",
+    "item_level": 90,
+    "base_attrs": {
+      "hurt": 3194,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "扇",
+    "item_info_code": 800059,
+    "item_type_id": 201,
+    "item_name": "五彩神焰扇",
+    "item_level": 100,
+    "base_attrs": {
+      "hurt": 3568,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "扇",
+    "item_info_code": 800060,
+    "item_type_id": 201,
+    "item_name": "离火七翎扇",
+    "item_level": 110,
+    "base_attrs": {
+      "hurt": 3943,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "扇",
+    "item_info_code": 800061,
+    "item_type_id": 201,
+    "item_name": "赤霄烈焰扇",
+    "item_level": 120,
+    "base_attrs": {
+      "hurt": 4321,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "扇",
+    "item_info_code": 800062,
+    "item_type_id": 201,
+    "item_name": "红云火霞扇",
+    "item_level": 130,
+    "base_attrs": {
+      "hurt": 4699,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "扇",
+    "item_info_code": 800063,
+    "item_type_id": 201,
+    "item_name": "熠焰通灵扇",
+    "item_level": 140,
+    "base_attrs": {
+      "hurt": 5080,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "扇",
+    "item_info_code": 800064,
+    "item_type_id": 201,
+    "item_name": "焚天神罚扇",
+    "item_level": 150,
+    "base_attrs": {
+      "hurt": 5461,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "锤",
+    "item_info_code": 800065,
+    "item_type_id": 201,
+    "item_name": "铜锤",
+    "item_level": 1,
+    "base_attrs": {
+      "hurt": 28,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "锤",
+    "item_info_code": 800066,
+    "item_type_id": 201,
+    "item_name": "流星锤",
+    "item_level": 10,
+    "base_attrs": {
+      "hurt": 318,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "锤",
+    "item_info_code": 800067,
+    "item_type_id": 201,
+    "item_name": "八棱锤",
+    "item_level": 20,
+    "base_attrs": {
+      "hurt": 658,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "锤",
+    "item_info_code": 800068,
+    "item_type_id": 201,
+    "item_name": "亮银锤",
+    "item_level": 30,
+    "base_attrs": {
+      "hurt": 1008,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "锤",
+    "item_info_code": 800069,
+    "item_type_id": 201,
+    "item_name": "乌金锤",
+    "item_level": 40,
+    "base_attrs": {
+      "hurt": 1363,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "锤",
+    "item_info_code": 800070,
+    "item_type_id": 201,
+    "item_name": "混元锤",
+    "item_level": 50,
+    "base_attrs": {
+      "hurt": 1723,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "锤",
+    "item_info_code": 800071,
+    "item_type_id": 201,
+    "item_name": "霹雳锤",
+    "item_level": 60,
+    "base_attrs": {
+      "hurt": 2087,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "锤",
+    "item_info_code": 800072,
+    "item_type_id": 201,
+    "item_name": "晃金锤",
+    "item_level": 70,
+    "base_attrs": {
+      "hurt": 2453,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "锤",
+    "item_info_code": 800073,
+    "item_type_id": 201,
+    "item_name": "撼地锤",
+    "item_level": 80,
+    "base_attrs": {
+      "hurt": 2823,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "锤",
+    "item_info_code": 800074,
+    "item_type_id": 201,
+    "item_name": "破天锤",
+    "item_level": 90,
+    "base_attrs": {
+      "hurt": 3194,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "锤",
+    "item_info_code": 800075,
+    "item_type_id": 201,
+    "item_name": "加持杵",
+    "item_level": 100,
+    "base_attrs": {
+      "hurt": 3568,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "锤",
+    "item_info_code": 800076,
+    "item_type_id": 201,
+    "item_name": "炼狱麒麟杵",
+    "item_level": 110,
+    "base_attrs": {
+      "hurt": 3943,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "锤",
+    "item_info_code": 800077,
+    "item_type_id": 201,
+    "item_name": "风雷如意杵",
+    "item_level": 120,
+    "base_attrs": {
+      "hurt": 4321,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "锤",
+    "item_info_code": 800078,
+    "item_type_id": 201,
+    "item_name": "玄黄破坚锤",
+    "item_level": 130,
+    "base_attrs": {
+      "hurt": 4699,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "锤",
+    "item_info_code": 800079,
+    "item_type_id": 201,
+    "item_name": "玄天火龙锤",
+    "item_level": 140,
+    "base_attrs": {
+      "hurt": 5080,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "武器",
+    "item_subtype_zh": "锤",
+    "item_info_code": 800080,
+    "item_type_id": 201,
+    "item_name": "混元定海杵",
+    "item_level": 150,
+    "base_attrs": {
+      "hurt": 5461,
+      "defense": null,
+      "blood": null,
+      "magic": null,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "帽子",
+    "item_info_code": 800081,
+    "item_type_id": 202,
+    "item_name": "方巾",
+    "item_level": 1,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 3,
+      "blood": 13,
+      "magic": 9,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "帽子",
+    "item_info_code": 800082,
+    "item_type_id": 202,
+    "item_name": "皮帽",
+    "item_level": 10,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 61,
+      "blood": 147,
+      "magic": 98,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "帽子",
+    "item_info_code": 800083,
+    "item_type_id": 202,
+    "item_name": "青铜盔",
+    "item_level": 20,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 150,
+      "blood": 304,
+      "magic": 202,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "帽子",
+    "item_info_code": 800084,
+    "item_type_id": 202,
+    "item_name": "冲天盔",
+    "item_level": 30,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 253,
+      "blood": 466,
+      "magic": 309,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "帽子",
+    "item_info_code": 800085,
+    "item_type_id": 202,
+    "item_name": "虎头盔",
+    "item_level": 40,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 366,
+      "blood": 630,
+      "magic": 418,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "帽子",
+    "item_info_code": 800086,
+    "item_type_id": 202,
+    "item_name": "神龙盔",
+    "item_level": 50,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 488,
+      "blood": 797,
+      "magic": 529,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "帽子",
+    "item_info_code": 800087,
+    "item_type_id": 202,
+    "item_name": "白玉冠",
+    "item_level": 60,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 618,
+      "blood": 965,
+      "magic": 641,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "帽子",
+    "item_info_code": 800088,
+    "item_type_id": 202,
+    "item_name": "乾坤冠",
+    "item_level": 70,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 754,
+      "blood": 1134,
+      "magic": 753,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "帽子",
+    "item_info_code": 800089,
+    "item_type_id": 202,
+    "item_name": "龙冠",
+    "item_level": 80,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 895,
+      "blood": 1305,
+      "magic": 866,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "帽子",
+    "item_info_code": 800090,
+    "item_type_id": 202,
+    "item_name": "蟠龙冠",
+    "item_level": 90,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 1042,
+      "blood": 1476,
+      "magic": 981,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "帽子",
+    "item_info_code": 800091,
+    "item_type_id": 202,
+    "item_name": "九霄烈焰冠",
+    "item_level": 100,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 1194,
+      "blood": 1649,
+      "magic": 1095,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "帽子",
+    "item_info_code": 800092,
+    "item_type_id": 202,
+    "item_name": "星耀冠",
+    "item_level": 110,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 1350,
+      "blood": 1823,
+      "magic": 1211,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "帽子",
+    "item_info_code": 800093,
+    "item_type_id": 202,
+    "item_name": "七星宝冠",
+    "item_level": 120,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 1510,
+      "blood": 1997,
+      "magic": 1326,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "帽子",
+    "item_info_code": 800094,
+    "item_type_id": 202,
+    "item_name": "白玉星冠",
+    "item_level": 130,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 1675,
+      "blood": 2172,
+      "magic": 1443,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "帽子",
+    "item_info_code": 800095,
+    "item_type_id": 202,
+    "item_name": "双翼灵枭冠",
+    "item_level": 140,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 1843,
+      "blood": 2348,
+      "magic": 1559,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "帽子",
+    "item_info_code": 800096,
+    "item_type_id": 202,
+    "item_name": "九天星辰冠",
+    "item_level": 150,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 2014,
+      "blood": 2524,
+      "magic": 1677,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "衣服",
+    "item_info_code": 800097,
+    "item_type_id": 203,
+    "item_name": "布衣",
+    "item_level": 1,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 6,
+      "blood": 26,
+      "magic": 17,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "衣服",
+    "item_info_code": 800098,
+    "item_type_id": 203,
+    "item_name": "虎皮衣",
+    "item_level": 10,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 122,
+      "blood": 294,
+      "magic": 195,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "衣服",
+    "item_info_code": 800099,
+    "item_type_id": 203,
+    "item_name": "青铜铠",
+    "item_level": 20,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 299,
+      "blood": 609,
+      "magic": 404,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "衣服",
+    "item_info_code": 800100,
+    "item_type_id": 203,
+    "item_name": "皂罗袍",
+    "item_level": 30,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 505,
+      "blood": 932,
+      "magic": 619,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "衣服",
+    "item_info_code": 800101,
+    "item_type_id": 203,
+    "item_name": "金锁甲",
+    "item_level": 40,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 732,
+      "blood": 1260,
+      "magic": 837,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "衣服",
+    "item_info_code": 800102,
+    "item_type_id": 203,
+    "item_name": "莽龙袍",
+    "item_level": 50,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 976,
+      "blood": 1593,
+      "magic": 1058,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "衣服",
+    "item_info_code": 800103,
+    "item_type_id": 203,
+    "item_name": "金丝甲",
+    "item_level": 60,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 1235,
+      "blood": 1929,
+      "magic": 1281,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "衣服",
+    "item_info_code": 800104,
+    "item_type_id": 203,
+    "item_name": "八卦衣",
+    "item_level": 70,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 1507,
+      "blood": 2268,
+      "magic": 1506,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "衣服",
+    "item_info_code": 800105,
+    "item_type_id": 203,
+    "item_name": "连环甲",
+    "item_level": 80,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 1790,
+      "blood": 2609,
+      "magic": 1733,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "衣服",
+    "item_info_code": 800106,
+    "item_type_id": 203,
+    "item_name": "金缕衣",
+    "item_level": 90,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 2084,
+      "blood": 2953,
+      "magic": 1961,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "衣服",
+    "item_info_code": 800107,
+    "item_type_id": 203,
+    "item_name": "天衣",
+    "item_level": 100,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 2388,
+      "blood": 3298,
+      "magic": 2191,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "衣服",
+    "item_info_code": 800108,
+    "item_type_id": 203,
+    "item_name": "瀚宇法袍",
+    "item_level": 110,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 2700,
+      "blood": 3646,
+      "magic": 2421,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "衣服",
+    "item_info_code": 800109,
+    "item_type_id": 203,
+    "item_name": "诸天法袍",
+    "item_level": 120,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 3021,
+      "blood": 3994,
+      "magic": 2653,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "衣服",
+    "item_info_code": 800110,
+    "item_type_id": 203,
+    "item_name": "天玄真神甲",
+    "item_level": 130,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 3349,
+      "blood": 4345,
+      "magic": 2885,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "衣服",
+    "item_info_code": 800111,
+    "item_type_id": 203,
+    "item_name": "赤金磐龙甲",
+    "item_level": 140,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 3685,
+      "blood": 4696,
+      "magic": 3119,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "衣服",
+    "item_info_code": 800112,
+    "item_type_id": 203,
+    "item_name": "九天玄衣",
+    "item_level": 150,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 4028,
+      "blood": 5049,
+      "magic": 3353,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "鞋子",
+    "item_info_code": 800113,
+    "item_type_id": 204,
+    "item_name": "麻鞋",
+    "item_level": 1,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 2,
+      "blood": 5,
+      "magic": 3,
+      "speed": 24
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "鞋子",
+    "item_info_code": 800114,
+    "item_type_id": 204,
+    "item_name": "布鞋",
+    "item_level": 10,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 31,
+      "blood": 59,
+      "magic": 29,
+      "speed": 40
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "鞋子",
+    "item_info_code": 800115,
+    "item_type_id": 204,
+    "item_name": "马靴",
+    "item_level": 20,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 75,
+      "blood": 122,
+      "magic": 61,
+      "speed": 58
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "鞋子",
+    "item_info_code": 800116,
+    "item_type_id": 204,
+    "item_name": "牛皮靴",
+    "item_level": 30,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 126,
+      "blood": 186,
+      "magic": 93,
+      "speed": 76
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "鞋子",
+    "item_info_code": 800117,
+    "item_type_id": 204,
+    "item_name": "长筒靴",
+    "item_level": 40,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 183,
+      "blood": 252,
+      "magic": 126,
+      "speed": 94
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "鞋子",
+    "item_info_code": 800118,
+    "item_type_id": 204,
+    "item_name": "追云履",
+    "item_level": 50,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 244,
+      "blood": 319,
+      "magic": 159,
+      "speed": 112
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "鞋子",
+    "item_info_code": 800119,
+    "item_type_id": 204,
+    "item_name": "亮银靴",
+    "item_level": 60,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 309,
+      "blood": 386,
+      "magic": 192,
+      "speed": 130
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "鞋子",
+    "item_info_code": 800120,
+    "item_type_id": 204,
+    "item_name": "疾风履",
+    "item_level": 70,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 377,
+      "blood": 454,
+      "magic": 226,
+      "speed": 148
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "鞋子",
+    "item_info_code": 800121,
+    "item_type_id": 204,
+    "item_name": "无影靴",
+    "item_level": 80,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 448,
+      "blood": 522,
+      "magic": 260,
+      "speed": 166
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "鞋子",
+    "item_info_code": 800122,
+    "item_type_id": 204,
+    "item_name": "天行履",
+    "item_level": 90,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 521,
+      "blood": 591,
+      "magic": 294,
+      "speed": 184
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "鞋子",
+    "item_info_code": 800123,
+    "item_type_id": 204,
+    "item_name": "踏云靴",
+    "item_level": 100,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 597,
+      "blood": 660,
+      "magic": 329,
+      "speed": 202
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "鞋子",
+    "item_info_code": 800124,
+    "item_type_id": 204,
+    "item_name": "御风履",
+    "item_level": 110,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 675,
+      "blood": 729,
+      "magic": 363,
+      "speed": 220
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "鞋子",
+    "item_info_code": 800125,
+    "item_type_id": 204,
+    "item_name": "钧天履",
+    "item_level": 120,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 755,
+      "blood": 799,
+      "magic": 398,
+      "speed": 238
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "鞋子",
+    "item_info_code": 800126,
+    "item_type_id": 204,
+    "item_name": "雷弧闪",
+    "item_level": 130,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 837,
+      "blood": 869,
+      "magic": 433,
+      "speed": 256
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "鞋子",
+    "item_info_code": 800127,
+    "item_type_id": 204,
+    "item_name": "惊虹战靴",
+    "item_level": 140,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 921,
+      "blood": 939,
+      "magic": 468,
+      "speed": 274
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "鞋子",
+    "item_info_code": 800128,
+    "item_type_id": 204,
+    "item_name": "九天御风靴",
+    "item_level": 150,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 1007,
+      "blood": 1010,
+      "magic": 503,
+      "speed": 292
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "腰带",
+    "item_info_code": 800129,
+    "item_type_id": 208,
+    "item_name": "布腰带",
+    "item_level": 1,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 3,
+      "blood": 16,
+      "magic": 3,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "腰带",
+    "item_info_code": 800130,
+    "item_type_id": 208,
+    "item_name": "皮腰带",
+    "item_level": 10,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 49,
+      "blood": 176,
+      "magic": 39,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "腰带",
+    "item_info_code": 800131,
+    "item_type_id": 208,
+    "item_name": "铜扣带",
+    "item_level": 20,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 120,
+      "blood": 365,
+      "magic": 81,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "腰带",
+    "item_info_code": 800132,
+    "item_type_id": 208,
+    "item_name": "虎皮带",
+    "item_level": 30,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 202,
+      "blood": 559,
+      "magic": 124,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "腰带",
+    "item_info_code": 800133,
+    "item_type_id": 208,
+    "item_name": "丝绦",
+    "item_level": 40,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 293,
+      "blood": 756,
+      "magic": 167,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "腰带",
+    "item_info_code": 800134,
+    "item_type_id": 208,
+    "item_name": "玉扣带",
+    "item_level": 50,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 391,
+      "blood": 956,
+      "magic": 212,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "腰带",
+    "item_info_code": 800135,
+    "item_type_id": 208,
+    "item_name": "云纹带",
+    "item_level": 60,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 494,
+      "blood": 1157,
+      "magic": 256,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "腰带",
+    "item_info_code": 800136,
+    "item_type_id": 208,
+    "item_name": "锦绣带",
+    "item_level": 70,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 603,
+      "blood": 1361,
+      "magic": 301,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "腰带",
+    "item_info_code": 800137,
+    "item_type_id": 208,
+    "item_name": "龙纹腰带",
+    "item_level": 80,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 716,
+      "blood": 1566,
+      "magic": 347,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "腰带",
+    "item_info_code": 800138,
+    "item_type_id": 208,
+    "item_name": "祥云玉带",
+    "item_level": 90,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 834,
+      "blood": 1772,
+      "magic": 392,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "腰带",
+    "item_info_code": 800139,
+    "item_type_id": 208,
+    "item_name": "七彩锦带",
+    "item_level": 100,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 955,
+      "blood": 1979,
+      "magic": 438,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "腰带",
+    "item_info_code": 800140,
+    "item_type_id": 208,
+    "item_name": "天蚕丝带",
+    "item_level": 110,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 1080,
+      "blood": 2187,
+      "magic": 484,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "腰带",
+    "item_info_code": 800141,
+    "item_type_id": 208,
+    "item_name": "玄龙腰带",
+    "item_level": 120,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 1208,
+      "blood": 2397,
+      "magic": 531,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "腰带",
+    "item_info_code": 800142,
+    "item_type_id": 208,
+    "item_name": "金龙护体带",
+    "item_level": 130,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 1340,
+      "blood": 2607,
+      "magic": 577,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "腰带",
+    "item_info_code": 800143,
+    "item_type_id": 208,
+    "item_name": "九霄紫金带",
+    "item_level": 140,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 1474,
+      "blood": 2818,
+      "magic": 624,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "腰带",
+    "item_info_code": 800144,
+    "item_type_id": 208,
+    "item_name": "混天玉带",
+    "item_level": 150,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 1611,
+      "blood": 3029,
+      "magic": 671,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "法宝",
+    "item_info_code": 800145,
+    "item_type_id": 205,
+    "item_name": "道符",
+    "item_level": 1,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 2,
+      "blood": 10,
+      "magic": 26,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "法宝",
+    "item_info_code": 800146,
+    "item_type_id": 205,
+    "item_name": "玉符",
+    "item_level": 10,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 31,
+      "blood": 118,
+      "magic": 293,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "法宝",
+    "item_info_code": 800147,
+    "item_type_id": 205,
+    "item_name": "铜钱剑",
+    "item_level": 20,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 75,
+      "blood": 243,
+      "magic": 606,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "法宝",
+    "item_info_code": 800148,
+    "item_type_id": 205,
+    "item_name": "玄机令",
+    "item_level": 30,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 126,
+      "blood": 373,
+      "magic": 928,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "法宝",
+    "item_info_code": 800149,
+    "item_type_id": 205,
+    "item_name": "七星剑",
+    "item_level": 40,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 183,
+      "blood": 504,
+      "magic": 1255,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "法宝",
+    "item_info_code": 800150,
+    "item_type_id": 205,
+    "item_name": "玄宝葫芦",
+    "item_level": 50,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 244,
+      "blood": 637,
+      "magic": 1587,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "法宝",
+    "item_info_code": 800151,
+    "item_type_id": 205,
+    "item_name": "翼火蛇鞭",
+    "item_level": 60,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 309,
+      "blood": 772,
+      "magic": 1922,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "法宝",
+    "item_info_code": 800152,
+    "item_type_id": 205,
+    "item_name": "阴阳镜",
+    "item_level": 70,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 377,
+      "blood": 907,
+      "magic": 2259,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "法宝",
+    "item_info_code": 800153,
+    "item_type_id": 205,
+    "item_name": "诛仙阵图",
+    "item_level": 80,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 448,
+      "blood": 1044,
+      "magic": 2599,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "法宝",
+    "item_info_code": 800154,
+    "item_type_id": 205,
+    "item_name": "五火七禽扇",
+    "item_level": 90,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 521,
+      "blood": 1181,
+      "magic": 2942,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "法宝",
+    "item_info_code": 800155,
+    "item_type_id": 205,
+    "item_name": "太乙神雷符",
+    "item_level": 100,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 597,
+      "blood": 1319,
+      "magic": 3286,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "法宝",
+    "item_info_code": 800156,
+    "item_type_id": 205,
+    "item_name": "混天绫",
+    "item_level": 110,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 675,
+      "blood": 1458,
+      "magic": 3632,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "法宝",
+    "item_info_code": 800157,
+    "item_type_id": 205,
+    "item_name": "乾坤圈",
+    "item_level": 120,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 755,
+      "blood": 1598,
+      "magic": 3979,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "法宝",
+    "item_info_code": 800158,
+    "item_type_id": 205,
+    "item_name": "山河社稷图",
+    "item_level": 130,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 837,
+      "blood": 1738,
+      "magic": 4328,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "法宝",
+    "item_info_code": 800159,
+    "item_type_id": 205,
+    "item_name": "太极图",
+    "item_level": 140,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 921,
+      "blood": 1878,
+      "magic": 4678,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "法宝",
+    "item_info_code": 800160,
+    "item_type_id": 205,
+    "item_name": "混元金斗",
+    "item_level": 150,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 1007,
+      "blood": 2020,
+      "magic": 5030,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "手镯",
+    "item_info_code": 800161,
+    "item_type_id": 206,
+    "item_name": "粗玉镯",
+    "item_level": 1,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 2,
+      "blood": 10,
+      "magic": 13,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "手镯",
+    "item_info_code": 800162,
+    "item_type_id": 206,
+    "item_name": "玉镯",
+    "item_level": 10,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 31,
+      "blood": 118,
+      "magic": 146,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "手镯",
+    "item_info_code": 800163,
+    "item_type_id": 206,
+    "item_name": "银镯",
+    "item_level": 20,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 75,
+      "blood": 243,
+      "magic": 303,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "手镯",
+    "item_info_code": 800164,
+    "item_type_id": 206,
+    "item_name": "铜镯",
+    "item_level": 30,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 126,
+      "blood": 373,
+      "magic": 464,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "手镯",
+    "item_info_code": 800165,
+    "item_type_id": 206,
+    "item_name": "金镯",
+    "item_level": 40,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 183,
+      "blood": 504,
+      "magic": 628,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "手镯",
+    "item_info_code": 800166,
+    "item_type_id": 206,
+    "item_name": "翡翠镯",
+    "item_level": 50,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 244,
+      "blood": 637,
+      "magic": 793,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "手镯",
+    "item_info_code": 800167,
+    "item_type_id": 206,
+    "item_name": "白玉镯",
+    "item_level": 60,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 309,
+      "blood": 772,
+      "magic": 961,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "手镯",
+    "item_info_code": 800168,
+    "item_type_id": 206,
+    "item_name": "青金镯",
+    "item_level": 70,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 377,
+      "blood": 907,
+      "magic": 1130,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "手镯",
+    "item_info_code": 800169,
+    "item_type_id": 206,
+    "item_name": "七宝镯",
+    "item_level": 80,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 448,
+      "blood": 1044,
+      "magic": 1300,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "手镯",
+    "item_info_code": 800170,
+    "item_type_id": 206,
+    "item_name": "玲珑镯",
+    "item_level": 90,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 521,
+      "blood": 1181,
+      "magic": 1471,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "手镯",
+    "item_info_code": 800171,
+    "item_type_id": 206,
+    "item_name": "天玉镯",
+    "item_level": 100,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 597,
+      "blood": 1319,
+      "magic": 1643,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "手镯",
+    "item_info_code": 800172,
+    "item_type_id": 206,
+    "item_name": "万宝琉璃镯",
+    "item_level": 110,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 675,
+      "blood": 1458,
+      "magic": 1816,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "手镯",
+    "item_info_code": 800173,
+    "item_type_id": 206,
+    "item_name": "玄铁腕镯",
+    "item_level": 120,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 755,
+      "blood": 1598,
+      "magic": 1990,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "手镯",
+    "item_info_code": 800174,
+    "item_type_id": 206,
+    "item_name": "龙纹宝镯",
+    "item_level": 130,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 837,
+      "blood": 1738,
+      "magic": 2164,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "手镯",
+    "item_info_code": 800175,
+    "item_type_id": 206,
+    "item_name": "九霄玉镯",
+    "item_level": 140,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 921,
+      "blood": 1878,
+      "magic": 2339,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "手镯",
+    "item_info_code": 800176,
+    "item_type_id": 206,
+    "item_name": "混元宝镯",
+    "item_level": 150,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 1007,
+      "blood": 2020,
+      "magic": 2515,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "项链",
+    "item_info_code": 800177,
+    "item_type_id": 207,
+    "item_name": "铜链",
+    "item_level": 1,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 2,
+      "blood": 10,
+      "magic": 13,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "项链",
+    "item_info_code": 800178,
+    "item_type_id": 207,
+    "item_name": "玉链",
+    "item_level": 10,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 31,
+      "blood": 118,
+      "magic": 146,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "项链",
+    "item_info_code": 800179,
+    "item_type_id": 207,
+    "item_name": "银链",
+    "item_level": 20,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 75,
+      "blood": 243,
+      "magic": 303,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "项链",
+    "item_info_code": 800180,
+    "item_type_id": 207,
+    "item_name": "金链",
+    "item_level": 30,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 126,
+      "blood": 373,
+      "magic": 464,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "项链",
+    "item_info_code": 800181,
+    "item_type_id": 207,
+    "item_name": "珍珠项链",
+    "item_level": 40,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 183,
+      "blood": 504,
+      "magic": 628,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "项链",
+    "item_info_code": 800182,
+    "item_type_id": 207,
+    "item_name": "凤羽项链",
+    "item_level": 50,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 244,
+      "blood": 637,
+      "magic": 793,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "项链",
+    "item_info_code": 800183,
+    "item_type_id": 207,
+    "item_name": "七彩项链",
+    "item_level": 60,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 309,
+      "blood": 772,
+      "magic": 961,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "项链",
+    "item_info_code": 800184,
+    "item_type_id": 207,
+    "item_name": "七星项链",
+    "item_level": 70,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 377,
+      "blood": 907,
+      "magic": 1130,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "项链",
+    "item_info_code": 800185,
+    "item_type_id": 207,
+    "item_name": "龙眼项链",
+    "item_level": 80,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 448,
+      "blood": 1044,
+      "magic": 1300,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "项链",
+    "item_info_code": 800186,
+    "item_type_id": 207,
+    "item_name": "北斗七星链",
+    "item_level": 90,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 521,
+      "blood": 1181,
+      "magic": 1471,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "项链",
+    "item_info_code": 800187,
+    "item_type_id": 207,
+    "item_name": "瑶光璎珞",
+    "item_level": 100,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 597,
+      "blood": 1319,
+      "magic": 1643,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "项链",
+    "item_info_code": 800188,
+    "item_type_id": 207,
+    "item_name": "天蚕丝链",
+    "item_level": 110,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 675,
+      "blood": 1458,
+      "magic": 1816,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "项链",
+    "item_info_code": 800189,
+    "item_type_id": 207,
+    "item_name": "灵玉项链",
+    "item_level": 120,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 755,
+      "blood": 1598,
+      "magic": 1990,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "项链",
+    "item_info_code": 800190,
+    "item_type_id": 207,
+    "item_name": "天蚕神玉链",
+    "item_level": 130,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 837,
+      "blood": 1738,
+      "magic": 2164,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "项链",
+    "item_info_code": 800191,
+    "item_type_id": 207,
+    "item_name": "九转琉璃链",
+    "item_level": 140,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 921,
+      "blood": 1878,
+      "magic": 2339,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "项链",
+    "item_info_code": 800192,
+    "item_type_id": 207,
+    "item_name": "混元玉链",
+    "item_level": 150,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 1007,
+      "blood": 2020,
+      "magic": 2515,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "玉佩",
+    "item_info_code": 800193,
+    "item_type_id": 209,
+    "item_name": "素玉配",
+    "item_level": 1,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 2,
+      "blood": 10,
+      "magic": 13,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "玉佩",
+    "item_info_code": 800194,
+    "item_type_id": 209,
+    "item_name": "玉环",
+    "item_level": 10,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 31,
+      "blood": 118,
+      "magic": 146,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "玉佩",
+    "item_info_code": 800195,
+    "item_type_id": 209,
+    "item_name": "金环",
+    "item_level": 20,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 75,
+      "blood": 243,
+      "magic": 303,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "玉佩",
+    "item_info_code": 800196,
+    "item_type_id": 209,
+    "item_name": "玄玉配",
+    "item_level": 30,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 126,
+      "blood": 373,
+      "magic": 464,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "玉佩",
+    "item_info_code": 800197,
+    "item_type_id": 209,
+    "item_name": "龙凤佩",
+    "item_level": 40,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 183,
+      "blood": 504,
+      "magic": 628,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "玉佩",
+    "item_info_code": 800198,
+    "item_type_id": 209,
+    "item_name": "七彩玉佩",
+    "item_level": 50,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 244,
+      "blood": 637,
+      "magic": 793,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "玉佩",
+    "item_info_code": 800199,
+    "item_type_id": 209,
+    "item_name": "灵玉佩",
+    "item_level": 60,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 309,
+      "blood": 772,
+      "magic": 961,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "玉佩",
+    "item_info_code": 800200,
+    "item_type_id": 209,
+    "item_name": "如意玉扳指",
+    "item_level": 70,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 377,
+      "blood": 907,
+      "magic": 1130,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "玉佩",
+    "item_info_code": 800201,
+    "item_type_id": 209,
+    "item_name": "玄天玉佩",
+    "item_level": 80,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 448,
+      "blood": 1044,
+      "magic": 1300,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "玉佩",
+    "item_info_code": 800202,
+    "item_type_id": 209,
+    "item_name": "天枢玉佩",
+    "item_level": 90,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 521,
+      "blood": 1181,
+      "magic": 1471,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "玉佩",
+    "item_info_code": 800203,
+    "item_type_id": 209,
+    "item_name": "北斗玉璧",
+    "item_level": 100,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 597,
+      "blood": 1319,
+      "magic": 1643,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "玉佩",
+    "item_info_code": 800204,
+    "item_type_id": 209,
+    "item_name": "混元玉璧",
+    "item_level": 110,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 675,
+      "blood": 1458,
+      "magic": 1816,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "玉佩",
+    "item_info_code": 800205,
+    "item_type_id": 209,
+    "item_name": "太极玉佩",
+    "item_level": 120,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 755,
+      "blood": 1598,
+      "magic": 1990,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "玉佩",
+    "item_info_code": 800206,
+    "item_type_id": 209,
+    "item_name": "九天灵玉佩",
+    "item_level": 130,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 837,
+      "blood": 1738,
+      "magic": 2164,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "玉佩",
+    "item_info_code": 800207,
+    "item_type_id": 209,
+    "item_name": "混元圣玉",
+    "item_level": 140,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 921,
+      "blood": 1878,
+      "magic": 2339,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  },
+  {
+    "category": "装备",
+    "item_subtype_zh": "玉佩",
+    "item_info_code": 800208,
+    "item_type_id": 209,
+    "item_name": "九天玲珑玉",
+    "item_level": 150,
+    "base_attrs": {
+      "hurt": null,
+      "defense": 1007,
+      "blood": 2020,
+      "magic": 2515,
+      "speed": null
+    },
+    "random_attrs": [],
+    "icon_url": ""
+  }
+]

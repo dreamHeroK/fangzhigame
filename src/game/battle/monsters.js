@@ -83,10 +83,10 @@ export function spawnFromWendaoSpawn(spawn, options = {}) {
   return spawnMonster(template, scale)
 }
 
-/** 幼崽：等级固定为 1，属性极弱，捕获后成长资质更优 */
+/** 宝宝：等级固定为 1，属性极弱，捕获后成长资质更优 */
 function spawnBabyMonsterUnit(spawn, options = {}) {
   const { scale = 1 } = options
-  const babySpawn = { ...spawn, level: 1, name: `${spawn.name}（幼崽）` }
+  const babySpawn = { ...spawn, level: 1, name: `${spawn.name}（宝宝）` }
   return spawnFromWendaoSpawn(babySpawn, { scale: scale * 0.5 })
 }
 
@@ -148,7 +148,7 @@ export function buildEncounter(partySize, options = {}) {
   const count = rollFoeCount(partySize, rng)
   const foes = []
 
-  // 每场遭遇：10% 出现野外首领，5% 出现幼崽（互斥，占第一个位置）
+  // 每场遭遇：10% 出现野外首领，5% 出现宝宝（互斥，占第一个位置）
   const spawnFieldBoss = rng() < 0.10
   const spawnBaby      = !spawnFieldBoss && rng() < 0.05
 
@@ -209,9 +209,9 @@ export function createAllyUnit(name, stats, skillIds) {
     /** 本级经验条（与 `level` 成对，见 characterLevelConfig） */
     expIntoLevel: stats.expIntoLevel ?? 0,
     maxHp: stats.maxHp,
-    hp: stats.maxHp,
+    hp: stats.hpCur != null ? Math.min(stats.hpCur, stats.maxHp) : stats.maxHp,
     maxMp: stats.maxMp,
-    mp: stats.maxMp,
+    mp: stats.mpCur != null ? Math.min(stats.mpCur, stats.maxMp) : stats.maxMp,
     atk: stats.atk,
     mAtk: stats.mAtk ?? stats.atk,
     def: stats.def,

@@ -44,7 +44,9 @@
       "Bash(npx vitest *)",
       "Bash(xargs basename -a)",
       "Bash(Get-ChildItem -Path \"d:\\\\learning\\\\wendao\" -Recurse -Filter \"*.json\")",
-      "Bash(Select-String \"\\(package|tsconfig|wendao\\)\")"
+      "Bash(Select-String \"\\(package|tsconfig|wendao\\)\")",
+      "Bash(xargs grep -l \"equip\\\\|装备\")",
+      "Bash(Get-ChildItem \"d:\\\\learning\\\\wendao\\\\python\\\\\" | Select-Object Name)"
     ]
   }
 }

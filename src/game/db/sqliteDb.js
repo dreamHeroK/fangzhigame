@@ -83,6 +83,12 @@ CREATE TABLE IF NOT EXISTS battle_history (
   loot_json       TEXT    DEFAULT '[]',
   FOREIGN KEY (save_id) REFERENCES saves(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS skill_memory (
+  template_key  TEXT    PRIMARY KEY,
+  skill_id      TEXT    NOT NULL,
+  updated_at    INTEGER NOT NULL
+);
 `
 
 // ── Public API ───────────────────────────────────────────────────────────────

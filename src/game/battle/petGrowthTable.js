@@ -137,7 +137,7 @@ function rollClosed(rng, lo, hi) {
  * @param {string} spawnKey
  * @param {() => number} rng
  * @param {{ qualityBoost?: 'elite' }} [opts]
- *   qualityBoost='elite'：每维在区间高 60%~100% 段内掷骰（幼崽捕获用）
+ *   qualityBoost='elite'：每维在区间高 60%~100% 段内掷骰（宝宝捕获用）
  * @returns {{ hp: number, mp: number, spd: number, pAtk: number, mAtk: number, totalBand: [number, number], ghost?: boolean }}
  */
 export function rollPetGrowthDetail(spawnKey, rng = Math.random, opts = {}) {
