@@ -1,5 +1,5 @@
 import React, { useState, useSyncExternalStore } from 'react'
-import { Seal, Placeholder, CornerDeco, PanelHead, SubHead, Cell, Tag } from './common.jsx'
+import { Seal, Placeholder, CornerDeco, PanelHead, SubHead, Cell, Tag, useLongPress } from './common.jsx'
 import { subscribe, getSnapshot, addStatAction, addAffinityAction, autoAllocateAction, resetAllocAction, equipItemAction, unequipItemAction } from '../game/characterStore.js'
 import {
   computeHeroDerived,
@@ -71,8 +71,13 @@ function EquipSlotBtn({ slotKey, equippedUid, equipBag, equippedUids }) {
           {equippedItem ? equippedItem.item_name : '未配'}
         </div>
         {equippedItem && (
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-3)' }}>
-            Lv{equippedItem.item_level}{q && q.key !== 'white' ? ` [${q.label}]` : ''}
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-3)', display: 'flex', alignItems: 'center', gap: 3 }}>
+            <span>Lv{equippedItem.item_level}{q && q.key !== 'white' ? ` [${q.label}]` : ''}</span>
+            {(equippedInst?.forgeLevel ?? 0) > 0 && (
+              <span style={{ color: 'var(--gold-2)', fontWeight: 700, fontSize: 9 }}>
+                +{equippedInst.forgeLevel}
+              </span>
+            )}
           </div>
         )}
       </div>
@@ -111,6 +116,7 @@ function EquipSlotBtn({ slotKey, equippedUid, equipBag, equippedUids }) {
                 <span style={{ color: cq?.color ?? 'var(--ink)' }}>{it.item_name}</span>
                 {cq?.key !== 'white' && <span style={{ fontSize: 9, marginLeft: 3, color: cq?.color, opacity: 0.8 }}>[{cq?.label}]</span>}
                 <span style={{ color: 'var(--ink-3)', marginLeft: 4 }}>Lv{it.item_level}</span>
+                {(inst.forgeLevel ?? 0) > 0 && <span style={{ color: 'var(--gold-2)', fontWeight: 700, marginLeft: 3 }}>+{inst.forgeLevel}</span>}
               </div>
             )
           })}
@@ -133,23 +139,26 @@ const SectionBox = ({ title, sub, children, style = {} }) => (
   </div>
 )
 
-const PlusBtn = ({ onClick, disabled }) => (
-  <button
-    className="cell-plus"
-    onClick={onClick}
-    disabled={disabled}
-    style={{ opacity: disabled ? 0.35 : 1, cursor: disabled ? 'not-allowed' : 'pointer' }}
-  >
-    ＋
-  </button>
-)
+const PlusBtn = ({ onAdd, disabled }) => {
+  const handlers = useLongPress(onAdd, { disabled })
+  return (
+    <button
+      className="cell-plus"
+      {...handlers}
+      disabled={disabled}
+      style={{ opacity: disabled ? 0.35 : 1, cursor: disabled ? 'not-allowed' : 'pointer' }}
+    >
+      ＋
+    </button>
+  )
+}
 
 const AllocCell = ({ label, value, sub, accent, onAdd, canAdd }) => (
   <div className="cell" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 2 }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
       <span className="cell-k">{label}</span>
       <span className="cell-v" style={accent ? { color: accent } : null}>{value}</span>
-      <PlusBtn onClick={onAdd} disabled={!canAdd} />
+      <PlusBtn onAdd={onAdd} disabled={!canAdd} />
     </div>
     <span style={{ fontSize: 10, color: 'var(--ink-4)', fontFamily: 'var(--font-mono)', lineHeight: 1.35 }}>{sub}</span>
   </div>
@@ -302,23 +311,23 @@ export default function CharacterScreen() {
               <AllocCell
                 label="体质" value={s.vit}
                 sub={`体质→气血 ${r.hpPerVit.toFixed(2)}，防御 ${r.defPerVit.toFixed(2)}`}
-                onAdd={() => addStatAction('vit')} canAdd={canAddStat}
+                onAdd={(n) => addStatAction('vit', n)} canAdd={canAddStat}
               />
               <AllocCell
                 label="灵力" value={s.int}
                 sub={`灵力→法伤 ${r.magPerInt.toFixed(2)}，法力 ${r.mpPerInt.toFixed(2)}`}
                 accent="var(--gold-2)"
-                onAdd={() => addStatAction('int')} canAdd={canAddStat}
+                onAdd={(n) => addStatAction('int', n)} canAdd={canAddStat}
               />
               <AllocCell
                 label="力量" value={s.str}
                 sub={`力量→物伤 ${r.phyPerStr.toFixed(2)}，命中 ${r.accPerStr}`}
-                onAdd={() => addStatAction('str')} canAdd={canAddStat}
+                onAdd={(n) => addStatAction('str', n)} canAdd={canAddStat}
               />
               <AllocCell
                 label="敏捷" value={s.agi}
                 sub={`敏捷→速度 ${r.spdPerAgi.toFixed(2)}`}
-                onAdd={() => addStatAction('agi')} canAdd={canAddStat}
+                onAdd={(n) => addStatAction('agi', n)} canAdd={canAddStat}
               />
               <div className="cell" style={{ flexDirection: 'column', alignItems: 'stretch', background: 'linear-gradient(180deg, var(--paper) 0%, #fff8ea 100%)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
@@ -340,7 +349,7 @@ export default function CharacterScreen() {
                   <span className="cell-k" style={{ marginLeft: 4 }}>{a.k}</span>
                   <span className="cell-v" style={{ color: a.v >= AFFINITY_CAP_PER_ELEMENT ? 'var(--gold-2)' : 'var(--ink)' }}>{a.v}/{AFFINITY_CAP_PER_ELEMENT}</span>
                   {a.v < AFFINITY_CAP_PER_ELEMENT
-                    ? <PlusBtn onClick={() => addAffinityAction(a.key)} disabled={remAff <= 0} />
+                    ? <PlusBtn onAdd={(n) => addAffinityAction(a.key, n)} disabled={remAff <= 0} />
                     : <span style={{ marginLeft: 4, fontFamily: 'var(--font-brush)', fontSize: 11, color: 'var(--gold-2)' }}>满</span>}
                 </div>
               ))}

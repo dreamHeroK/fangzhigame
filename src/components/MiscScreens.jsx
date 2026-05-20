@@ -1,5 +1,6 @@
-import React from 'react'
+import React, { useState, useSyncExternalStore } from 'react'
 import { Seal, PanelHead, SubHead, Tag, CornerDeco } from './common.jsx'
+import { subscribe, getSnapshot, buyShopItemAction } from '../game/characterStore.js'
 
 // ───── 任务 ─────
 const tasks = [
@@ -71,44 +72,94 @@ export function QuestScreen() {
 }
 
 // ───── 商城 ─────
+const SHOP_ROWS = [
+  { id: 'xiao_huanhun',  n: '小还魂丹',  qty: 10, price: 120,    k: 'T1 · HP +300',                   glyph: '还', special: false },
+  { id: 'xiao_juling',   n: '小聚灵丹',  qty: 10, price: 100,    k: 'T1 · MP +200',                   glyph: '聚', special: false },
+  { id: 'zhong_huanhun', n: '中还魂丹',  qty: 5,  price: 800,    k: 'T2 · HP +1500',                  glyph: '中', special: false },
+  { id: 'zhong_juling',  n: '中聚灵丹',  qty: 5,  price: 700,    k: 'T2 · MP +1000',                  glyph: '中', special: false },
+  { id: 'da_huanhun',    n: '大还魂丹',  qty: 3,  price: 2500,   k: 'T3 · HP +6000',                  glyph: '大', special: false },
+  { id: 'da_juling',     n: '大聚灵丹',  qty: 3,  price: 2200,   k: 'T3 · MP +4000',                  glyph: '大', special: false },
+  { id: 'qianghuashi',   n: '强化石',    qty: 5,  price: 3000,   k: '装备强化材料 · 每次强化消耗 1 颗', glyph: '石', special: false },
+  { id: 'heishuijing',   n: '黑水晶',    qty: 1,  price: 999999, k: '吸取装备一条随机额外属性',         glyph: '黑', special: true },
+]
+
 export function ShopScreen() {
-  const rows = [
-    { key: 's1', n: '止血草', qty: 5, price: 120, k: 'T1·HP +100' },
-    { key: 's2', n: '白果', qty: 5, price: 100, k: 'T1·MP +80' },
-    { key: 's3', n: '七叶莲', qty: 3, price: 800, k: 'T2·HP +1000' },
-  ]
+  const char = useSyncExternalStore(subscribe, getSnapshot)
+  const [msg, setMsg] = useState(null)
+
+  function handleBuy(row) {
+    const res = buyShopItemAction(row.id, row.qty)
+    setMsg({ text: res.ok ? `购买成功：${row.n} ×${row.qty}` : (res.reason ?? '购买失败'), ok: res.ok })
+    setTimeout(() => setMsg(null), 2500)
+  }
+
+  const tael = char.tael ?? 0
+
   return (
     <div className="paper-bg" style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', fontFamily: 'var(--font-body)' }}>
       <PanelHead title="商 城" sub="SHOP · 银两专卖"
-        right={<span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-2)' }}>银两 <span style={{ color: 'var(--gold-2)', fontWeight: 700 }}>248,800</span></span>}
+        right={<span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-2)' }}>银两 <span style={{ color: 'var(--gold-2)', fontWeight: 700 }}>{tael.toLocaleString()}</span></span>}
       />
       <div style={{ position: 'absolute', inset: '60px 20px 20px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'var(--paper-2)', border: '1px solid var(--gold-2)' }}>
+        {/* 银两栏 */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'var(--paper-2)', border: '1px solid var(--gold-2)', flexShrink: 0 }}>
           <Seal size={34} style={{ background: 'var(--gold-2)', boxShadow: 'inset 0 0 0 2px var(--paper), inset 0 0 0 3px var(--gold-2)' }}>银</Seal>
           <div>
-            <div className="brush" style={{ fontSize: 20, color: 'var(--gold-2)', lineHeight: 1 }}>248,800 银两</div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-3)', marginTop: 2 }}>TAEL · 战斗 + 出售获得</div>
+            <div className="brush" style={{ fontSize: 20, color: 'var(--gold-2)', lineHeight: 1 }}>{tael.toLocaleString()} 银两</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-3)', marginTop: 2 }}>TAEL · 战斗 + 出售装备获得</div>
           </div>
           <span style={{ flex: 1 }} />
-          <button className="btn-ink btn-ink-sm">领每日礼包</button>
           <button className="btn-ink btn-ink-sm">仙玉商城</button>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {rows.map((r) => (
-            <div key={r.key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 8, background: 'rgba(243,237,224,0.7)', border: '1px solid var(--ink-4)' }}>
-              <div className="slot q-common" style={{ width: 46, height: 46, flex: '0 0 46px' }}>
-                <Seal size={22} round>{r.n[0]}</Seal>
+
+        {/* 消息提示 */}
+        {msg && (
+          <div style={{
+            flexShrink: 0, padding: '5px 12px',
+            background: msg.ok ? 'rgba(45,138,45,0.12)' : 'rgba(163,55,58,0.12)',
+            border: `1px solid ${msg.ok ? 'var(--bamboo)' : 'var(--vermilion)'}`,
+            fontFamily: 'var(--font-mono)', fontSize: 11,
+            color: msg.ok ? 'var(--bamboo)' : 'var(--vermilion)',
+          }}>
+            {msg.text}
+          </div>
+        )}
+
+        {/* 商品列表 */}
+        <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {SHOP_ROWS.map((r) => {
+            const canAfford = tael >= r.price * r.qty
+            return (
+              <div key={r.id} style={{
+                display: 'flex', alignItems: 'center', gap: 10, padding: 8,
+                background: r.special ? 'rgba(106,61,138,0.07)' : 'rgba(243,237,224,0.7)',
+                border: `1px solid ${r.special ? '#6a3d8a' : 'var(--ink-4)'}`,
+              }}>
+                <div className="slot q-common" style={{ width: 46, height: 46, flex: '0 0 46px', borderColor: r.special ? '#6a3d8a' : undefined }}>
+                  <Seal size={22} round style={r.special ? { background: '#6a3d8a' } : {}}>{r.glyph}</Seal>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div className="brush" style={{ fontSize: 15, color: r.special ? '#6a3d8a' : 'var(--ink)' }}>{r.n} ×{r.qty}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-3)' }}>{r.k}</div>
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <button
+                    className="btn-ink btn-ink-primary"
+                    disabled={!canAfford}
+                    style={r.special ? { background: '#6a3d8a', borderColor: '#6a3d8a' } : {}}
+                    onClick={() => handleBuy(r)}
+                  >
+                    {(r.price * r.qty).toLocaleString()} 银两 · 购买
+                  </button>
+                  {!canAfford && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--vermilion)', marginTop: 2 }}>银两不足</div>}
+                </div>
               </div>
-              <div style={{ flex: 1 }}>
-                <div className="brush" style={{ fontSize: 15 }}>{r.n} ×{r.qty}</div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-3)' }}>{r.k}</div>
-              </div>
-              <button className="btn-ink btn-ink-primary">{r.price} 银两 · 购买</button>
-            </div>
-          ))}
+            )
+          })}
         </div>
-        <p style={{ margin: 0, fontSize: 10, color: 'var(--ink-3)', lineHeight: 1.6, marginTop: 'auto' }}>
-          每日 0 时刷新。仙玉购买、坐骑、套装等内容拓展中。
+
+        <p style={{ margin: 0, fontSize: 10, color: 'var(--ink-3)', lineHeight: 1.6, flexShrink: 0 }}>
+          黑水晶：在背包选中后可吸取任意装备（包括已装备）的一条额外属性，永久转化为角色加成。
         </p>
       </div>
     </div>

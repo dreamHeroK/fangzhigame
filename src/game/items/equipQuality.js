@@ -37,13 +37,12 @@ export function rollQuality(rng = Math.random) {
 const A = {
   blood:      { type: 'blood_flat',    label: '气血',  stat: 'blood',      isPct: false, minFn: L => L*4,    maxFn: L => L*16   },
   magic:      { type: 'magic_flat',    label: '法力',  stat: 'magic',      isPct: false, minFn: L => L*2,    maxFn: L => L*8    },
-  phyAtk:     { type: 'phyAtk_flat',   label: '物攻',  stat: 'phyAtk',     isPct: false, minFn: L => L*1,    maxFn: L => L*5    },
-  magAtk:     { type: 'magAtk_flat',   label: '法攻',  stat: 'magAtk',     isPct: false, minFn: L => L*1,    maxFn: L => L*5    },
-  wPhyAtk:    { type: 'phyAtk_flat',   label: '物攻',  stat: 'phyAtk',     isPct: false, minFn: L => L*6,    maxFn: L => L*24   },
-  wMagAtk:    { type: 'magAtk_flat',   label: '法攻',  stat: 'magAtk',     isPct: false, minFn: L => L*6,    maxFn: L => L*24   },
+  // 武器伤害（大量级，同时加物理攻击和法术攻击）
+  wDmg:       { type: 'dmg_flat',      label: '伤害',  stat: 'dmgAdd',     isPct: false, minFn: L => L*6,    maxFn: L => L*24   },
+  // 非武器部位伤害（小量级，同时加物理攻击和法术攻击）
+  dmg:        { type: 'dmg_flat',      label: '伤害',  stat: 'dmgAdd',     isPct: false, minFn: L => L*1,    maxFn: L => L*5    },
   defense:    { type: 'defense_flat',  label: '防御',  stat: 'defense',    isPct: false, minFn: L => L*1,    maxFn: L => L*4    },
   speed:      { type: 'speed_flat',    label: '速度',  stat: 'speed',      isPct: false, minFn: L => Math.max(1,Math.round(L*0.05)), maxFn: L => Math.max(2,Math.round(L*0.15)) },
-  // 四维基础属性（参考端游单属性 L100≈25，全属性≈20各维）
   vitAdd:     { type: 'vit_flat',      label: '体质',  stat: 'vitAdd',     isPct: false, minFn: L => Math.max(1,Math.round(L*0.10)), maxFn: L => Math.max(2,Math.round(L*0.25)) },
   intAdd:     { type: 'int_flat',      label: '灵力',  stat: 'intAdd',     isPct: false, minFn: L => Math.max(1,Math.round(L*0.10)), maxFn: L => Math.max(2,Math.round(L*0.25)) },
   strAdd:     { type: 'str_flat',      label: '力量',  stat: 'strAdd',     isPct: false, minFn: L => Math.max(1,Math.round(L*0.10)), maxFn: L => Math.max(2,Math.round(L*0.25)) },
@@ -51,14 +50,13 @@ const A = {
   allStats:   { type: 'allStats_flat', label: '全属性',stat: 'allStatsAdd',isPct: false, minFn: L => Math.max(1,Math.round(L*0.08)), maxFn: L => Math.max(2,Math.round(L*0.18)) },
   bloodPct:   { type: 'blood_pct',     label: '气血%', stat: 'bloodPct',   isPct: true,  min: 2,  max: 10 },
   magicPct:   { type: 'magic_pct',     label: '法力%', stat: 'magicPct',   isPct: true,  min: 2,  max: 10 },
-  phyAtkPct:  { type: 'phyAtk_pct',    label: '物攻%', stat: 'phyAtkPct',  isPct: true,  min: 1,  max: 6  },
-  magAtkPct:  { type: 'magAtk_pct',    label: '法攻%', stat: 'magAtkPct',  isPct: true,  min: 1,  max: 6  },
+  dmgPct:     { type: 'dmg_pct',       label: '伤害%', stat: 'dmgPct',     isPct: true,  min: 1,  max: 6  },
   defensePct: { type: 'defense_pct',   label: '防御%', stat: 'defensePct', isPct: true,  min: 1,  max: 6  },
   dodge:      { type: 'dodge_add',     label: '躲闪',  stat: 'dodgeAdd',   isPct: true,  min: 1,  max: 5  },
-  crit:       { type: 'crit_add',      label: '必杀',  stat: 'critAdd',    isPct: true,  min: 1,  max: 5  },
-  combo:      { type: 'combo_add',     label: '连击',  stat: 'comboAdd',   isPct: true,  min: 1,  max: 4  },
-  counter:    { type: 'counter_add',   label: '反击',  stat: 'counterAdd', isPct: true,  min: 1,  max: 3  },
-  piercing:   { type: 'piercing_add',  label: '破甲',  stat: 'piercing',   isPct: true,  min: 1,  max: 4  },
+  crit:       { type: 'crit_add',      label: '必杀',  stat: 'critAdd',    isPct: true,  min: 3,  max: 15 },
+  combo:      { type: 'combo_add',     label: '连击',  stat: 'comboAdd',   isPct: true,  min: 3,  max: 12 },
+  counter:    { type: 'counter_add',   label: '反击',  stat: 'counterAdd', isPct: true,  min: 2,  max: 10 },
+  piercing:   { type: 'piercing_add',  label: '破甲',  stat: 'piercing',   isPct: true,  min: 2,  max: 12 },
 }
 
 // ── 各槽位词条池（参考问道端游部位分化设计）────────────────────────────────
@@ -82,17 +80,17 @@ const A = {
 // 项链：法力/相性（法术资源型）
 // 玉佩：气血/相性（气血百分比型）
 const SLOT_POOLS = {
-  weapon:   [A.wPhyAtk, A.wMagAtk, A.phyAtkPct, A.magAtkPct, A.crit, A.combo, A.counter, A.piercing],
-  hat:      [A.blood,  A.magic,  A.defense,  A.vitAdd,   A.allStats, A.bloodPct,  A.defensePct, A.combo, A.counter],
-  cloth:    [A.blood,  A.defense, A.vitAdd,  A.allStats, A.bloodPct, A.defensePct, A.magic,  A.counter, A.dodge],
-  shoe:     [A.speed,  A.dodge,  A.defense, A.agiAdd,   A.allStats, A.combo,     A.counter],
-  belt:     [A.blood,  A.bloodPct, A.defense, A.vitAdd,  A.defensePct, A.counter],
-  lingbao:  [A.magAtk, A.magic,  A.intAdd,  A.magAtkPct, A.magicPct, A.crit,   A.combo],
-  bracelet: [A.phyAtk, A.magAtk, A.strAdd,  A.intAdd,   A.phyAtkPct, A.magAtkPct, A.crit],
-  necklace: [A.magic,  A.magAtk, A.intAdd,  A.magicPct,  A.magAtkPct],
-  pendant:  [A.blood,  A.vitAdd, A.bloodPct, A.magicPct, A.defensePct, A.phyAtkPct, A.magAtkPct, A.dodge],
-  default:  [A.blood, A.magic, A.phyAtk, A.magAtk, A.defense, A.speed,
-             A.bloodPct, A.magicPct, A.phyAtkPct, A.magAtkPct, A.defensePct,
+  weapon:   [A.wDmg,  A.dmgPct,  A.crit,   A.combo,  A.counter, A.piercing],
+  hat:      [A.blood, A.magic,   A.defense, A.vitAdd, A.allStats, A.bloodPct, A.defensePct, A.combo, A.counter],
+  cloth:    [A.blood, A.defense, A.vitAdd,  A.allStats, A.bloodPct, A.defensePct, A.magic,  A.counter, A.dodge],
+  shoe:     [A.speed, A.dodge,   A.defense, A.agiAdd, A.allStats, A.combo,    A.counter],
+  belt:     [A.blood, A.bloodPct, A.defense, A.vitAdd, A.defensePct, A.counter],
+  lingbao:  [A.dmg,  A.magic,   A.intAdd,  A.dmgPct, A.magicPct, A.crit,    A.combo],
+  bracelet: [A.dmg,  A.strAdd,  A.intAdd,  A.dmgPct, A.crit],
+  necklace: [A.magic, A.dmg,    A.intAdd,  A.magicPct, A.dmgPct],
+  pendant:  [A.blood, A.vitAdd, A.bloodPct, A.magicPct, A.defensePct, A.dmgPct, A.dodge],
+  default:  [A.blood, A.magic,  A.dmg,     A.defense, A.speed,
+             A.bloodPct, A.magicPct, A.dmgPct, A.defensePct,
              A.dodge, A.crit, A.combo, A.counter, A.piercing],
 }
 
@@ -145,8 +143,10 @@ export function rollExtraAttrs(quality, itemLevel, rng = Math.random, baseItem =
       lo = attr.min
       hi = attr.max
     }
-    const value = lo + Math.floor(rng() * (hi - lo + 1))
-    picked.push({ type: attr.type, label: attr.label, stat: attr.stat, isPct: attr.isPct, value })
+    // 取两次随机的最大值，使高区间出现概率约为均匀分布的2倍
+    const t = Math.max(rng(), rng())
+    const value = lo + Math.floor(t * (hi - lo + 1))
+    picked.push({ type: attr.type, label: attr.label, stat: attr.stat, isPct: attr.isPct, value, lo, hi })
   }
   return picked
 }
@@ -176,27 +176,29 @@ export function generateEquipInstance(baseItem, rng = Math.random) {
  */
 export function compileExtraBonuses(instances) {
   const out = {
-    // 固定值
     blood: 0, magic: 0, defense: 0, speed: 0,
     phyAtk: 0, magAtk: 0,
-    hurt: 0,          // 旧存档兼容（原 hurt_flat）
-    // 四维基础属性（叠加后在 playerSheet 中放大）
+    hurt: 0,       // 旧存档兼容
     vitAdd: 0, intAdd: 0, strAdd: 0, agiAdd: 0,
-    // 百分比
     bloodPct: 0, magicPct: 0, defensePct: 0,
     phyAtkPct: 0, magAtkPct: 0,
-    hurtPct: 0,       // 旧存档兼容（原 hurt_pct）
-    // 战斗系数
+    hurtPct: 0,    // 旧存档兼容
     dodgeAdd: 0, critAdd: 0, comboAdd: 0, counterAdd: 0,
     piercing: 0,
   }
   for (const inst of instances) {
     for (const ex of (inst?.extra ?? [])) {
       if (ex.stat === 'allStatsAdd') {
-        out.vitAdd += ex.value
-        out.intAdd += ex.value
-        out.strAdd += ex.value
-        out.agiAdd += ex.value
+        out.vitAdd += ex.value; out.intAdd += ex.value
+        out.strAdd += ex.value; out.agiAdd += ex.value
+      } else if (ex.stat === 'dmgAdd') {
+        // 伤害词条同时加物理攻击和法术攻击
+        out.phyAtk += ex.value
+        out.magAtk += ex.value
+      } else if (ex.stat === 'dmgPct') {
+        // 伤害%词条同时加物攻%和法攻%
+        out.phyAtkPct += ex.value
+        out.magAtkPct += ex.value
       } else if (ex.stat in out) {
         out[ex.stat] += ex.value
       }
@@ -208,4 +210,9 @@ export function compileExtraBonuses(instances) {
 // ── 格式化显示 ────────────────────────────────────────────────────────────────
 export function formatExtra(ex) {
   return `${ex.label} +${ex.value}${ex.isPct ? '%' : ''}`
+}
+
+/** 词条是否为满属性（hi 字段存在且 value 达到 hi） */
+export function isExtraMax(ex) {
+  return ex.hi != null && ex.value >= ex.hi
 }

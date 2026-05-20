@@ -128,6 +128,9 @@ const DEFAULT_STATE = {
   /** 装备背包：[{ uid, baseCode, quality, extra }]，包含已装和未装的全部装备实例 */
   equipBag: [],
 
+  /** 黑水晶实例背包：[{ uid, absorbedAttrs: [] }] */
+  crystalBag: [],
+
   /** 当前气血（null = 满血）；战斗结束后写回 */
   hpCur: null,
   /** 当前法力（null = 满法）；战斗结束后写回 */
@@ -182,6 +185,18 @@ function load() {
       if (merged.hpCur === undefined) merged.hpCur = null
       if (merged.mpCur === undefined) merged.mpCur = null
       if (merged.autoRestore === undefined) merged.autoRestore = false
+      if (!Array.isArray(merged.crystalBag)) merged.crystalBag = []
+      // 迁移：旧存档的 bag 中可能有 heishuijing，转为 crystalBag 实例
+      const newBag = []
+      for (const entry of (merged.bag ?? [])) {
+        if (entry.itemId === 'heishuijing') {
+          for (let i = 0; i < (entry.qty ?? 1); i++)
+            merged.crystalBag.push({ uid: `crystal_migr_${Date.now()}_${i}`, absorbedAttrs: [] })
+        } else {
+          newBag.push(entry)
+        }
+      }
+      merged.bag = newBag
       if (!merged.equipped || typeof merged.equipped !== 'object') {
         merged.equipped = { ...EMPTY_EQUIPPED }
       } else {
@@ -229,12 +244,13 @@ function patch(updates) {
  * @param {'vit'|'int'|'str'|'agi'} stat
  * @returns {{ ok: boolean, reason?: string }}
  */
-export function addStatAction(stat) {
+export function addStatAction(stat, count = 1) {
   const budget = getAttributePointBudget(state.level)
   const used = sumFour(state)
   if (used >= budget) return { ok: false, reason: '无剩余属性点' }
   if (!['vit', 'int', 'str', 'agi'].includes(stat)) return { ok: false, reason: '未知属性' }
-  patch({ [stat]: (state[stat] ?? 0) + 1 })
+  const actual = Math.min(count, budget - used)
+  patch({ [stat]: (state[stat] ?? 0) + actual })
   return { ok: true }
 }
 
@@ -243,14 +259,15 @@ export function addStatAction(stat) {
  * @param {'Metal'|'Wood'|'Water'|'Fire'|'Earth'} elem
  * @returns {{ ok: boolean, reason?: string }}
  */
-export function addAffinityAction(elem) {
+export function addAffinityAction(elem, count = 1) {
   const key = 'aff' + elem
   const budget = getAffinityPointBudget(state.level)
   const used = sumAffinity(state)
   if (used >= budget) return { ok: false, reason: '无剩余相性点' }
   const cur = state[key] ?? 0
   if (cur >= AFFINITY_CAP_PER_ELEMENT) return { ok: false, reason: `${elem}相性已达上限 30` }
-  patch({ [key]: cur + 1 })
+  const actual = Math.min(count, budget - used, AFFINITY_CAP_PER_ELEMENT - cur)
+  patch({ [key]: cur + actual })
   return { ok: true }
 }
 
@@ -472,7 +489,7 @@ export function setPetActiveAction(petId, active) {
  * @param {'vit'|'int'|'str'|'agi'} attr
  * @returns {{ ok: boolean, reason?: string }}
  */
-export function addPetAttrAction(petId, attr) {
+export function addPetAttrAction(petId, attr, count = 1) {
   const VALID = ['vit', 'int', 'str', 'agi']
   if (!VALID.includes(attr)) return { ok: false, reason: '未知属性' }
   const pet = state.petRoster.find(p => p.id === petId)
@@ -480,7 +497,8 @@ export function addPetAttrAction(petId, attr) {
   const total = getPetFreeAttrTotal(pet.level)
   const used  = sumPetAllocAttr(pet.allocatedAttr)
   if (used >= total) return { ok: false, reason: '无剩余属性点' }
-  const newAlloc = { ...(pet.allocatedAttr ?? { vit:0,int:0,str:0,agi:0 }), [attr]: ((pet.allocatedAttr?.[attr] ?? 0) + 1) }
+  const actual = Math.min(count, total - used)
+  const newAlloc = { ...(pet.allocatedAttr ?? { vit:0,int:0,str:0,agi:0 }), [attr]: ((pet.allocatedAttr?.[attr] ?? 0) + actual) }
   patch({ petRoster: state.petRoster.map(p => p.id === petId ? { ...p, allocatedAttr: newAlloc } : p) })
   return { ok: true }
 }
@@ -643,6 +661,222 @@ export function unequipItemAction(slotKey) {
   if (!oldUid) return { ok: false, reason: '该槽位未装备任何物品' }
   patch({ equipped: { ...(state.equipped ?? EMPTY_EQUIPPED), [slotKey]: null } })
   return { ok: true }
+}
+
+// ── 装备出售 ──────────────────────────────────────────────────────────────────
+export const EQUIP_SELL_PRICE = {
+  white: 100, green: 600, blue: 3000, purple: 15000, orange: 60000,
+}
+
+/**
+ * 出售单件装备（不可出售已装备在槽位的物品）。
+ * @param {string} uid
+ * @returns {{ ok: boolean, reason?: string, tael?: number }}
+ */
+export function sellEquipAction(uid) {
+  const equippedUids = new Set(Object.values(state.equipped ?? {}).filter(v => typeof v === 'string'))
+  if (equippedUids.has(uid)) return { ok: false, reason: '已装备的物品需先卸下' }
+  const inst = (state.equipBag ?? []).find(i => i.uid === uid)
+  if (!inst) return { ok: false, reason: '未找到该装备' }
+  const price = EQUIP_SELL_PRICE[inst.quality] ?? 100
+  patch({
+    equipBag: state.equipBag.filter(i => i.uid !== uid),
+    tael: (state.tael ?? 0) + price,
+  })
+  return { ok: true, tael: price }
+}
+
+/**
+ * 批量出售指定品质的所有未装备装备。
+ * @param {string[]} qualities  如 ['white','green']
+ * @returns {{ ok: boolean, count: number, tael: number }}
+ */
+export function batchSellEquipAction(qualities) {
+  const qSet = new Set(qualities)
+  const equippedUids = new Set(Object.values(state.equipped ?? {}).filter(v => typeof v === 'string'))
+  const toSell = (state.equipBag ?? []).filter(i => !equippedUids.has(i.uid) && qSet.has(i.quality))
+  if (!toSell.length) return { ok: true, count: 0, tael: 0 }
+  const earned = toSell.reduce((s, i) => s + (EQUIP_SELL_PRICE[i.quality] ?? 100), 0)
+  const sellUids = new Set(toSell.map(i => i.uid))
+  patch({
+    equipBag: state.equipBag.filter(i => !sellUids.has(i.uid)),
+    tael: (state.tael ?? 0) + earned,
+  })
+  return { ok: true, count: toSell.length, tael: earned }
+}
+
+// ── 商城购买 ──────────────────────────────────────────────────────────────────
+/**
+ * 购买商城道具（普通消耗品 / 黑水晶）。
+ * @param {string} itemId
+ * @param {number} qty
+ * @returns {{ ok: boolean, reason?: string }}
+ */
+export function buyShopItemAction(itemId, qty = 1) {
+  const SHOP_PRICES = {
+    xiao_huanhun: 120, xiao_juling: 100,
+    zhong_huanhun: 800, zhong_juling: 700,
+    da_huanhun: 2500, da_juling: 2200,
+    heishuijing: 999999,
+    qianghuashi: 3000,
+  }
+  const price = SHOP_PRICES[itemId]
+  if (price == null) return { ok: false, reason: '该商品不存在' }
+  const total = price * qty
+  if ((state.tael ?? 0) < total) return { ok: false, reason: `银两不足（需 ${total.toLocaleString()}）` }
+  if (itemId === 'heishuijing') {
+    // 黑水晶是独立实例，存入 crystalBag
+    const newCrystals = Array.from({ length: qty }, (_, i) => ({
+      uid: `crystal_${Date.now()}_${_crystalSeq++}_${i}`,
+      absorbedAttrs: [],
+    }))
+    patch({ crystalBag: [...(state.crystalBag ?? []), ...newCrystals], tael: (state.tael ?? 0) - total })
+    return { ok: true }
+  }
+  const bag = [...(state.bag ?? [])]
+  const idx = bag.findIndex(e => e.itemId === itemId)
+  if (idx >= 0) bag[idx] = { ...bag[idx], qty: bag[idx].qty + qty }
+  else bag.push({ itemId, qty })
+  patch({ bag, tael: (state.tael ?? 0) - total })
+  return { ok: true }
+}
+
+// ── 背包物品出售 ──────────────────────────────────────────────────────────────
+/** tier → 出售单价 */
+const BAG_SELL_BY_TIER = { 1: 50, 2: 250, 3: 600, 4: 1200, 5: 2500 }
+const BAG_SELL_OVERRIDES = { qianghuashi: 1500 }
+
+/**
+ * 返回背包物品单件出售价，null 表示不可出售（特殊道具 / 任务物品 / 黑水晶）。
+ */
+export function getBagItemSellPrice(itemId) {
+  if (BAG_SELL_OVERRIDES[itemId] != null) return BAG_SELL_OVERRIDES[itemId]
+  const def = getConsumable(itemId)
+  if (!def) return null
+  if (def.kind === 'special' || def.kind === 'quest') return null
+  return BAG_SELL_BY_TIER[def.tier] ?? null
+}
+
+/**
+ * 出售背包中指定物品（qty 件）。
+ */
+export function sellBagItemAction(itemId, qty = 1) {
+  const price = getBagItemSellPrice(itemId)
+  if (price == null) return { ok: false, reason: '该物品不可出售' }
+  const entry = (state.bag ?? []).find(e => e.itemId === itemId)
+  if (!entry || entry.qty < qty) return { ok: false, reason: '背包中数量不足' }
+  const earned = price * qty
+  const newBag = state.bag
+    .map(e => e.itemId === itemId ? { ...e, qty: e.qty - qty } : e)
+    .filter(e => e.qty > 0)
+  patch({ bag: newBag, tael: (state.tael ?? 0) + earned })
+  return { ok: true, tael: earned }
+}
+
+// ── 黑水晶：吸取 / 锻造熔炼 ──────────────────────────────────────────────────
+export const MAX_EXTRA_ATTRS = 6
+
+let _crystalSeq = 0
+/**
+ * 用黑水晶吸取目标装备的一条随机额外属性，存储到水晶上。
+ * @param {string} crystalUid
+ * @param {string} equipUid
+ */
+export function absorbToCrystalAction(crystalUid, equipUid) {
+  const crystal = (state.crystalBag ?? []).find(c => c.uid === crystalUid)
+  if (!crystal) return { ok: false, reason: '未找到黑水晶' }
+  const inst = (state.equipBag ?? []).find(i => i.uid === equipUid)
+  if (!inst) return { ok: false, reason: '未找到该装备' }
+  if (!inst.extra?.length) return { ok: false, reason: '该装备没有额外属性可吸取' }
+
+  const idx = Math.floor(Math.random() * inst.extra.length)
+  const absorbed = inst.extra[idx]
+
+  patch({
+    crystalBag: state.crystalBag.map(c =>
+      c.uid === crystalUid ? { ...c, absorbedAttrs: [...(c.absorbedAttrs ?? []), absorbed] } : c
+    ),
+    equipBag: state.equipBag.map(i =>
+      i.uid === equipUid ? { ...i, extra: i.extra.filter((_, j) => j !== idx) } : i
+    ),
+  })
+  return { ok: true, absorbed }
+}
+
+/**
+ * 熔炼：将黑水晶上的所有属性注入目标装备，消耗水晶。
+ * 装备额外属性上限 MAX_EXTRA_ATTRS 条，超过则拒绝。
+ * @param {string} equipUid
+ * @param {string} crystalUid
+ */
+export function smeltEquipAction(equipUid, crystalUid) {
+  const crystal = (state.crystalBag ?? []).find(c => c.uid === crystalUid)
+  if (!crystal) return { ok: false, reason: '未找到黑水晶' }
+  if (!crystal.absorbedAttrs?.length) return { ok: false, reason: '黑水晶上没有属性' }
+  const inst = (state.equipBag ?? []).find(i => i.uid === equipUid)
+  if (!inst) return { ok: false, reason: '未找到该装备' }
+  const curCount = inst.extra?.length ?? 0
+  if (curCount >= MAX_EXTRA_ATTRS) return { ok: false, reason: `额外属性已达上限（${MAX_EXTRA_ATTRS} 条）` }
+  const toAdd = crystal.absorbedAttrs.slice(0, MAX_EXTRA_ATTRS - curCount)
+
+  patch({
+    equipBag: state.equipBag.map(i =>
+      i.uid === equipUid ? { ...i, extra: [...(i.extra ?? []), ...toAdd] } : i
+    ),
+    crystalBag: state.crystalBag.filter(c => c.uid !== crystalUid),
+  })
+  return { ok: true, added: toAdd.length }
+}
+
+// ── 锻造强化 ──────────────────────────────────────────────────────────────────
+export const FORGE_MAX_LEVEL = 12
+export const FORGE_STONE_ID  = 'qianghuashi'
+
+/** 各级强化基础成功率（%），索引 i = 从 +i 强化到 +(i+1) */
+export const FORGE_SUCCESS_RATES = [100, 100, 100, 85, 78, 30, 18, 10, 6, 4, 2, 1]
+
+/** 各级强化失败时累积的保底进度（%），索引 i = 从 +i 强化到 +(i+1) */
+export const FORGE_PITY_STEPS = [15, 15, 15, 15, 12, 5, 4, 3, 3, 2, 2, 2]
+
+/** 第 N 级强化费用（银两） */
+export function forgeCost(currentLevel) {
+  return 500 * (currentLevel + 1) * (currentLevel + 1)
+}
+
+/**
+ * 对装备进行一次强化，消耗银两 + 强化石。
+ * 成功：forgeLevel +1，保底归零。
+ * 失败：forgeLevel 不变，保底 +FORGE_PITY_STEP；保底达 100 时下次必中。
+ */
+export function forgeEquipAction(uid) {
+  const inst = (state.equipBag ?? []).find(i => i.uid === uid)
+  if (!inst) return { ok: false, reason: '未找到该装备' }
+  const cur = inst.forgeLevel ?? 0
+  if (cur >= FORGE_MAX_LEVEL) return { ok: false, reason: `强化已达上限 +${FORGE_MAX_LEVEL}` }
+  const cost = forgeCost(cur)
+  if ((state.tael ?? 0) < cost) return { ok: false, reason: `银两不足（需 ${cost.toLocaleString()}）` }
+  const stoneEntry = (state.bag ?? []).find(e => e.itemId === FORGE_STONE_ID)
+  if (!stoneEntry || stoneEntry.qty < 1) return { ok: false, reason: '强化石不足（需 1 颗）' }
+
+  const pity = inst.forgePity ?? 0
+  const guaranteed = pity >= 100
+  const rate = FORGE_SUCCESS_RATES[cur] ?? 15
+  const success = guaranteed || Math.random() * 100 < rate
+  const pityStep = FORGE_PITY_STEPS[cur] ?? 2
+  const newPity  = success ? 0 : Math.min(100, pity + pityStep)
+
+  const newBag = state.bag
+    .map(e => e.itemId === FORGE_STONE_ID ? { ...e, qty: e.qty - 1 } : e)
+    .filter(e => e.qty > 0)
+
+  patch({
+    equipBag: state.equipBag.map(i =>
+      i.uid === uid ? { ...i, forgeLevel: success ? cur + 1 : cur, forgePity: newPity } : i
+    ),
+    tael: (state.tael ?? 0) - cost,
+    bag: newBag,
+  })
+  return { ok: true, success, forgeLevel: success ? cur + 1 : cur, pity: newPity, guaranteed }
 }
 
 /**

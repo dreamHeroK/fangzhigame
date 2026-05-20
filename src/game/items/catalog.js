@@ -94,6 +94,14 @@ export const CONSUMABLE_BY_ID = {
     id: 'falinglong', name: '法玲珑', glyph: '法', kind: 'mp', mode: 'quota', tier: 6,
     note: '不可叠加，每颗独立额度与一格；每次使用可将法力补满，实际回复不超过缺失量与当前额度，扣等额额度。',
   },
+  heishuijing: {
+    id: 'heishuijing', name: '黑水晶', glyph: '黑', kind: 'special', mode: 'absorb', tier: 7,
+    note: '使用于装备，随机吸取一条额外属性，永久转化为角色加成。每件装备吸取后该属性消失。',
+  },
+  qianghuashi: {
+    id: 'qianghuashi', name: '强化石', glyph: '石', kind: 'material', tier: 5,
+    note: '装备强化所需材料，每次强化消耗 1 颗。',
+  },
 }
 
 /** 按怪物等级取掉落池 tier 1–5 */

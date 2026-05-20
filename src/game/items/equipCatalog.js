@@ -107,6 +107,20 @@ export function resolveSlotItem(slotValue, equipBag) {
   return CATALOG_BY_CODE.get(inst.baseCode) ?? null
 }
 
+// ── 强化奖励表 ───────────────────────────────────────────────────────────────
+/**
+ * 每一级强化额外增加的基础属性加成（%），索引 0 = +1 级时的增量。
+ * 越高级增量越大，体现高级强化的稀缺价值。
+ * 累计上限（+12 满级）：+75%
+ */
+export const FORGE_BONUS_PER_LEVEL = [2, 2, 2, 3, 3, 6, 8, 10, 12, 15, 18, 22]
+
+/** 返回 forgeLevel 等级下的累积基础属性加成百分比 */
+export function forgeBonusPct(level) {
+  const lv = Math.max(0, Math.min(12, level))
+  return FORGE_BONUS_PER_LEVEL.slice(0, lv).reduce((s, v) => s + v, 0)
+}
+
 // ── 加成计算 ─────────────────────────────────────────────────────────────────
 /**
  * 汇总基础属性加成（来自 catalog base_attrs）。
@@ -120,21 +134,24 @@ export function getEquipBonuses(equippedMap, equipBag) {
   const instMap = buildInstMap(equipBag)
   for (const v of Object.values(equippedMap)) {
     if (!v) continue
-    let baseCode
+    let baseCode, forgeLevel = 0
     if (typeof v === 'number') {
       baseCode = v
     } else {
-      baseCode = instMap.get(v)?.baseCode
+      const inst = instMap.get(v)
+      baseCode   = inst?.baseCode
+      forgeLevel = inst?.forgeLevel ?? 0
     }
     if (!baseCode) continue
     const item = CATALOG_BY_CODE.get(Number(baseCode))
     if (!item?.base_attrs) continue
     const a = item.base_attrs
-    hurt    += Number(a.hurt)    || 0
-    defense += Number(a.defense) || 0
-    blood   += Number(a.blood)   || 0
-    magic   += Number(a.magic)   || 0
-    speed   += Number(a.speed)   || 0
+    const fm = 1 + forgeBonusPct(forgeLevel) / 100
+    hurt    += Math.round((Number(a.hurt)    || 0) * fm)
+    defense += Math.round((Number(a.defense) || 0) * fm)
+    blood   += Math.round((Number(a.blood)   || 0) * fm)
+    magic   += Math.round((Number(a.magic)   || 0) * fm)
+    speed   += Math.round((Number(a.speed)   || 0) * fm)
   }
   return { hurt, defense, blood, magic, speed }
 }

@@ -6,6 +6,7 @@ import PetsScreen from './components/PetsScreen.jsx'
 import BagScreen from './components/BagScreen.jsx'
 
 import { QuestScreen, ShopScreen, SignScreen, WorldMapScreen } from './components/MiscScreens.jsx'
+import ForgeScreen from './components/ForgeScreen.jsx'
 import DataScreen from './components/DataScreen.jsx'
 import TestScreen from './components/TestScreen.jsx'
 import { subscribe, getSnapshot } from './game/characterStore.js'
@@ -22,6 +23,7 @@ const SCREENS = [
   { id: 'pets',      label: '灵兽',  component: PetsScreen },
   { id: 'bag',       label: '背包',  component: BagScreen },
 
+  { id: 'forge',     label: '锻造',  component: ForgeScreen },
   { id: 'quest',     label: '任务',  component: QuestScreen },
   { id: 'shop',      label: '商城',  component: ShopScreen },
   { id: 'sign',      label: '签到',  component: SignScreen },

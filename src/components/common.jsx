@@ -1,4 +1,50 @@
-import React from 'react'
+import React, { useRef, useEffect, useCallback } from 'react'
+
+/**
+ * 返回长按事件 handlers。按住触发连续回调；按住 Ctrl 速度×10。
+ * @param {(count: number) => void} onAdd
+ * @param {{ disabled?: boolean }} opts
+ */
+export function useLongPress(onAdd, { disabled = false } = {}) {
+  const holdTimer    = useRef(null)
+  const holdInterval = useRef(null)
+  const ctrlRef      = useRef(false)
+  const disabledRef  = useRef(disabled)
+  disabledRef.current = disabled
+  const onAddRef     = useRef(onAdd)
+  onAddRef.current   = onAdd
+
+  const stop = useCallback(() => {
+    clearTimeout(holdTimer.current)
+    clearInterval(holdInterval.current)
+  }, [])
+
+  useEffect(() => {
+    const sync = (e) => { ctrlRef.current = e.ctrlKey }
+    window.addEventListener('keydown', sync)
+    window.addEventListener('keyup', sync)
+    return () => {
+      window.removeEventListener('keydown', sync)
+      window.removeEventListener('keyup', sync)
+      stop()
+    }
+  }, [stop])
+
+  const onMouseDown = (e) => {
+    if (disabledRef.current) return
+    e.preventDefault()
+    ctrlRef.current = e.ctrlKey
+    onAddRef.current(ctrlRef.current ? 10 : 1)
+    holdTimer.current = setTimeout(() => {
+      holdInterval.current = setInterval(() => {
+        if (disabledRef.current) { stop(); return }
+        onAddRef.current(ctrlRef.current ? 10 : 1)
+      }, 80)
+    }, 400)
+  }
+
+  return { onMouseDown, onMouseUp: stop, onMouseLeave: stop }
+}
 
 export const SCHOOL_SLUG = { 金: 'jin', 木: 'mu', 水: 'shui', 火: 'huo', 土: 'tu' }
 

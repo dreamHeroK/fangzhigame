@@ -1,5 +1,5 @@
 import React, { useSyncExternalStore, useState, useEffect } from 'react'
-import { Seal, Placeholder, CornerDeco, PanelHead, SubHead, Tag } from './common.jsx'
+import { Seal, Placeholder, CornerDeco, PanelHead, SubHead, Tag, useLongPress } from './common.jsx'
 import { subscribe, getSnapshot, setPetActiveAction, addPetAttrAction, resetPetAttrAction } from '../game/characterStore.js'
 import { getPetByKey, INNATE_NAMES, INNATE_DESC } from '../game/petCatalog.js'
 import { computeStatsFromGrowth, getPetFreeAttrTotal, sumPetAllocAttr, getPetAttrRates } from '../game/battle/petGrowthTable.js'
@@ -167,6 +167,26 @@ const ATTR_RATE_LABELS = {
   int: [{ key: 'mp', statKey: 'maxMp', label: '法力' }, { key: 'mAtk', statKey: 'mAtk', label: '法攻' }],
   str: [{ key: 'atk', statKey: 'atk', label: '物攻' }],
   agi: [{ key: 'speed', statKey: 'speed', label: '速度' }],
+}
+
+const PetAddBtn = ({ attrKey, disabled, onAdd }) => {
+  const handlers = useLongPress((n) => onAdd(attrKey, n), { disabled })
+  return (
+    <button
+      {...handlers}
+      disabled={disabled}
+      style={{
+        fontSize: 11, padding: '1px 10px', flexShrink: 0,
+        background: disabled ? 'var(--ink-2)' : ATTR_COLORS[attrKey],
+        color: disabled ? 'var(--ink-4)' : '#fff',
+        border: 'none', borderRadius: 2,
+        cursor: disabled ? 'default' : 'pointer',
+        opacity: disabled ? 0.5 : 1,
+      }}
+    >
+      +1
+    </button>
+  )
 }
 
 const PetDetail = ({ pet, onToggleActive, onAddAttr, onResetAttr }) => {
@@ -363,19 +383,7 @@ const PetDetail = ({ pet, onToggleActive, onAddAttr, onResetAttr }) => {
                       </span>
                     )}
                   </div>
-                  <button
-                    onClick={() => onAddAttr(key)}
-                    disabled={freeAttr <= 0}
-                    style={{
-                      fontSize: 11, padding: '1px 10px', flexShrink: 0,
-                      background: freeAttr > 0 ? ATTR_COLORS[key] : 'var(--ink-2)',
-                      color: freeAttr > 0 ? '#fff' : 'var(--ink-4)',
-                      border: 'none', borderRadius: 2, cursor: freeAttr > 0 ? 'pointer' : 'default',
-                      opacity: freeAttr > 0 ? 1 : 0.5,
-                    }}
-                  >
-                    +1
-                  </button>
+                  <PetAddBtn attrKey={key} disabled={freeAttr <= 0} onAdd={onAddAttr} />
                 </div>
               )
             })}
@@ -460,9 +468,9 @@ export default function PetsScreen() {
     setMsg({ text: res.reason ?? (pet.active ? `「${pet.displayName}」已下阵休息` : `「${pet.displayName}」已上阵出战`), ok: res.ok })
   }
 
-  function handleAddAttr(pet, attr) {
+  function handleAddAttr(pet, attr, count = 1) {
     if (!pet) return
-    const res = addPetAttrAction(pet.id, attr)
+    const res = addPetAttrAction(pet.id, attr, count)
     if (!res.ok) setMsg({ text: res.reason, ok: false })
   }
 
@@ -545,7 +553,7 @@ export default function PetsScreen() {
           <PetDetail
             pet={selected}
             onToggleActive={() => handleToggle(selected)}
-            onAddAttr={(attr) => handleAddAttr(selected, attr)}
+            onAddAttr={(attr, n) => handleAddAttr(selected, attr, n)}
             onResetAttr={() => handleResetAttr(selected)}
           />
         ) : (

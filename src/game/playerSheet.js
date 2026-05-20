@@ -201,12 +201,12 @@ export function computeHeroDerived(level, sheet) {
   const chassisDef = 10 + L * 1.8
   const chassisSpd = 8 + L * 1.2
 
-  /** 装备基础加成 + 额外词条加成 */
+  /** 装备基础加成（含锻造等级加成）+ 额外词条加成 */
   const eq = getEquipBonuses(sheet.equipped, sheet.equipBag)
   const instances = getEquippedInstances(sheet.equipped, sheet.equipBag)
   const ex = compileExtraBonuses(instances)
 
-  // 装备词条中的四维加成叠入基础属性，再经相性放大
+  // 装备词条中的四维叠入基础属性，再经相性放大
   const vitEff = vit + ex.vitAdd
   const intEff = int + ex.intAdd
   const strEff = str + ex.strAdd
@@ -232,13 +232,13 @@ export function computeHeroDerived(level, sheet) {
   // 破甲率（上限 30%，降低目标有效防御）
   const piercingPct = Math.min(30, ex.piercing)
 
-  const acc = Math.round(36 + L * 0.55 + str * r.accPerStr + agi * 0.15)
+  const acc = Math.round(36 + L * 0.55 + strEff * r.accPerStr + agiEff * 0.15)
 
-  const dodgePct   = Math.min(45, Math.round((agi * 0.12 + vit * 0.04  + ex.dodgeAdd)   * 10) / 10)
-  const critPct    = Math.min(40, Math.round((str * 0.06 + agi * 0.04  + ex.critAdd)    * 10) / 10)
-  const comboPct   = Math.min(35, Math.round((agi * 0.05 + str * 0.03  + ex.comboAdd)   * 10) / 10)
-  const counterPct = Math.min(25, Math.round((vit * 0.08                + ex.counterAdd) * 10) / 10)
-  const reflectPct = Math.min(20, Math.round(vit * 0.06 * 10) / 10)
+  const dodgePct   = Math.min(45, Math.round((agiEff * 0.12 + vitEff * 0.04  + ex.dodgeAdd)   * 10) / 10)
+  const critPct    = Math.min(40, Math.round((strEff * 0.06 + agiEff * 0.04  + ex.critAdd)    * 10) / 10)
+  const comboPct   = Math.min(35, Math.round((agiEff * 0.05 + strEff * 0.03  + ex.comboAdd)   * 10) / 10)
+  const counterPct = Math.min(25, Math.round((vitEff * 0.08                   + ex.counterAdd) * 10) / 10)
+  const reflectPct = Math.min(20, Math.round(vitEff * 0.06 * 10) / 10)
 
   const strongMetal = Math.min(8, affMetal * 0.22)
   const strongWood = Math.min(8, affWood * 0.22)
@@ -248,7 +248,7 @@ export function computeHeroDerived(level, sheet) {
 
   /** 五系法术抗性（对抗金木水火土法伤） */
   const resElem = (a, b, c) =>
-    Math.min(40, Math.round((4 + L * 0.07 + vit * 0.06 + a * 0.28 + b * 0.12 + c * 0.12) * 10) / 10)
+    Math.min(40, Math.round((4 + L * 0.07 + vitEff * 0.06 + a * 0.28 + b * 0.12 + c * 0.12) * 10) / 10)
   const resJin = resElem(affWood, affEarth, affWater)
   const resMu = resElem(affMetal, affEarth, affWater)
   const resShui = resElem(affFire, affWood, affMetal)
@@ -260,7 +260,7 @@ export function computeHeroDerived(level, sheet) {
   const resCtrl = (seed) =>
     Math.min(
       42,
-      Math.round((3.5 + L * 0.06 + vit * 0.05 + seed * 0.18 + daoB) * 10) / 10
+      Math.round((3.5 + L * 0.06 + vitEff * 0.05 + seed * 0.18 + daoB) * 10) / 10
     )
   const resYi = resCtrl(affWood + affWater * 0.6)
   const resBing = resCtrl(affWater + affEarth * 0.55)
