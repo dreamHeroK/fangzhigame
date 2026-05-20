@@ -141,6 +141,12 @@ const DEFAULT_STATE = {
 
   /** 已装备物品：slotKey → item_info_code (number) | null */
   equipped: { ...EMPTY_EQUIPPED },
+
+  /** 待执行刷道类型：'chubao'|'jiangyao'|'fomo'|null */
+  pendingShuadao: null,
+
+  /** 当前选定练级地图 id */
+  currentMapId: 'wulong_ku',
 }
 
 function load() {
@@ -347,7 +353,7 @@ export function equipSkillAction(skillId) {
  * @param {number|null} remainingMp
  */
 export function applyBattleRewardsAction(rewards, activePetIds = [], loot = [], equipLoot = [], remainingHp = null, remainingMp = null) {
-  const { exp = 0, petExp = 0, gold = 0 } = rewards
+  const { exp = 0, petExp = 0, gold = 0, daoDays = 0, potential = 0 } = rewards
 
   // ── 角色经验 ──
   const oldLevel = state.level
@@ -383,11 +389,20 @@ export function applyBattleRewardsAction(rewards, activePetIds = [], loot = [], 
     finalBag = res.newBag
   }
 
+  // ── 道行 / 潜能 ──
+  const totalDays = (state.daoDays ?? 0) + daoDays
+  const newDaoYears = (state.daoYears ?? 0) + Math.floor(totalDays / 365)
+  const newDaoDays  = totalDays % 365
+  const newPotential = (state.potential ?? 0) + potential
+
   patch({
     level:        newLevel,
     expIntoLevel: newExpInto,
     expCur:       newExpInto,
     tael:         (state.tael ?? 0) + gold,
+    daoYears:     newDaoYears,
+    daoDays:      newDaoDays,
+    potential:    newPotential,
     petRoster:    newPetRoster,
     bag:          finalBag,
     equipBag:     newEquipBag,
@@ -877,6 +892,23 @@ export function forgeEquipAction(uid) {
     bag: newBag,
   })
   return { ok: true, success, forgeLevel: success ? cur + 1 : cur, pity: newPity, guaranteed }
+}
+
+// ── 刷道任务（除暴 / 降妖 / 伏魔）────────────────────────────────────────────
+
+/** 设置待出战的刷道类型，导航到战斗画面后由 CombatScreen 读取并发起战斗 */
+export function setPendingShuadaoAction(typeId) {
+  patch({ pendingShuadao: typeId ?? null })
+}
+
+/** 战斗发起后清除待战标记 */
+export function clearPendingShuadaoAction() {
+  patch({ pendingShuadao: null })
+}
+
+/** 切换练级地图 */
+export function setMapAction(mapId) {
+  patch({ currentMapId: mapId })
 }
 
 /**

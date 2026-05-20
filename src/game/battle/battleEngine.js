@@ -1,4 +1,5 @@
 ﻿import { expRequiredToNextLevel, petExpRequiredToNextLevel } from '../characterLevelConfig.js'
+import { daoRewardMultiplier, daoStatusHitBonus, daoStatusResistBonus } from './daoStandard.js'
 import { getSkill } from './skills.js'
 import {
   elementDamageFactor,
@@ -43,19 +44,24 @@ const STATUS_EXPIRE_MSG = {
 /**
  * 端游经验计算：每只怪 ≈ 0.2% 同级升级经验，宠物 ≈ 0.2% 宠物升级经验。
  * 100 场同级战（5 怪/场）≈ 升一级，与端游节奏一致。
+ * 道行：每只怪约 L×0.04 天；潜能：每只怪约 L×0.15 点。
  */
 function calcVictoryRewards(foes, rng) {
   let exp    = 0
   let petExp = 0
   let gold   = 0
+  let daoDays   = 0
+  let potential = 0
   for (const f of foes) {
     const L = Math.max(1, f.level)
     const bm = f.isFieldBoss ? 3 : 1
     exp    += Math.max(10, Math.floor(expRequiredToNextLevel(L) * 0.002 * bm))
     petExp += Math.max(5,  Math.floor(petExpRequiredToNextLevel(L) * 0.002 * bm))
     gold   += Math.floor(L * (2 + rng() * 3) * bm)
+    daoDays   += Math.max(1, Math.round(L * 0.04 * bm))
+    potential += Math.max(2, Math.round(L * 0.15 * bm))
   }
-  return { exp, petExp, gold }
+  return { exp, petExp, gold, daoDays, potential }
 }
 
 /** @param {Array<{ itemId: string, qty: number }>} [extraLoot] 例如捕捉最后一只时补上已从场上移除的怪 */
@@ -64,7 +70,26 @@ function finalizeVictory(s, rng, extraLoot = []) {
   const fromField = rollBattleDrops(foes, rng)
   const lastVictoryLoot = mergeLootStacks([...fromField, ...extraLoot])
   const lastEquipDrops = rollBattleEquipDrops(foes, rng)
-  const { exp, petExp, gold } = calcVictoryRewards(foes, rng)
+  let { exp, petExp, gold, daoDays, potential } = calcVictoryRewards(foes, rng)
+
+  // 刷道战斗：不发经验，道行按当前道行年数计算
+  if (s.isShuadao) {
+    const daoYears = Math.max(1, s.charDaoYears ?? 1)
+    exp    = 0
+    petExp = 0
+    daoDays = foes.reduce((sum, f) => {
+      const bm = f.key === 'shuadao_boss' ? 3 : 1
+      return sum + Math.max(1, Math.round(daoYears * 0.15 * bm))
+    }, 0)
+  }
+
+  // 道行奖励衰减：玩家道行超出本级标准后递减
+  const playerUnit = s.units.find(u => u.side === 'ally' && u.kind !== 'pet')
+  const daoMul = daoRewardMultiplier(playerUnit?.daoExcessRatio ?? 0)
+  if (daoMul < 1) {
+    daoDays = Math.max(1, Math.round(daoDays * daoMul))
+  }
+
   const lastVictoryLootNamed = lastVictoryLoot.map(l => ({
     ...l, name: getConsumable(l.itemId)?.name ?? l.itemId,
   }))
@@ -75,8 +100,13 @@ function finalizeVictory(s, rng, extraLoot = []) {
   const rewardLines = [
     '— — — — — — — — — —',
     '战斗胜利。',
-    `人物经验 +${exp.toLocaleString()}　宠物经验 +${petExp.toLocaleString()}`,
-    `银两 +${gold.toLocaleString()}`,
+    ...(s.isShuadao
+      ? [`银两 +${gold.toLocaleString()}　道行 +${daoDays}天　潜能 +${potential}`]
+      : [
+          `人物经验 +${exp.toLocaleString()}　宠物经验 +${petExp.toLocaleString()}`,
+          `银两 +${gold.toLocaleString()}　道行 +${daoDays}天　潜能 +${potential}`,
+        ]
+    ),
     lootMsg,
     ...(equipMsg ? [equipMsg] : []),
   ]
@@ -87,7 +117,7 @@ function finalizeVictory(s, rng, extraLoot = []) {
     awaitingActorId: null,
     lastVictoryLoot: lastVictoryLootNamed,
     lastEquipDrops,
-    victoryRewards: { exp, petExp, gold },
+    victoryRewards: { exp, petExp, gold, daoDays, potential },
     victoryLootNonce: `${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
     log: [...s.log, ...rewardLines].slice(-80),
   }
@@ -248,9 +278,18 @@ function tryApplyStatus(state, casterId, targetId, skill, rng) {
   const skillLevel = caster?.skillLevels?.[skill.id] ?? 0
   const levelDiff = Math.max(0, (target.level ?? 1) - (caster?.level ?? 1))
   const tier = skill.tier ?? 1
-  const rate = tier >= 4
+  let rate = tier >= 4
     ? 0.88
     : Math.max(0.12, Math.min(0.92, 0.55 + skillLevel * 0.0025 - levelDiff * 0.025))
+
+  // 道行加成：施法方道行超标 → 命中率提升；受击方道行超标 → 命中率降低
+  if (caster?.side === 'ally') {
+    rate = Math.min(0.96, rate + daoStatusHitBonus(caster.daoExcessRatio ?? 0))
+  }
+  if (target?.side === 'ally') {
+    rate *= (1 - daoStatusResistBonus(target.daoExcessRatio ?? 0))
+  }
+
   if (rng() > rate) return pushLog(state, `【${STATUS_LABELS[statusEffect.type]}】未能命中 ${target.name}。`)
   const s = addStatusEffect(state, targetId, { ...statusEffect })
   return pushLog(s, `${target.name} 陷入【${STATUS_LABELS[statusEffect.type]}】（${statusEffect.duration}回合）！`)
@@ -569,16 +608,21 @@ export function createBattle(opts = {}) {
   let foes =
     bossFoes.length > 0
       ? bossFoes
-      : buildEncounter(partySize, { rng, scale: opts.foeScale ?? 1, mapId })
-  const isBossFight  = bossFoes.length > 0
+      : opts.customFoes?.length > 0
+        ? opts.customFoes
+        : buildEncounter(partySize, { rng, scale: opts.foeScale ?? 1, mapId })
+  const isBossFight    = bossFoes.length > 0
+  const isCustomFight  = !isBossFight && opts.customFoes?.length > 0
   const fieldBossUnit = foes.find(f => f.isFieldBoss)
   const babyUnit      = foes.find(f => f.isBabyMonster)
   const specialNote   = fieldBossUnit ? `　★首领「${fieldBossUnit.name}」出没！` : babyUnit ? `　☆发现宝宝「${babyUnit.name}」！` : ''
-  const open = isBossFight
-    ? `【${foes[0].worldBossMapName ?? foes[0].mapName ?? '世界BOSS'}】挑战「${foes[0].name}」Lv${foes[0].level}：我方 ${partySize} 人（首领战固定 1 只）。`
-    : wantsBoss
-      ? `【${map.name}】世界 BOSS 键无效，已回退为野怪。我方 ${partySize} 人，敌方 ${foes.length} 只（[${partySize}×, ${partySize}×2]）。`
-      : `【${map.name}】遭遇战：我方 ${partySize} 人，敌方 ${foes.length} 只。${specialNote}`
+  const open = opts.customOpeningMsg
+    ? opts.customOpeningMsg
+    : isBossFight
+      ? `【${foes[0].worldBossMapName ?? foes[0].mapName ?? '世界BOSS'}】挑战「${foes[0].name}」Lv${foes[0].level}：我方 ${partySize} 人（首领战固定 1 只）。`
+      : wantsBoss
+        ? `【${map.name}】世界 BOSS 键无效，已回退为野怪。我方 ${partySize} 人，敌方 ${foes.length} 只（[${partySize}×, ${partySize}×2]）。`
+        : `【${map.name}】遭遇战：我方 ${partySize} 人，敌方 ${foes.length} 只。${specialNote}`
   const units = [...allies, ...foes]
   let state = {
     units,
@@ -590,6 +634,8 @@ export function createBattle(opts = {}) {
     roundNum: 1,
     pendingAllyActions: {},
     planningQueue: [],
+    isShuadao:    isCustomFight,
+    charDaoYears: opts.charDaoYears ?? 1,
   }
   state = startPlanningPhase(state)
   return state

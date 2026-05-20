@@ -19,11 +19,15 @@ import {
   deductBagItemAction,
   toggleAutoRestoreAction,
   addCapturedPetAction,
+  clearPendingShuadaoAction,
 } from '../game/characterStore.js'
 import { dbReady } from '../game/db/sqliteDb.js'
 import { recordBattle, loadSkillMemory, saveSkillEntry } from '../game/db/saveManager.js'
 import { computeHeroDerived } from '../game/playerSheet.js'
 import { createAllyUnit } from '../game/battle/monsters.js'
+import { buildShuadaoFoes, shuadaoOpeningMsg } from '../game/battle/shuadaoEncounter.js'
+import { SHUADAO_TYPES } from '../game/shuadao.js'
+import { calcDaoExcessRatio } from '../game/battle/daoStandard.js'
 import { createPetAllyUnit } from '../game/battle/pets.js'
 import { getConsumable } from '../game/items/catalog.js'
 import { getEquipByCode } from '../game/items/equipCatalog.js'
@@ -32,22 +36,23 @@ import { QUALITY } from '../game/items/equipQuality.js'
 function makeNewBattle() {
   const char = charSnapshot()
   const d = computeHeroDerived(char.level, char)
-  const mapId = suggestMapIdForLevel(char.level)
+  const mapId = char.currentMapId ?? suggestMapIdForLevel(char.level)
   const learnedEquipped = char.equippedSkills.filter((id) => (char.skillLevels[id] ?? 0) > 0)
   const skillPool = ['normal_attack', ...learnedEquipped]
 
   const playerUnit = createAllyUnit(char.name, {
-    level:       char.level,
-    maxHp:       d.maxHp,
-    hpCur:       char.hpCur,
-    maxMp:       d.maxMp,
-    mpCur:       char.mpCur,
-    atk:         d.phyDmg,
-    mAtk:        d.magDmg,
-    def:         d.def,
-    speed:       d.speed,
-    piercingPct: d.piercingPct ?? 0,
-    skillLevels: char.skillLevels,
+    level:          char.level,
+    maxHp:          d.maxHp,
+    hpCur:          char.hpCur,
+    maxMp:          d.maxMp,
+    mpCur:          char.mpCur,
+    atk:            d.phyDmg,
+    mAtk:           d.magDmg,
+    def:            d.def,
+    speed:          d.speed,
+    piercingPct:    d.piercingPct ?? 0,
+    skillLevels:    char.skillLevels,
+    daoExcessRatio: calcDaoExcessRatio(char.level, char.daoYears, char.daoDays),
   }, skillPool)
 
   // 最多携带 9 只宠物（含玩家共 10 格位）
@@ -786,6 +791,30 @@ export default function CombatScreen() {
     // lastSkillByActorRef 跨战斗保留，不清空
   }
 
+  function handleShuadaoBattle(typeId) {
+    const char = charSnapshot()
+    const d = computeHeroDerived(char.level, char)
+    const learnedEquipped = char.equippedSkills.filter(id => (char.skillLevels[id] ?? 0) > 0)
+    const skillPool = ['normal_attack', ...learnedEquipped]
+    const playerUnit = createAllyUnit(char.name, {
+      level: char.level, maxHp: d.maxHp, hpCur: char.hpCur,
+      maxMp: d.maxMp, mpCur: char.mpCur, atk: d.phyDmg, mAtk: d.magDmg,
+      def: d.def, speed: d.speed, piercingPct: d.piercingPct ?? 0,
+      skillLevels: char.skillLevels,
+      daoExcessRatio: calcDaoExcessRatio(char.level, char.daoYears, char.daoDays),
+    }, skillPool)
+    const activePets = (char.petRoster ?? []).filter(p => p.active).slice(0, 9)
+    const foes = buildShuadaoFoes(typeId, char.level, 1 + activePets.length, Math.random)
+    const openMsg = shuadaoOpeningMsg(typeId, foes)
+    clearPendingShuadaoAction()
+    handleNewBattle(createBattle({
+      allyUnits:      [playerUnit, ...activePets.map(createPetAllyUnit)],
+      customFoes:     foes,
+      customOpeningMsg: openMsg,
+      charDaoYears:   char.daoYears ?? 1,
+    }))
+  }
+
   // 战斗败北 → 记录历史 + 持久化状态（HP=1 作为败北惩罚）
   useEffect(() => {
     if (!battle.defeatNonce) return
@@ -1044,11 +1073,20 @@ export default function CombatScreen() {
             {battle.outcome === 'victory' && (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <div style={{ display: 'flex', gap: 20, fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-                  <span style={{ color: 'var(--bamboo)' }}>
-                    经验 <span style={{ color: 'var(--ink)', fontWeight: 600 }}>
-                      +{(battle.victoryRewards?.exp ?? 0).toLocaleString()}
+                  {!battle.isShuadao && (
+                    <span style={{ color: 'var(--bamboo)' }}>
+                      经验 <span style={{ color: 'var(--ink)', fontWeight: 600 }}>
+                        +{(battle.victoryRewards?.exp ?? 0).toLocaleString()}
+                      </span>
                     </span>
-                  </span>
+                  )}
+                  {battle.isShuadao && (
+                    <span style={{ color: 'var(--gold-2)' }}>
+                      道行 <span style={{ color: 'var(--ink)', fontWeight: 600 }}>
+                        +{battle.victoryRewards?.daoDays ?? 0}天
+                      </span>
+                    </span>
+                  )}
                   <span style={{ color: 'var(--bamboo)' }}>
                     银两 <span style={{ color: 'var(--gold-2)', fontWeight: 600 }}>
                       +{(battle.victoryRewards?.gold ?? 0).toLocaleString()}
@@ -1095,6 +1133,19 @@ export default function CombatScreen() {
               </div>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0, alignItems: 'center' }}>
+              {char.pendingShuadao && (
+                <button
+                  className="btn-ink btn-ink-primary"
+                  onClick={() => handleShuadaoBattle(char.pendingShuadao)}
+                  style={{
+                    fontSize: 13, padding: '8px 20px',
+                    borderColor: SHUADAO_TYPES[char.pendingShuadao]?.color,
+                    color: SHUADAO_TYPES[char.pendingShuadao]?.color,
+                  }}
+                >
+                  刷道出战 · {SHUADAO_TYPES[char.pendingShuadao]?.label}
+                </button>
+              )}
               <button
                 className="btn-ink btn-ink-primary"
                 onClick={() => handleNewBattle()}

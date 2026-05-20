@@ -1,18 +1,20 @@
 import React, { useState, useSyncExternalStore } from 'react'
 import { Seal, PanelHead, SubHead, Tag, CornerDeco } from './common.jsx'
-import { subscribe, getSnapshot, buyShopItemAction } from '../game/characterStore.js'
+import { subscribe, getSnapshot, buyShopItemAction, setPendingShuadaoAction, setMapAction } from '../game/characterStore.js'
+import { SHUADAO_TYPES, SHUADAO_ORDER } from '../game/shuadao.js'
+import { WENDAO_MAPS, MAP_TYPES, inferSpawnElement } from '../game/battle/wendaoMapsConfig.js'
 
-// ───── 任务 ─────
-const tasks = [
-  { tag: '师门', title: '完成一场战斗', done: true, reward: '银两 +320 · 潜能 +60', desc: '击败任意野怪一次。', progress: '1/1' },
-  { tag: '修山', title: '组队击败世界 BOSS', done: false, reward: '银两 +2,400 · 道行 +1天', desc: '需 ≥3 人组队挑战 羊头怪 / 牛头怪 / 百年黑熊精 等。', progress: '0/1' },
-  { tag: '日常', title: '捕捉 1 只野生宠', done: false, reward: '银两 +800 · 潜能 +120', desc: '在 桃柳林 / 轩辕庙 / 五龙窟 捕捉，血量 ≤30% 概率最高。', progress: '0/1' },
-  { tag: '日常', title: '使用药品 10 次（解锁仙法疗伤）', done: false, reward: '解锁 仙法疗伤', desc: '战斗中累计使用消耗品。', progress: '4/10' },
-  { tag: '师门', title: '百战淬炼：击败 50 只野怪', done: false, reward: '解锁 力破千钧', desc: '累计击败野怪进度计算。', progress: '32/50' },
-  { tag: '活动', title: '中秋·夜话灯谜', done: false, reward: '仙玉 +20 · 月饼礼盒', desc: '活动期间每日 19:00 开启。', progress: '0/5', event: true },
+// ───── 日常任务（静态演示） ─────
+const DAILY_TASKS = [
+  { tag: '师门', title: '完成一场战斗', done: true,  reward: '银两 +320 · 潜能 +60',    desc: '击败任意野怪一次。',                                                progress: '1/1'  },
+  { tag: '修山', title: '组队击败世界 BOSS', done: false, reward: '银两 +2,400 · 道行 +1天',  desc: '需 ≥3 人组队挑战 羊头怪 / 牛头怪 / 百年黑熊精 等。',               progress: '0/1'  },
+  { tag: '日常', title: '捕捉 1 只野生宠',  done: false, reward: '银两 +800 · 潜能 +120',    desc: '在 桃柳林 / 轩辕庙 / 五龙窟 捕捉，血量 ≤30% 概率最高。',            progress: '0/1'  },
+  { tag: '日常', title: '使用药品 10 次',   done: false, reward: '解锁 仙法疗伤',             desc: '战斗中累计使用消耗品。',                                             progress: '4/10' },
+  { tag: '师门', title: '百战淬炼：击败 50 只野怪', done: false, reward: '解锁 力破千钧',   desc: '累计击败野怪进度计算。',                                             progress: '32/50'},
+  { tag: '活动', title: '中秋·夜话灯谜',   done: false, reward: '仙玉 +20 · 月饼礼盒',     desc: '活动期间每日 19:00 开启。',                                          progress: '0/5', event: true },
 ]
 
-const QuestRow = ({ t }) => {
+const DailyQuestRow = ({ t }) => {
   const tone = { 师门: 'vermilion', 修山: 'ink', 日常: 'rust', 活动: 'bamboo' }[t.tag] || 'ink'
   return (
     <div style={{
@@ -41,31 +43,104 @@ const QuestRow = ({ t }) => {
   )
 }
 
-export function QuestScreen() {
+// ───── 刷道任务卡片 ─────
+function ShuadaoCard({ typeId, typeDef, onStart }) {
+  return (
+    <div style={{
+      padding: '12px 16px',
+      background: 'var(--paper-1, rgba(243,237,224,0.9))',
+      border: `1.5px solid ${typeDef.color}`,
+      display: 'flex', alignItems: 'center', gap: 14,
+    }}>
+      {/* 左侧色条 */}
+      <div style={{ width: 3, alignSelf: 'stretch', background: typeDef.color, flexShrink: 0, borderRadius: 2 }} />
+
+      {/* 内容区 */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <Tag tone={typeDef.tagColor} style={{ fontSize: 11, padding: '1px 8px', flexShrink: 0 }}>{typeDef.tag}</Tag>
+          <span className="brush" style={{ fontSize: 17, color: typeDef.color, lineHeight: 1.2 }}>{typeDef.label}</span>
+        </div>
+        <p style={{ margin: 0, fontSize: 12, color: 'var(--ink)', lineHeight: 1.55 }}>{typeDef.desc}</p>
+        <div style={{ marginTop: 3, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-2)' }}>
+          对阵 · {typeDef.enemyDesc}
+        </div>
+      </div>
+
+      {/* 出发按钮 */}
+      <button
+        className="btn-ink"
+        style={{
+          flexShrink: 0,
+          padding: '8px 18px',
+          fontSize: 14,
+          border: `1.5px solid ${typeDef.color}`,
+          color: typeDef.color,
+          background: 'transparent',
+          cursor: 'pointer',
+          fontFamily: 'var(--font-body)',
+          letterSpacing: '0.1em',
+        }}
+        onClick={() => onStart(typeId)}
+      >
+        出发
+      </button>
+    </div>
+  )
+}
+
+export function QuestScreen({ navigate }) {
+  const char = useSyncExternalStore(subscribe, getSnapshot)
+  const [tab, setTab] = useState('shuadao')
+
+  function handleStart(typeId) {
+    setPendingShuadaoAction(typeId)
+    navigate?.('combat')
+  }
+
   return (
     <div className="paper-bg" style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', fontFamily: 'var(--font-body)' }}>
       <PanelHead title="任 务 簿" sub="QUEST JOURNAL"
-        right={<span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-2)' }}>今日 5 / 12 · 待领 3</span>}
+        right={
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-2)' }}>
+            道行 <span style={{ color: 'var(--gold-2)', fontWeight: 700 }}>{char.daoYears ?? 0}</span> 年
+            <span style={{ color: 'var(--ink-3)' }}> {char.daoDays ?? 0} 天</span>
+          </span>
+        }
       />
       <div style={{ position: 'absolute', inset: '60px 20px 20px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <div className="tab-list" style={{ flexWrap: 'wrap' }}>
-          {['全部 6', '师门 2', '修山 1', '日常 2', '活动 1'].map((t, i) => (
-            <div key={t} className={'tab' + (i === 0 ? ' active' : '')} style={{ padding: '4px 14px' }}>{t}</div>
+        <div className="tab-list">
+          {[['shuadao', '刷  道'], ['daily', '日常任务']].map(([id, label]) => (
+            <div key={id} className={'tab' + (tab === id ? ' active' : '')} style={{ padding: '4px 18px', cursor: 'pointer' }} onClick={() => setTab(id)}>{label}</div>
           ))}
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1, overflow: 'auto' }}>
-          {tasks.map((t, i) => <QuestRow key={i} t={t} />)}
-        </div>
-        <div className="paper-bg" style={{ marginTop: 'auto', padding: 12, border: '1px solid var(--vermilion)', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Seal size={32}>急</Seal>
-          <div style={{ flex: 1 }}>
-            <span className="brush" style={{ fontSize: 14, color: 'var(--vermilion)' }}>当前·指引</span>
-            <div style={{ fontSize: 12, color: 'var(--ink-2)', marginTop: 2 }}>
-              师妹素衣最后出现于「五龙窟·西麓·古道驿」附近，建议沿河岸向北行十里。
-            </div>
+
+        {tab === 'daily' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1, overflow: 'auto' }}>
+            {DAILY_TASKS.map((t, i) => <DailyQuestRow key={i} t={t} />)}
           </div>
-          <button className="btn-ink btn-ink-primary">前 往</button>
-        </div>
+        )}
+
+        {tab === 'shuadao' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1, overflow: 'auto' }}>
+            <div style={{ padding: '8px 12px', background: 'var(--paper-2)', border: '1px solid var(--ink-4)', fontSize: 11, color: 'var(--ink-2)', lineHeight: 1.7, flexShrink: 0 }}>
+              <span className="brush" style={{ fontSize: 13, color: 'var(--ink)', marginRight: 8 }}>刷道说明</span>
+              选择任务后进入<span style={{ color: 'var(--gold-2)' }}>真实战斗</span>，敌方为随机命名的山贼/妖兽/魔头。
+              战斗胜利奖励经验、道行与潜能；可无限次挑战。
+            </div>
+            {SHUADAO_ORDER.map(typeId => {
+              const typeDef = SHUADAO_TYPES[typeId]
+              return (
+                <ShuadaoCard
+                  key={typeId}
+                  typeId={typeId}
+                  typeDef={typeDef}
+                  onStart={handleStart}
+                />
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -221,111 +296,220 @@ export function SignScreen() {
 }
 
 // ───── 世界地图 ─────
-const cities = [
-  { x: 18, y: 32, name: '揽仙镇外', lv: '1-20', type: '新手', current: false },
-  { x: 12, y: 58, name: '卧龙坡', lv: '1-20', type: '野外', current: false },
-  { x: 26, y: 78, name: '桃柳林', lv: '1-20', type: '野外', current: false },
-  { x: 38, y: 26, name: '轩辕庙', lv: '21-40', type: '副本' },
-  { x: 50, y: 56, name: '十里坡', lv: '21-40', type: '野外' },
-  { x: 64, y: 32, name: '五派山头', lv: '21-40', type: '门派' },
-  { x: 56, y: 78, name: '五龙窟', lv: '41-60', type: '副本', current: true, hot: true },
-  { x: 78, y: 50, name: '蓬莱岛', lv: '41-60', type: '野外' },
-  { x: 72, y: 14, name: '百花谷', lv: '61-80', type: '副本' },
-  { x: 88, y: 72, name: '绝人阵', lv: '61-100', type: '禁地' },
-]
 
-const CityMarker = ({ city }) => {
-  const isCurrent = city.current
-  const typeColor = { 新手: 'var(--bamboo)', 野外: 'var(--gold-2)', 副本: 'var(--vermilion)', 门派: 'var(--ink-2)', 禁地: 'var(--ink)' }[city.type] || 'var(--ink)'
+const ELEM_SCHOOL = { 火: '火', 冰: '水', 水: '水', 木: '木', 金: '金', 土: '土', 暗: null, 无: null }
+
+function MapNode({ map, isActive, isSelected, charLevel, onClick }) {
+  const [lo, hi] = map.levelRange
+  const inRange  = charLevel >= lo && charLevel <= hi
+  const tooHigh  = charLevel < lo
+  const typeConf = MAP_TYPES[map.type] ?? MAP_TYPES['野外']
+  const color    = isActive ? 'var(--vermilion)' : isSelected ? 'var(--gold)' : tooHigh ? 'var(--ink-4)' : typeConf.color
+  const nodeSize = isActive ? 13 : isSelected ? 11 : inRange ? 10 : 8
+
   return (
-    <div style={{ position: 'absolute', left: city.x + '%', top: city.y + '%', transform: 'translate(-50%, -100%)', zIndex: isCurrent ? 5 : 1 }}>
+    <div
+      onClick={onClick}
+      style={{
+        position: 'absolute',
+        left: map.pos.x + '%',
+        top:  map.pos.y + '%',
+        transform: 'translate(-50%, -100%)',
+        cursor: 'pointer',
+        zIndex: isActive ? 10 : isSelected ? 8 : inRange ? 4 : 2,
+        userSelect: 'none',
+      }}
+    >
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div className="brush" style={{ fontSize: isCurrent ? 16 : 13, color: typeColor, textShadow: '0 1px 0 var(--paper), 1px 1px 0 var(--paper)', whiteSpace: 'nowrap' }}>
-          {city.name}
-        </div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-3)', marginBottom: 4 }}>
-          {city.type} · {city.lv}
-        </div>
         <div style={{
-          width: isCurrent ? 14 : 10, height: isCurrent ? 14 : 10,
-          background: typeColor, border: '1.5px solid var(--paper)',
-          boxShadow: '0 2px 3px rgba(0,0,0,0.3), 0 0 0 1px ' + typeColor,
-          transform: 'rotate(45deg)', position: 'relative',
+          fontFamily: 'var(--font-body)', fontWeight: isActive || inRange ? 600 : 400,
+          fontSize: isActive ? 13 : isSelected ? 12 : inRange ? 11 : 10,
+          color,
+          textShadow: '0 1px 0 rgba(243,237,224,0.9), 1px 0 0 rgba(243,237,224,0.9)',
+          whiteSpace: 'nowrap', lineHeight: 1.2, marginBottom: 2,
         }}>
-          {isCurrent ? (
-            <div style={{ position: 'absolute', inset: -10, border: '1.5px solid var(--vermilion)', animation: 'pulse2 1.6s ease-in-out infinite', borderRadius: 2 }} />
-          ) : null}
+          {map.name}
         </div>
-        {city.hot ? <div style={{ position: 'absolute', top: -6, right: -16 }}><Seal size={16} round style={{ fontSize: 8 }}>新</Seal></div> : null}
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: tooHigh ? 'var(--ink-4)' : 'var(--ink-3)', marginBottom: 3 }}>
+          {lo}-{hi}
+        </div>
+        <div style={{ position: 'relative' }}>
+          <div style={{
+            width: nodeSize, height: nodeSize,
+            background: color,
+            border: `1.5px solid rgba(243,237,224,0.8)`,
+            boxShadow: `0 1px 3px rgba(0,0,0,0.25), 0 0 0 1px ${color}`,
+            transform: 'rotate(45deg)',
+          }} />
+          {isActive && (
+            <div style={{
+              position: 'absolute', inset: -8,
+              border: '1.5px solid var(--vermilion)',
+              borderRadius: 2,
+              animation: 'pulse2 1.6s ease-in-out infinite',
+            }} />
+          )}
+        </div>
       </div>
     </div>
   )
 }
 
-export function WorldMapScreen() {
+export function WorldMapScreen({ navigate }) {
+  const char = useSyncExternalStore(subscribe, getSnapshot)
+  const activeMapId   = char.currentMapId ?? 'wulong_ku'
+  const [selectedId, setSelectedId] = useState(activeMapId)
+  const selectedMap   = WENDAO_MAPS.find(m => m.id === selectedId) ?? WENDAO_MAPS[0]
+  const activeMap     = WENDAO_MAPS.find(m => m.id === activeMapId)
+  const charLevel     = char.level ?? 1
+  const isAtSelected  = selectedId === activeMapId
+
+  function handleGoTo() {
+    setMapAction(selectedId)
+  }
+
+  function handleBattle() {
+    if (!isAtSelected) setMapAction(selectedId)
+    navigate?.('combat')
+  }
+
   return (
     <div className="paper-bg" style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', fontFamily: 'var(--font-body)' }}>
       <PanelHead title="行游天下" sub="WORLD · 地图"
-        right={<span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-2)' }}>已发现 <span style={{ color: 'var(--vermilion)', fontWeight: 700 }}>10</span> / 20</span>}
+        right={
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-2)' }}>
+            当前 <span style={{ color: 'var(--vermilion)', fontWeight: 700 }}>{activeMap?.name ?? '—'}</span>
+          </span>
+        }
       />
-      <div style={{ position: 'absolute', inset: '60px 20px 20px 20px', display: 'flex', gap: 14 }}>
-        <div className="paper-dark scroll-frame" style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-          <svg viewBox="0 0 1000 600" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.55 }}>
-            <path d="M 80 80 Q 200 50 380 90 Q 540 130 700 100 Q 850 80 920 140 Q 970 250 920 380 Q 870 480 740 510 Q 540 540 380 520 Q 200 500 110 420 Q 70 310 80 200 Z" fill="none" stroke="#5a4a38" strokeWidth="1.4" strokeDasharray="2 3" opacity="0.6" />
-            <g stroke="#3a2e22" strokeWidth="1.4" fill="none">
-              <path d="M 200 200 L 240 160 L 280 200 L 320 170 L 360 210" />
-              <path d="M 480 130 L 520 90 L 555 130 L 600 110" />
-              <path d="M 700 280 L 740 240 L 780 280 L 820 260" />
-              <path d="M 300 420 L 340 380 L 380 420 L 420 400" />
+      <div style={{ position: 'absolute', inset: '60px 16px 16px 16px', display: 'flex', gap: 12 }}>
+
+        {/* ── 地图画布 ── */}
+        <div className="paper-dark scroll-frame" style={{ flex: 1, position: 'relative', overflow: 'hidden', minWidth: 0 }}>
+          {/* 装饰 SVG */}
+          <svg viewBox="0 0 1000 700" preserveAspectRatio="none"
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.4, pointerEvents: 'none' }}>
+            {/* 大陆轮廓 */}
+            <path d="M 60 80 Q 180 40 380 70 Q 560 100 700 75 Q 850 55 940 130
+                     Q 990 230 960 380 Q 930 500 800 550 Q 620 600 420 580
+                     Q 220 560 110 470 Q 50 380 60 230 Z"
+              fill="rgba(200,180,140,0.12)" stroke="#6a5a48" strokeWidth="1.2" strokeDasharray="3 4" />
+            {/* 东海 */}
+            <path d="M 720 80 Q 900 150 980 320 Q 1000 450 940 560 Q 970 480 990 350 Q 990 200 940 130"
+              fill="rgba(100,140,180,0.15)" stroke="none" />
+            {/* 山脉线 - 北部 */}
+            <g stroke="#4a3e32" strokeWidth="1.2" fill="none" opacity="0.7">
+              <path d="M 180 180 L 210 145 L 240 180 L 268 155 L 300 185" />
+              <path d="M 340 100 L 370 65 L 400 100 L 430 75 L 460 105" />
+              <path d="M 520 150 L 555 115 L 585 148 L 615 120" />
+              <path d="M 680 140 L 715 105 L 748 140 L 775 118" />
             </g>
-            <path d="M 150 240 Q 280 320 420 300 Q 560 280 720 350 Q 840 400 880 420" fill="none" stroke="#7a8a9c" strokeWidth="2.5" opacity="0.5" />
+            {/* 河流 */}
+            <path d="M 120 500 Q 260 440 420 430 Q 580 418 720 460 Q 840 490 900 520"
+              fill="none" stroke="#7898b0" strokeWidth="2.2" opacity="0.45" />
+            <path d="M 300 300 Q 380 340 460 330 Q 560 315 640 360"
+              fill="none" stroke="#7898b0" strokeWidth="1.6" opacity="0.35" />
+            {/* 区域标注 */}
           </svg>
-          <div className="vertical brush" style={{ position: 'absolute', left: '8%', top: '6%', fontSize: 22, color: 'var(--ink-3)', letterSpacing: '0.35em' }}>中原</div>
-          <div className="vertical brush" style={{ position: 'absolute', left: '48%', top: '8%', fontSize: 22, color: 'var(--ink-3)', letterSpacing: '0.35em' }}>西域</div>
-          <div className="vertical brush" style={{ position: 'absolute', left: '82%', top: '10%', fontSize: 22, color: 'var(--ink-3)', letterSpacing: '0.35em' }}>东海</div>
-          {cities.map((c, i) => <CityMarker key={i} city={c} />)}
+          {/* 区域文字 */}
+          <div style={{ position: 'absolute', left: '8%', top: '55%', pointerEvents: 'none' }}>
+            <div className="vertical brush" style={{ fontSize: 18, color: 'rgba(90,74,56,0.35)', letterSpacing: '0.4em' }}>中原</div>
+          </div>
+          <div style={{ position: 'absolute', left: '44%', top: '8%', pointerEvents: 'none' }}>
+            <div className="vertical brush" style={{ fontSize: 16, color: 'rgba(90,74,56,0.30)', letterSpacing: '0.4em' }}>北域</div>
+          </div>
+          <div style={{ position: 'absolute', left: '78%', top: '40%', pointerEvents: 'none' }}>
+            <div className="vertical brush" style={{ fontSize: 16, color: 'rgba(70,100,130,0.35)', letterSpacing: '0.4em' }}>东海</div>
+          </div>
+          <div style={{ position: 'absolute', left: '66%', top: '10%', pointerEvents: 'none' }}>
+            <div className="vertical brush" style={{ fontSize: 14, color: 'rgba(90,74,56,0.28)', letterSpacing: '0.4em' }}>阵法</div>
+          </div>
+          {/* 地图节点 */}
+          {WENDAO_MAPS.map(map => (
+            <MapNode
+              key={map.id}
+              map={map}
+              isActive={map.id === activeMapId}
+              isSelected={map.id === selectedId}
+              charLevel={charLevel}
+              onClick={() => setSelectedId(map.id)}
+            />
+          ))}
         </div>
-        <div style={{ width: 280, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div className="paper-bg scroll-frame" style={{ padding: 14, position: 'relative' }}>
+
+        {/* ── 右侧信息面板 ── */}
+        <div style={{ width: 272, display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0 }}>
+
+          {/* 选中地图信息 */}
+          <div className="paper-bg scroll-frame" style={{ padding: '12px 14px', position: 'relative' }}>
             <CornerDeco />
-            <SubHead title="当前位置" sub="LOCATION" />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Seal size={32}>窟</Seal>
-              <div>
-                <div className="brush" style={{ fontSize: 18 }}>五龙窟（一层）</div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-3)' }}>Lv 41-60 · 副本 · 核心练级区</div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
+              <Seal size={34} style={{ flexShrink: 0, fontSize: 13 }}>
+                {selectedMap.name.slice(0, 1)}
+              </Seal>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="brush" style={{ fontSize: 17, lineHeight: 1.2, color: 'var(--ink)' }}>{selectedMap.name}</div>
+                <div style={{ display: 'flex', gap: 6, marginTop: 4, alignItems: 'center' }}>
+                  <Tag tone={selectedMap.type === '副本' ? 'vermilion' : selectedMap.type === '阵法' ? 'ink' : 'bamboo'}
+                    style={{ fontSize: 10, padding: '1px 6px' }}>
+                    {selectedMap.type}
+                  </Tag>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-3)' }}>
+                    Lv {selectedMap.levelRange[0]}–{selectedMap.levelRange[1]}
+                  </span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-4)' }}>
+                    {selectedMap.region}
+                  </span>
+                </div>
               </div>
             </div>
-            <div style={{ marginTop: 8, fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.7 }}>
-              五龙窟一至五层皆为五龙盘踞，出没五行属性各异之龙；中层时常有 BOSS「百年狂狮怪」现身。
-            </div>
+            <p style={{ margin: 0, fontSize: 11, color: 'var(--ink-2)', lineHeight: 1.7 }}>{selectedMap.blurb}</p>
+            {isAtSelected && (
+              <div style={{ marginTop: 6, fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--vermilion)' }}>
+                ▶ 当前练级地图
+              </div>
+            )}
           </div>
-          <div className="paper-bg scroll-frame" style={{ padding: 14, position: 'relative', flex: 1 }}>
+
+          {/* 出没怪物 */}
+          <div className="paper-bg scroll-frame" style={{ padding: '10px 14px', position: 'relative', flex: 1, overflow: 'auto' }}>
             <CornerDeco />
-            <SubHead title="本图出没" sub="SPAWNS · 共 10 种" />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, fontFamily: 'var(--font-mono)' }}>
-              {[
-                { n: '乌龙', lv: 42, e: '水' }, { n: '花妖', lv: 42, e: '木' },
-                { n: '炎龙', lv: 45, e: '火' }, { n: '鱼人', lv: 45, e: '水' },
-                { n: '冰龙', lv: 48, e: '水' }, { n: '地裂兽', lv: 48, e: '土' },
-                { n: '青龙', lv: 51, e: '木' }, { n: '金头陀', lv: 51, e: '金' },
-                { n: '黄龙', lv: 54, e: '土' }, { n: '火鸦', lv: 54, e: '火' },
-              ].map((s, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '2px 4px', borderBottom: i < 9 ? '1px dashed var(--ink-4)' : 'none' }}>
-                  <Seal size={12} round school={s.e} style={{ fontSize: 7 }}>{s.e}</Seal>
-                  <span style={{ fontFamily: 'var(--font-body)', color: 'var(--ink-2)', fontSize: 12 }}>{s.n}</span>
-                  <span style={{ flex: 1 }} />
-                  <span style={{ color: 'var(--ink-3)' }}>Lv {s.lv}</span>
-                </div>
-              ))}
+            <SubHead title="出没怪物" sub={`SPAWNS · ${selectedMap.spawns.length} 种`} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {selectedMap.spawns.map((sp, i) => {
+                const elem = inferSpawnElement(sp.tags)
+                const sch  = ELEM_SCHOOL[elem]
+                return (
+                  <div key={i} style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    padding: '3px 4px',
+                    borderBottom: i < selectedMap.spawns.length - 1 ? '1px dashed var(--ink-4)' : 'none',
+                  }}>
+                    <Seal size={14} round school={sch} style={{ fontSize: 8, flexShrink: 0 }}>{elem}</Seal>
+                    <span style={{ fontFamily: 'var(--font-body)', color: 'var(--ink-2)', fontSize: 12, flex: 1 }}>{sp.name}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-3)' }}>Lv {sp.level}</span>
+                  </div>
+                )
+              })}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button className="btn-ink" style={{ flex: 1 }}>切换地图</button>
-            <button className="btn-ink btn-ink-primary" style={{ flex: 1 }}>立 即 开 战</button>
+
+          {/* 操作按钮 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {!isAtSelected && (
+              <button className="btn-ink" onClick={handleGoTo}
+                style={{ padding: '7px 0', fontSize: 13, letterSpacing: '0.1em' }}>
+                前 往 此 地
+              </button>
+            )}
+            <button className="btn-ink btn-ink-primary" onClick={handleBattle}
+              style={{ padding: '10px 0', fontSize: 15, letterSpacing: '0.2em' }}>
+              {isAtSelected ? '立 即 开 战' : '前往并开战'}
+            </button>
           </div>
         </div>
       </div>
     </div>
   )
 }
+

@@ -58,7 +58,7 @@ export default function App() {
           const Comp = s.component
           return (
             <div key={s.id} style={active === s.id ? { width: '100%', height: '100%' } : { display: 'none' }}>
-              <Comp />
+              <Comp navigate={setActive} />
             </div>
           )
         })}
