@@ -15,11 +15,14 @@ import {
   subscribe as charSubscribe,
   getSnapshot as charSnapshot,
   applyBattleRewardsAction,
+  applyExpToOtherCharsAction,
   saveBattleEndAction,
+  saveOtherCharsDefeatAction,
   deductBagItemAction,
   toggleAutoRestoreAction,
   addCapturedPetAction,
   clearPendingShuadaoAction,
+  progressBattleQuestAction,
 } from '../game/characterStore.js'
 import { dbReady } from '../game/db/sqliteDb.js'
 import { recordBattle, loadSkillMemory, saveSkillEntry } from '../game/db/saveManager.js'
@@ -33,49 +36,62 @@ import { getConsumable } from '../game/items/catalog.js'
 import { getEquipByCode } from '../game/items/equipCatalog.js'
 import { QUALITY } from '../game/items/equipQuality.js'
 
-function makeNewBattle() {
-  const char = charSnapshot()
-  const d = computeHeroDerived(char.level, char)
-  const mapId = char.currentMapId ?? suggestMapIdForLevel(char.level)
-  const learnedEquipped = char.equippedSkills.filter((id) => (char.skillLevels[id] ?? 0) > 0)
-  const skillPool = ['normal_attack', ...learnedEquipped]
-
-  const playerUnit = createAllyUnit(char.name, {
-    level:          char.level,
+/** 根据角色快照数据构建一个战斗单位（角色类型） */
+function buildCharUnit(c, shared) {
+  // 非出战角色缺少共享字段，补入 equipBag 以正确计算装备加成
+  const sheet = c.equipBag != null ? c : { ...c, equipBag: shared.equipBag ?? [] }
+  const d = computeHeroDerived(c.level, sheet)
+  const learned = (c.equippedSkills ?? []).filter(id => (c.skillLevels?.[id] ?? 0) > 0)
+  const skillPool = ['normal_attack', ...learned]
+  return createAllyUnit(c.name, {
+    level:          c.level,
     maxHp:          d.maxHp,
-    hpCur:          char.hpCur,
+    hpCur:          c.hpCur,
     maxMp:          d.maxMp,
-    mpCur:          char.mpCur,
+    mpCur:          c.mpCur,
     atk:            d.phyDmg,
     mAtk:           d.magDmg,
     def:            d.def,
     speed:          d.speed,
     piercingPct:    d.piercingPct ?? 0,
-    skillLevels:    char.skillLevels,
-    daoExcessRatio: calcDaoExcessRatio(char.level, char.daoYears, char.daoDays),
+    skillLevels:    c.skillLevels ?? {},
+    daoExcessRatio: calcDaoExcessRatio(c.level, c.daoYears ?? 0, c.daoDays ?? 0),
+    charId:         c.id,  // 标记角色 id，战后回写 HP/MP 时使用
   }, skillPool)
+}
 
-  // 最多携带 9 只宠物（含玩家共 10 格位）
-  const activePets = (char.petRoster ?? []).filter(p => p.active).slice(0, 9)
+function makeNewBattle() {
+  const char = charSnapshot()
+  const mapId = char.currentMapId ?? suggestMapIdForLevel(char.level)
+
+  // 所有角色（出战 + 仓库中）均参战，出战角色排首位
+  const allCharData = [
+    { ...char, id: char.activeCharId },           // 出战角色（id 字段已在 state 中）
+    ...(char.otherChars ?? []),
+  ]
+  const charUnits = allCharData.map(c => buildCharUnit(c, char))
+
+  // 共享宠物，最多 5 只出战
+  const activePets = (char.petRoster ?? []).filter(p => p.active).slice(0, 5)
   const petUnits = activePets.map(createPetAllyUnit)
 
-  return createBattle({ allyUnits: [playerUnit, ...petUnits], mapId })
+  return createBattle({ allyUnits: [...charUnits, ...petUnits], mapId })
 }
 
 const allyPos = [
-  // 0: 玩家 - 最后排
-  { x: 8,  y: 46, scale: 0.75 },
-  // 1-5: 宠物前排
-  { x: 5,  y: 82, scale: 0.85 },
-  { x: 14, y: 82, scale: 0.85 },
-  { x: 23, y: 82, scale: 0.85 },
-  { x: 32, y: 82, scale: 0.85 },
-  { x: 41, y: 82, scale: 0.85 },
-  // 6-9: 宠物次排
-  { x: 9,  y: 60, scale: 0.78 },
-  { x: 18, y: 60, scale: 0.78 },
-  { x: 27, y: 60, scale: 0.78 },
-  { x: 36, y: 60, scale: 0.78 },
+  // 0-2: 角色（后排，最多 3 人）
+  { x: 7,  y: 44, scale: 0.75 },
+  { x: 19, y: 44, scale: 0.75 },
+  { x: 31, y: 44, scale: 0.75 },
+  // 3-7: 宠物（前排，最多 5 只）
+  { x: 5,  y: 84, scale: 0.85 },
+  { x: 14, y: 84, scale: 0.85 },
+  { x: 23, y: 84, scale: 0.85 },
+  { x: 32, y: 84, scale: 0.85 },
+  { x: 41, y: 84, scale: 0.85 },
+  // 8-9: 溢出备用
+  { x: 11, y: 62, scale: 0.78 },
+  { x: 22, y: 62, scale: 0.78 },
 ]
 const enemyPos = [
   { x: 56, y: 82, scale: 1.00 },
@@ -319,7 +335,7 @@ const PartyCard = ({ unit, isActive }) => (
           background: unit.kind === 'pet' ? 'linear-gradient(135deg,#1a4a2a,#2d6040)' : undefined,
           border: unit.kind === 'pet' ? '1px solid #3a8040' : undefined,
         }}>
-          {unit.kind === 'pet' ? '宠' : unit.name[0]}
+          {unit.kind === 'pet' ? '宠' : unit.name?.[0] ?? '人'}
         </div>
         {unit.affinity && (
           <div style={{ position: 'absolute', bottom: -3, right: -3 }}>
@@ -656,17 +672,32 @@ export default function CombatScreen() {
   // 战斗胜利 → 落账经验 / 宠物经验 / 银两 / 持久化剩余HP/MP
   useEffect(() => {
     if (!battle.victoryLootNonce || !battle.victoryRewards) return
+
+    const snap = charSnapshot()
     const activePetIds = allies
       .filter(u => u.kind === 'pet')
-      .map(u => {
-        return charSnapshot().petRoster.find(p => `petunit_${p.id}` === u.id)?.id
-      })
+      .map(u => snap.petRoster?.find(p => `petunit_${p.id}` === u.id)?.id)
       .filter(Boolean)
-    const playerUnit = allies.find(u => !u.kind)
-    const remainingHp = playerUnit ? playerUnit.hp : null
-    const remainingMp = playerUnit ? playerUnit.mp : null
-    applyBattleRewardsAction(battle.victoryRewards, activePetIds, battle.lastVictoryLoot ?? [], battle.lastEquipDrops ?? [], remainingHp, remainingMp)
-    // 战斗历史写入 DB（DB 已就绪时才记录）
+
+    // 所有角色单位按 charId 建立 HP/MP 映射
+    const charUnitsInBattle = allies.filter(u => u.kind !== 'pet')
+    const charHpMpMap = {}
+    for (const u of charUnitsInBattle) {
+      if (u.charId) charHpMpMap[u.charId] = { hp: u.hp, mp: u.mp }
+    }
+
+    // 出战角色：经验 + 掉落 + HP/MP
+    const activeUnit = charUnitsInBattle.find(u => u.charId === snap.activeCharId) ?? charUnitsInBattle[0]
+    applyBattleRewardsAction(
+      battle.victoryRewards, activePetIds,
+      battle.lastVictoryLoot ?? [], battle.lastEquipDrops ?? [],
+      activeUnit?.hp ?? null, activeUnit?.mp ?? null,
+    )
+
+    // 非出战角色：同步经验 + HP/MP
+    applyExpToOtherCharsAction(battle.victoryRewards?.exp ?? 0, charHpMpMap)
+
+    if (battle.mapId) progressBattleQuestAction(battle.mapId)
     dbReady.then(() => recordBattle({
       outcome:       'victory',
       mapName:       battle.log[0]?.match(/【(.+?)】/)?.[1] ?? '',
@@ -793,25 +824,22 @@ export default function CombatScreen() {
 
   function handleShuadaoBattle(typeId) {
     const char = charSnapshot()
-    const d = computeHeroDerived(char.level, char)
-    const learnedEquipped = char.equippedSkills.filter(id => (char.skillLevels[id] ?? 0) > 0)
-    const skillPool = ['normal_attack', ...learnedEquipped]
-    const playerUnit = createAllyUnit(char.name, {
-      level: char.level, maxHp: d.maxHp, hpCur: char.hpCur,
-      maxMp: d.maxMp, mpCur: char.mpCur, atk: d.phyDmg, mAtk: d.magDmg,
-      def: d.def, speed: d.speed, piercingPct: d.piercingPct ?? 0,
-      skillLevels: char.skillLevels,
-      daoExcessRatio: calcDaoExcessRatio(char.level, char.daoYears, char.daoDays),
-    }, skillPool)
-    const activePets = (char.petRoster ?? []).filter(p => p.active).slice(0, 9)
-    const foes = buildShuadaoFoes(typeId, char.level, 1 + activePets.length, Math.random)
+    const allCharData = [
+      { ...char, id: char.activeCharId },
+      ...(char.otherChars ?? []),
+    ]
+    const charUnits = allCharData.map(c => buildCharUnit(c, char))
+    const activePets = (char.petRoster ?? []).filter(p => p.active).slice(0, 5)
+    const petUnits = activePets.map(createPetAllyUnit)
+    const partySize = charUnits.length + petUnits.length
+    const foes = buildShuadaoFoes(typeId, char.level, partySize, Math.random)
     const openMsg = shuadaoOpeningMsg(typeId, foes)
     clearPendingShuadaoAction()
     handleNewBattle(createBattle({
-      allyUnits:      [playerUnit, ...activePets.map(createPetAllyUnit)],
-      customFoes:     foes,
+      allyUnits:        [...charUnits, ...petUnits],
+      customFoes:       foes,
       customOpeningMsg: openMsg,
-      charDaoYears:   char.daoYears ?? 1,
+      charDaoYears:     char.daoYears ?? 1,
     }))
   }
 
@@ -819,6 +847,7 @@ export default function CombatScreen() {
   useEffect(() => {
     if (!battle.defeatNonce) return
     saveBattleEndAction(1, 0)
+    saveOtherCharsDefeatAction()
     // 败北时停止自动模式
     setAutoCombat(false)
     setAutoStart(false)

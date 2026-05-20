@@ -24,22 +24,47 @@ import { getPetFreeAttrTotal, sumPetAllocAttr } from './battle/petGrowthTable.js
 import { computeHeroDerived } from './playerSheet.js'
 import { getConsumable, isQuotaOrb, getRestoreAmount } from './items/catalog.js'
 import { EMPTY_EQUIPPED, getEquipByCode, EQUIP_SLOT_KEYS, EQUIP_SLOT_DEFS } from './items/equipCatalog.js'
+import { acceptQuest, progressBattle, progressVisitMap, claimQuest } from './quests/questEngine.js'
+import { createQuestBabyPet } from './battle/pets.js'
 
 const STORAGE_KEY = 'wendao_char_v1'
 
+function _charUid() {
+  return `c_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`
+}
+
+const CHAR_FIELDS = [
+  'id', 'name', 'school', 'level', 'potential',
+  'vit', 'int', 'str', 'agi',
+  'affMetal', 'affWood', 'affWater', 'affFire', 'affEarth',
+  'daoYears', 'daoDays', 'fame',
+  'staminaCur', 'staminaMax', 'meritRecord',
+  'expCur', 'expIntoLevel',
+  'skillLevels', 'equippedSkills',
+  'hpCur', 'mpCur', 'equipped',
+  // petRoster 为共享字段，不在此列
+]
+
+function _extractChar(s) {
+  const snap = {}
+  for (const f of CHAR_FIELDS) snap[f] = s[f]
+  return snap
+}
+
 const DEFAULT_STATE = {
+  id: 'char_main',
   name: '天行健',
   school: '金',
   level: 50,
   tael: 248800,
   potential: 4820,
 
-  // ── 四维加点（端游每级 5 点，最低 1）──
-  // Lv50 budget=245，法金 build：灵力为主
-  vit: 40,
-  int: 155,
-  str: 5,
-  agi: 45,
+  // ── 四维加点（底盘=等级×4 + 自由点=(等级-1)×4；Lv50 budget=8×50-4=396）──
+  // 底盘各 50；自由 196 点，法金 build：灵力为主
+  vit: 80,   // 底盘 50 + 自由 30
+  int: 176,  // 底盘 50 + 自由 126
+  str: 50,   // 底盘 50 + 自由 0
+  agi: 90,   // 底盘 50 + 自由 40
 
   // ── 相性（每系 0-30，总和受等级预算限制）──
   // Lv50 budget=25 → 金系满25
@@ -147,6 +172,14 @@ const DEFAULT_STATE = {
 
   /** 当前选定练级地图 id */
   currentMapId: 'wulong_ku',
+
+  /** 任务日志 { [questId]: { status, progress } } */
+  questLog: {},
+
+  /** 当前出战角色 id */
+  activeCharId: 'char_main',
+  /** 其他角色快照（仅含 CHAR_FIELDS 字段）*/
+  otherChars: [],
 }
 
 function load() {
@@ -203,6 +236,10 @@ function load() {
         }
       }
       merged.bag = newBag
+      if (!merged.questLog || typeof merged.questLog !== 'object') merged.questLog = {}
+      if (!merged.id) merged.id = 'char_main'
+      if (!merged.activeCharId) merged.activeCharId = merged.id
+      if (!Array.isArray(merged.otherChars)) merged.otherChars = []
       if (!merged.equipped || typeof merged.equipped !== 'object') {
         merged.equipped = { ...EMPTY_EQUIPPED }
       } else {
@@ -360,6 +397,8 @@ export function applyBattleRewardsAction(rewards, activePetIds = [], loot = [], 
   const charResult = applyExpTowardLevelUp(state.level, state.expIntoLevel ?? state.expCur ?? 0, exp)
   const newLevel       = Math.min(CHARACTER_MAX_LEVEL, charResult.newLevel)
   const newExpInto     = newLevel >= CHARACTER_MAX_LEVEL ? 0 : charResult.expIntoLevel
+  // 升级底盘：每升一级全属性 +1（不占自由点）
+  const gained = newLevel - oldLevel
 
   // ── 宠物经验（仅参战宠物，平均分配 petExp） ──
   const petIds = new Set(activePetIds)
@@ -399,6 +438,10 @@ export function applyBattleRewardsAction(rewards, activePetIds = [], loot = [], 
     level:        newLevel,
     expIntoLevel: newExpInto,
     expCur:       newExpInto,
+    vit:          (state.vit ?? 0) + gained,
+    int:          (state.int ?? 0) + gained,
+    str:          (state.str ?? 0) + gained,
+    agi:          (state.agi ?? 0) + gained,
     tael:         (state.tael ?? 0) + gold,
     daoYears:     newDaoYears,
     daoDays:      newDaoDays,
@@ -909,6 +952,264 @@ export function clearPendingShuadaoAction() {
 /** 切换练级地图 */
 export function setMapAction(mapId) {
   patch({ currentMapId: mapId })
+}
+
+// ── 任务系统 ──────────────────────────────────────────────────────────────────
+
+/** 接受任务 */
+export function acceptQuestAction(questId) {
+  const newLog = acceptQuest(questId, state.questLog, state.level)
+  if (newLog === state.questLog) return { ok: false }
+  patch({ questLog: newLog })
+  return { ok: true }
+}
+
+/** 领取任务奖励，并直接落账到角色属性（含物品/宠物） */
+export function claimQuestAction(questId) {
+  const { questLog: newLog, rewards } = claimQuest(questId, state.questLog)
+  if (!rewards) return { ok: false }
+  const { exp = 0, gold = 0, daoDays = 0, potential = 0, items = [], pet: petReward } = rewards
+  const charResult  = applyExpTowardLevelUp(state.level, state.expIntoLevel ?? state.expCur ?? 0, exp)
+  const newLevel    = Math.min(CHARACTER_MAX_LEVEL, charResult.newLevel)
+  const newExpInto  = newLevel >= CHARACTER_MAX_LEVEL ? 0 : charResult.expIntoLevel
+  const levelGained = newLevel - state.level
+  const totalDays   = (state.daoDays ?? 0) + daoDays
+  const newDaoYears = (state.daoYears ?? 0) + Math.floor(totalDays / 365)
+  const newDaoDays  = totalDays % 365
+  const newBag      = mergeBagLoot(state.bag ?? [], items)
+  let newRoster     = state.petRoster ?? []
+  let rewardedPet   = null
+  if (petReward?.spawnKey) {
+    rewardedPet = createQuestBabyPet(petReward.spawnKey)
+    newRoster   = [...newRoster, rewardedPet]
+  }
+  patch({
+    questLog:     newLog,
+    level:        newLevel,
+    expIntoLevel: newExpInto,
+    expCur:       newExpInto,
+    vit:          (state.vit ?? 0) + levelGained,
+    int:          (state.int ?? 0) + levelGained,
+    str:          (state.str ?? 0) + levelGained,
+    agi:          (state.agi ?? 0) + levelGained,
+    tael:         (state.tael ?? 0) + gold,
+    daoYears:     newDaoYears,
+    daoDays:      newDaoDays,
+    potential:    (state.potential ?? 0) + potential,
+    bag:          newBag,
+    petRoster:    newRoster,
+  })
+  return { ok: true, rewards, rewardedPet }
+}
+
+/** 战斗胜利后更新地图战斗类任务进度 */
+export function progressBattleQuestAction(mapId) {
+  if (!mapId) return
+  const newLog = progressBattle(mapId, state.questLog)
+  if (newLog !== state.questLog) patch({ questLog: newLog })
+}
+
+/** 前往地图时更新 visit_map 类任务进度 */
+export function progressVisitQuestAction(mapId) {
+  if (!mapId) return
+  const newLog = progressVisitMap(mapId, state.questLog)
+  if (newLog !== state.questLog) patch({ questLog: newLog })
+}
+
+// ── 多角色战斗同步 ────────────────────────────────────────────────────────────
+
+/**
+ * 战斗胜利后将经验同步给所有非出战角色，并写回其战场 HP/MP。
+ * @param {number} exp  本场战斗基础经验（与出战角色相同）
+ * @param {Record<string,{hp:number,mp:number}>} charHpMpMap  战后各角色 id → {hp, mp}
+ */
+export function applyExpToOtherCharsAction(exp, charHpMpMap = {}) {
+  const others = state.otherChars ?? []
+  if (!others.length) return
+  const newOthers = others.map(c => {
+    const r = applyExpTowardLevelUp(c.level, c.expIntoLevel ?? c.expCur ?? 0, exp)
+    const newLevel    = Math.min(CHARACTER_MAX_LEVEL, r.newLevel)
+    const newExpInto  = newLevel >= CHARACTER_MAX_LEVEL ? 0 : r.expIntoLevel
+    const gained      = newLevel - c.level
+    const hpMp        = charHpMpMap[c.id]
+    return {
+      ...c,
+      level:        newLevel,
+      expIntoLevel: newExpInto,
+      expCur:       newExpInto,
+      vit: (c.vit ?? 0) + gained,
+      int: (c.int ?? 0) + gained,
+      str: (c.str ?? 0) + gained,
+      agi: (c.agi ?? 0) + gained,
+      hpCur: hpMp != null ? (hpMp.hp <= 0 ? 1 : hpMp.hp >= (c.maxHp ?? 9999) ? null : hpMp.hp) : c.hpCur,
+      mpCur: hpMp != null ? (Math.max(0, hpMp.mp) >= (c.maxMp ?? 9999) ? null : Math.max(0, hpMp.mp)) : c.mpCur,
+    }
+  })
+  patch({ otherChars: newOthers })
+}
+
+/**
+ * 战斗败北后将所有非出战角色 HP 置为 1，MP 置为 0。
+ */
+export function saveOtherCharsDefeatAction() {
+  const others = state.otherChars ?? []
+  if (!others.length) return
+  patch({ otherChars: others.map(c => ({ ...c, hpCur: 1, mpCur: 0 })) })
+}
+
+// ── 多角色系统 ────────────────────────────────────────────────────────────────
+
+/**
+ * 创建新角色（最多 3 个），自动切换到新角色出战。
+ * 新角色从 Lv1 起步，共用银两 / 背包 / 装备背包。
+ */
+export function createCharacterAction(name, school) {
+  const others = state.otherChars ?? []
+  if (others.length >= 2) return { ok: false, reason: '最多同时拥有 3 个角色' }
+  const newId = _charUid()
+  const curSnap = _extractChar(state)
+  const newChar = {
+    id: newId, name, school,
+    level: 1, potential: 0,
+    vit: 0, int: 0, str: 0, agi: 0,
+    affMetal: 0, affWood: 0, affWater: 0, affFire: 0, affEarth: 0,
+    daoYears: 0, daoDays: 0, fame: 0,
+    staminaCur: 5000, staminaMax: 5000, meritRecord: 0,
+    expCur: 0, expIntoLevel: 0,
+    skillLevels: {}, equippedSkills: [],
+    hpCur: null, mpCur: null,
+    equipped: { ...EMPTY_EQUIPPED },
+    // petRoster 共享，不重置
+  }
+  patch({ ...newChar, activeCharId: newId, otherChars: [...others, curSnap] })
+  return { ok: true }
+}
+
+/**
+ * 切换出战角色（保存当前快照，加载目标快照）。
+ * 共用字段（银两、背包等）不受影响。
+ */
+export function switchCharacterAction(charId) {
+  if (charId === state.activeCharId) return { ok: false, reason: '已是当前角色' }
+  const others = state.otherChars ?? []
+  const idx = others.findIndex(c => c.id === charId)
+  if (idx < 0) return { ok: false, reason: '角色不存在' }
+  const target = others[idx]
+  const curSnap = _extractChar(state)
+  const newOthers = [...others.slice(0, idx), curSnap, ...others.slice(idx + 1)]
+  patch({ ...target, activeCharId: charId, otherChars: newOthers })
+  return { ok: true }
+}
+
+/**
+ * 删除非出战角色（不可删除当前出战角色）。
+ */
+export function deleteCharacterAction(charId) {
+  if (charId === state.activeCharId) return { ok: false, reason: '不能删除当前出战角色' }
+  const others = state.otherChars ?? []
+  if (!others.some(c => c.id === charId)) return { ok: false, reason: '角色不存在' }
+  patch({ otherChars: others.filter(c => c.id !== charId) })
+  return { ok: true }
+}
+
+/**
+ * 将共享装备背包中的实例装备到指定角色的槽位。
+ * 若 charId 为 null / 当前出战角色，等同于 equipItemAction。
+ */
+export function equipItemForChar(slotKey, itemUid, charId) {
+  if (!charId || charId === state.activeCharId) return equipItemAction(slotKey, itemUid)
+  if (!EQUIP_SLOT_KEYS.includes(slotKey)) return { ok: false, reason: '未知槽位' }
+  const inst = (state.equipBag ?? []).find(i => i.uid === itemUid)
+  if (!inst) return { ok: false, reason: '装备背包中没有此实例' }
+  const item = getEquipByCode(inst.baseCode)
+  if (!item) return { ok: false, reason: '未知装备' }
+  const slotDef = EQUIP_SLOT_DEFS.find(s => s.key === slotKey)
+  if (!slotDef?.filter(item)) return { ok: false, reason: '该装备不适合此槽位' }
+  const others = state.otherChars ?? []
+  const idx = others.findIndex(c => c.id === charId)
+  if (idx < 0) return { ok: false, reason: '角色不存在' }
+  const updated = { ...others[idx], equipped: { ...(others[idx].equipped ?? EMPTY_EQUIPPED), [slotKey]: itemUid } }
+  patch({ otherChars: [...others.slice(0, idx), updated, ...others.slice(idx + 1)] })
+  return { ok: true }
+}
+
+/**
+ * 卸除指定角色槽位的装备。
+ * 若 charId 为 null / 当前出战角色，等同于 unequipItemAction。
+ */
+export function unequipItemForChar(slotKey, charId) {
+  if (!charId || charId === state.activeCharId) return unequipItemAction(slotKey)
+  if (!EQUIP_SLOT_KEYS.includes(slotKey)) return { ok: false, reason: '未知槽位' }
+  const others = state.otherChars ?? []
+  const idx = others.findIndex(c => c.id === charId)
+  if (idx < 0) return { ok: false, reason: '角色不存在' }
+  const target = others[idx]
+  if (!(target.equipped ?? {})[slotKey]) return { ok: false, reason: '该槽位未装备任何物品' }
+  const updated = { ...target, equipped: { ...(target.equipped ?? EMPTY_EQUIPPED), [slotKey]: null } }
+  patch({ otherChars: [...others.slice(0, idx), updated, ...others.slice(idx + 1)] })
+  return { ok: true }
+}
+
+// ── 多角色专用加点工具 ────────────────────────────────────────────────────────
+
+function _getCharData(charId) {
+  if (!charId || charId === state.activeCharId) return { isActive: true, char: state }
+  const others = state.otherChars ?? []
+  const idx = others.findIndex(c => c.id === charId)
+  if (idx < 0) return null
+  return { isActive: false, char: others[idx], idx, others }
+}
+
+function _patchChar(info, updates) {
+  if (info.isActive) {
+    patch(updates)
+  } else {
+    const updated = { ...info.char, ...updates }
+    patch({ otherChars: [...info.others.slice(0, info.idx), updated, ...info.others.slice(info.idx + 1)] })
+  }
+}
+
+export function addStatToCharAction(stat, charId, count = 1) {
+  const info = _getCharData(charId)
+  if (!info) return { ok: false, reason: '角色不存在' }
+  const c = info.char
+  const budget = getAttributePointBudget(c.level)
+  const used = sumFour(c)
+  if (used >= budget) return { ok: false, reason: '无剩余属性点' }
+  if (!['vit', 'int', 'str', 'agi'].includes(stat)) return { ok: false, reason: '未知属性' }
+  const actual = Math.min(count, budget - used)
+  _patchChar(info, { [stat]: (c[stat] ?? 0) + actual })
+  return { ok: true }
+}
+
+export function addAffinityToCharAction(elem, charId, count = 1) {
+  const info = _getCharData(charId)
+  if (!info) return { ok: false, reason: '角色不存在' }
+  const c = info.char
+  const key = 'aff' + elem
+  const budget = getAffinityPointBudget(c.level)
+  const used = sumAffinity(c)
+  if (used >= budget) return { ok: false, reason: '无剩余相性点' }
+  const cur = c[key] ?? 0
+  if (cur >= AFFINITY_CAP_PER_ELEMENT) return { ok: false, reason: `${elem}相性已达上限 30` }
+  const actual = Math.min(count, budget - used, AFFINITY_CAP_PER_ELEMENT - cur)
+  _patchChar(info, { [key]: cur + actual })
+  return { ok: true }
+}
+
+export function autoAllocateToCharAction(charId) {
+  const info = _getCharData(charId)
+  if (!info) return
+  const c = info.char
+  const next = autoAllocateVitInt(c, c.level)
+  _patchChar(info, { vit: next.vit, int: next.int, str: next.str, agi: next.agi })
+}
+
+export function resetAllocToCharAction(charId) {
+  const info = _getCharData(charId)
+  if (!info) return
+  const floor = getFixedStatFloor(info.char.level)
+  _patchChar(info, { vit: floor, int: floor, str: floor, agi: floor })
 }
 
 /**

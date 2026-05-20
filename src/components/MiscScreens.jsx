@@ -1,8 +1,10 @@
-import React, { useState, useSyncExternalStore } from 'react'
+import React, { useState, useEffect, useSyncExternalStore } from 'react'
 import { Seal, PanelHead, SubHead, Tag, CornerDeco } from './common.jsx'
-import { subscribe, getSnapshot, buyShopItemAction, setPendingShuadaoAction, setMapAction } from '../game/characterStore.js'
+import { subscribe, getSnapshot, buyShopItemAction, setPendingShuadaoAction, setMapAction, acceptQuestAction, claimQuestAction, progressVisitQuestAction } from '../game/characterStore.js'
 import { SHUADAO_TYPES, SHUADAO_ORDER } from '../game/shuadao.js'
 import { WENDAO_MAPS, MAP_TYPES, inferSpawnElement } from '../game/battle/wendaoMapsConfig.js'
+import { MAIN_QUESTS, SIDE_QUESTS, getNpcsForMap, getQuestsForNpc } from '../game/quests/questData.js'
+import { getQuestStatus, QS } from '../game/quests/questEngine.js'
 
 // ───── 日常任务（静态演示） ─────
 const DAILY_TASKS = [
@@ -39,6 +41,84 @@ const DailyQuestRow = ({ t }) => {
       <button className="btn-ink btn-ink-sm" disabled={!t.done && t.tag !== '活动'} style={{ flexShrink: 0 }}>
         {t.done ? '领取' : '前往'}
       </button>
+    </div>
+  )
+}
+
+// ───── 任务行（主线/支线） ─────
+const QS_INFO = {
+  locked:    { label: '未解锁', color: 'var(--ink-4)' },
+  available: { label: '可接取', color: 'var(--bamboo)' },
+  active:    { label: '进行中', color: 'var(--gold-2)' },
+  claimable: { label: '可领取', color: 'var(--vermilion)' },
+  done:      { label: '已完成', color: 'var(--ink-3)' },
+}
+
+function QuestRow({ quest, status, questLog, onAccept, onClaim }) {
+  const obj     = quest.objectives[0]
+  const entry   = questLog?.[quest.id]
+  const progress = entry?.progress ?? 0
+  const count   = obj?.count ?? 1
+  const isLocked = status === QS.LOCKED
+  const isDone   = status === QS.DONE
+  const si = QS_INFO[status] ?? { label: '?', color: 'var(--ink-3)' }
+  const r  = quest.reward
+  const rewardParts = [
+    r.exp      ? `经验 +${r.exp.toLocaleString()}`  : '',
+    r.gold     ? `银两 +${r.gold.toLocaleString()}` : '',
+    r.daoDays  ? `道行 +${r.daoDays}天`            : '',
+    r.potential? `潜能 +${r.potential}`            : '',
+  ].filter(Boolean)
+
+  return (
+    <div style={{
+      padding: 10, display: 'flex', gap: 10, alignItems: 'flex-start',
+      background: isDone ? 'rgba(106,138,122,0.08)' : 'rgba(243,237,224,0.65)',
+      border: `1px solid ${status === QS.CLAIMABLE ? 'var(--vermilion)' : status === QS.ACTIVE ? 'var(--gold-2)' : 'var(--ink-4)'}`,
+      opacity: isLocked ? 0.55 : isDone ? 0.75 : 1,
+    }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
+          <span className="brush" style={{ fontSize: 15, color: isDone ? 'var(--ink-3)' : 'var(--ink)', textDecoration: isDone ? 'line-through' : 'none' }}>
+            {quest.title}
+          </span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: si.color }}>{si.label}</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-4)' }}>Lv{quest.levelReq}</span>
+        </div>
+        {obj && (
+          <p style={{ margin: '3px 0 0', fontSize: 11, color: 'var(--ink-2)', lineHeight: 1.5 }}>
+            {obj.label}{(status === QS.ACTIVE || status === QS.CLAIMABLE) ? `（${progress}/${count}）` : ''}
+          </p>
+        )}
+        {!isLocked && !isDone && (rewardParts.length > 0 || r.items?.length > 0 || r.pet) && (
+          <div style={{ marginTop: 2, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--gold-2)', lineHeight: 1.7 }}>
+            {rewardParts.length > 0 && <div>奖 · {rewardParts.join('　')}</div>}
+            {r.items?.length > 0 && (
+              <div style={{ color: 'var(--bamboo)' }}>
+                物品 · {r.items.map(it => {
+                  const names = { xiao_huanhun: '小还魂丹', zhong_huanhun: '中还魂丹', da_huanhun: '大还魂丹',
+                    xiao_juling: '小聚灵丹', zhong_juling: '中聚灵丹', da_juling: '大聚灵丹',
+                    qianghuashi: '强化石', heishuijing: '黑水晶' }
+                  return `${names[it.itemId] ?? it.itemId} ×${it.qty}`
+                }).join('　')}
+              </div>
+            )}
+            {r.pet && (
+              <div style={{ color: '#c87820' }}>宠物 · {r.pet.label ?? r.pet.spawnKey}（宝宝）</div>
+            )}
+          </div>
+        )}
+      </div>
+      <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--ink-4)', maxWidth: 80, textAlign: 'right', lineHeight: 1.3 }}>{quest.chapter}</span>
+        {status === QS.AVAILABLE && (
+          <button className="btn-ink btn-ink-sm" onClick={() => onAccept(quest.id)} style={{ fontSize: 11 }}>接 受</button>
+        )}
+        {status === QS.CLAIMABLE && (
+          <button className="btn-ink btn-ink-primary btn-ink-sm" onClick={() => onClaim(quest.id)} style={{ fontSize: 11 }}>领 取</button>
+        )}
+        {isDone && <span style={{ color: 'var(--bamboo)', fontSize: 16 }}>✓</span>}
+      </div>
     </div>
   )
 }
@@ -92,11 +172,47 @@ function ShuadaoCard({ typeId, typeDef, onStart }) {
 export function QuestScreen({ navigate }) {
   const char = useSyncExternalStore(subscribe, getSnapshot)
   const [tab, setTab] = useState('shuadao')
+  const [questMsg, setQuestMsg] = useState(null)
 
   function handleStart(typeId) {
     setPendingShuadaoAction(typeId)
     navigate?.('combat')
   }
+
+  function handleAccept(questId) {
+    const res = acceptQuestAction(questId)
+    setQuestMsg(res.ok ? { ok: true, text: '任务已接受' } : { ok: false, text: '无法接受任务' })
+    setTimeout(() => setQuestMsg(null), 2000)
+  }
+
+  function handleClaim(questId) {
+    const res = claimQuestAction(questId)
+    if (res.ok) {
+      const r = res.rewards
+      const parts = [
+        r.exp      ? `经验 +${r.exp.toLocaleString()}`  : '',
+        r.gold     ? `银两 +${r.gold.toLocaleString()}` : '',
+        r.daoDays  ? `道行 +${r.daoDays}天`            : '',
+        r.potential? `潜能 +${r.potential}`            : '',
+        ...(r.items ?? []).map(it => {
+          const nm = { xiao_huanhun:'小还魂丹', zhong_huanhun:'中还魂丹', da_huanhun:'大还魂丹',
+            xiao_juling:'小聚灵丹', zhong_juling:'中聚灵丹', da_juling:'大聚灵丹',
+            qianghuashi:'强化石', heishuijing:'黑水晶' }
+          return `${nm[it.itemId] ?? it.itemId} ×${it.qty}`
+        }),
+        res.rewardedPet ? `获得宠物「${res.rewardedPet.displayName}」` : '',
+      ].filter(Boolean)
+      setQuestMsg({ ok: true, text: `奖励已领取：${parts.join('　')}` })
+    } else {
+      setQuestMsg({ ok: false, text: '无法领取奖励' })
+    }
+    setTimeout(() => setQuestMsg(null), 4000)
+  }
+
+  const questLog  = char.questLog ?? {}
+  const charLevel = char.level ?? 1
+  const mainList = MAIN_QUESTS.map(q => ({ quest: q, status: getQuestStatus(q, questLog, charLevel) }))
+  const sideList = SIDE_QUESTS.map(q => ({ quest: q, status: getQuestStatus(q, questLog, charLevel) }))
 
   return (
     <div className="paper-bg" style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', fontFamily: 'var(--font-body)' }}>
@@ -110,10 +226,38 @@ export function QuestScreen({ navigate }) {
       />
       <div style={{ position: 'absolute', inset: '60px 20px 20px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div className="tab-list">
-          {[['shuadao', '刷  道'], ['daily', '日常任务']].map(([id, label]) => (
-            <div key={id} className={'tab' + (tab === id ? ' active' : '')} style={{ padding: '4px 18px', cursor: 'pointer' }} onClick={() => setTab(id)}>{label}</div>
+          {[['shuadao', '刷  道'], ['main', '主  线'], ['side', '支  线'], ['daily', '日常任务']].map(([id, label]) => (
+            <div key={id} className={'tab' + (tab === id ? ' active' : '')} style={{ padding: '4px 16px', cursor: 'pointer' }} onClick={() => setTab(id)}>{label}</div>
           ))}
         </div>
+
+        {questMsg && (
+          <div style={{
+            flexShrink: 0, padding: '5px 12px',
+            background: questMsg.ok ? 'rgba(45,138,45,0.12)' : 'rgba(163,55,58,0.12)',
+            border: `1px solid ${questMsg.ok ? 'var(--bamboo)' : 'var(--vermilion)'}`,
+            fontFamily: 'var(--font-mono)', fontSize: 11,
+            color: questMsg.ok ? 'var(--bamboo)' : 'var(--vermilion)',
+          }}>{questMsg.text}</div>
+        )}
+
+        {tab === 'main' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1, overflow: 'auto' }}>
+            {mainList.map(({ quest, status }) => (
+              <QuestRow key={quest.id} quest={quest} status={status} questLog={questLog}
+                onAccept={handleAccept} onClaim={handleClaim} />
+            ))}
+          </div>
+        )}
+
+        {tab === 'side' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1, overflow: 'auto' }}>
+            {sideList.map(({ quest, status }) => (
+              <QuestRow key={quest.id} quest={quest} status={status} questLog={questLog}
+                onAccept={handleAccept} onClaim={handleClaim} />
+            ))}
+          </div>
+        )}
 
         {tab === 'daily' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1, overflow: 'auto' }}>
@@ -359,17 +503,62 @@ export function WorldMapScreen({ navigate }) {
   const char = useSyncExternalStore(subscribe, getSnapshot)
   const activeMapId   = char.currentMapId ?? 'wulong_ku'
   const [selectedId, setSelectedId] = useState(activeMapId)
+  const [selectedNpcId, setSelectedNpcId] = useState(null)
   const selectedMap   = WENDAO_MAPS.find(m => m.id === selectedId) ?? WENDAO_MAPS[0]
   const activeMap     = WENDAO_MAPS.find(m => m.id === activeMapId)
   const charLevel     = char.level ?? 1
   const isAtSelected  = selectedId === activeMapId
 
+  const npcsOnMap  = getNpcsForMap(selectedId)
+  const selectedNpc = npcsOnMap.find(n => n.id === selectedNpcId) ?? null
+  const npcQuests  = selectedNpc
+    ? getQuestsForNpc(selectedNpc.id).map(q => ({ quest: q, status: getQuestStatus(q, char.questLog ?? {}, charLevel) }))
+    : []
+
+  useEffect(() => { setSelectedNpcId(null) }, [selectedId])
+
+  const [npcMsg, setNpcMsg] = useState(null)
+
+  function handleNpcAccept(questId) {
+    const res = acceptQuestAction(questId)
+    setNpcMsg(res.ok ? { ok: true, text: '任务已接受' } : { ok: false, text: '无法接受任务' })
+    setTimeout(() => setNpcMsg(null), 2000)
+  }
+
+  function handleNpcClaim(questId) {
+    const res = claimQuestAction(questId)
+    if (res.ok) {
+      const r = res.rewards
+      const parts = [
+        r.exp      ? `经验 +${r.exp.toLocaleString()}`  : '',
+        r.gold     ? `银两 +${r.gold.toLocaleString()}` : '',
+        r.daoDays  ? `道行 +${r.daoDays}天`            : '',
+        r.potential? `潜能 +${r.potential}`            : '',
+        ...(r.items ?? []).map(it => {
+          const nm = { xiao_huanhun:'小还魂丹', zhong_huanhun:'中还魂丹', da_huanhun:'大还魂丹',
+            xiao_juling:'小聚灵丹', zhong_juling:'中聚灵丹', da_juling:'大聚灵丹',
+            qianghuashi:'强化石', heishuijing:'黑水晶' }
+          return `${nm[it.itemId] ?? it.itemId} ×${it.qty}`
+        }),
+        res.rewardedPet ? `宠物「${res.rewardedPet.displayName}」已入仓库` : '',
+      ].filter(Boolean)
+      setNpcMsg({ ok: true, text: parts.join('　') })
+    } else {
+      setNpcMsg({ ok: false, text: '无法领取奖励' })
+    }
+    setTimeout(() => setNpcMsg(null), 4000)
+  }
+
   function handleGoTo() {
     setMapAction(selectedId)
+    progressVisitQuestAction(selectedId)
   }
 
   function handleBattle() {
-    if (!isAtSelected) setMapAction(selectedId)
+    if (!isAtSelected) {
+      setMapAction(selectedId)
+      progressVisitQuestAction(selectedId)
+    }
     navigate?.('combat')
   }
 
@@ -471,27 +660,99 @@ export function WorldMapScreen({ navigate }) {
             )}
           </div>
 
-          {/* 出没怪物 */}
-          <div className="paper-bg scroll-frame" style={{ padding: '10px 14px', position: 'relative', flex: 1, overflow: 'auto' }}>
-            <CornerDeco />
-            <SubHead title="出没怪物" sub={`SPAWNS · ${selectedMap.spawns.length} 种`} />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {selectedMap.spawns.map((sp, i) => {
-                const elem = inferSpawnElement(sp.tags)
-                const sch  = ELEM_SCHOOL[elem]
+          {/* NPC 条（有 NPC 时显示） */}
+          {npcsOnMap.length > 0 && (
+            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', flexShrink: 0 }}>
+              {npcsOnMap.map(npc => {
+                const isSelected = npc.id === selectedNpcId
+                const npcQs = getQuestsForNpc(npc.id)
+                const hasClaimable = npcQs.some(q => getQuestStatus(q, char.questLog ?? {}, charLevel) === QS.CLAIMABLE)
+                const hasAvailable = !hasClaimable && npcQs.some(q => getQuestStatus(q, char.questLog ?? {}, charLevel) === QS.AVAILABLE)
                 return (
-                  <div key={i} style={{
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    padding: '3px 4px',
-                    borderBottom: i < selectedMap.spawns.length - 1 ? '1px dashed var(--ink-4)' : 'none',
-                  }}>
-                    <Seal size={14} round school={sch} style={{ fontSize: 8, flexShrink: 0 }}>{elem}</Seal>
-                    <span style={{ fontFamily: 'var(--font-body)', color: 'var(--ink-2)', fontSize: 12, flex: 1 }}>{sp.name}</span>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-3)' }}>Lv {sp.level}</span>
-                  </div>
+                  <button
+                    key={npc.id}
+                    className={'btn-ink' + (isSelected ? ' btn-ink-primary' : '')}
+                    onClick={() => setSelectedNpcId(isSelected ? null : npc.id)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 8px', fontSize: 11, position: 'relative' }}
+                  >
+                    <Seal size={18} round style={{ fontSize: 9, flexShrink: 0,
+                      background: hasClaimable ? 'var(--vermilion)' : hasAvailable ? 'var(--bamboo)' : undefined,
+                    }}>{npc.glyph}</Seal>
+                    <span style={{ fontFamily: 'var(--font-body)' }}>{npc.name}</span>
+                    {(hasClaimable || hasAvailable) && (
+                      <span style={{
+                        position: 'absolute', top: -3, right: -3, width: 8, height: 8,
+                        background: hasClaimable ? 'var(--vermilion)' : 'var(--bamboo)',
+                        borderRadius: '50%', border: '1px solid var(--paper)',
+                      }} />
+                    )}
+                  </button>
                 )
               })}
             </div>
+          )}
+
+          {/* 主内容区：NPC 对话 or 出没怪物 */}
+          <div className="paper-bg scroll-frame" style={{ padding: '10px 14px', position: 'relative', flex: 1, overflow: 'auto' }}>
+            <CornerDeco />
+            {selectedNpc ? (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <Seal size={28} round style={{ flexShrink: 0 }}>{selectedNpc.glyph}</Seal>
+                  <div>
+                    <div className="brush" style={{ fontSize: 15, color: 'var(--ink)' }}>{selectedNpc.name}</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-3)' }}>{selectedNpc.title}</div>
+                  </div>
+                </div>
+                <p style={{ margin: '0 0 10px', fontSize: 11, color: 'var(--ink-2)', lineHeight: 1.7, fontStyle: 'italic',
+                  borderLeft: '2px solid var(--gold-2)', paddingLeft: 8 }}>
+                  「{selectedNpc.idle}」
+                </p>
+                {npcMsg && (
+                  <div style={{
+                    marginBottom: 8, padding: '4px 10px',
+                    background: npcMsg.ok ? 'rgba(45,138,45,0.12)' : 'rgba(163,55,58,0.12)',
+                    border: `1px solid ${npcMsg.ok ? 'var(--bamboo)' : 'var(--vermilion)'}`,
+                    fontFamily: 'var(--font-mono)', fontSize: 10,
+                    color: npcMsg.ok ? 'var(--bamboo)' : 'var(--vermilion)',
+                  }}>{npcMsg.text}</div>
+                )}
+                {npcQuests.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <SubHead title="相关任务" sub={`QUESTS · ${npcQuests.length}`} />
+                    {npcQuests.map(({ quest, status }) => (
+                      <QuestRow key={quest.id} quest={quest} status={status}
+                        questLog={char.questLog ?? {}} onAccept={handleNpcAccept} onClaim={handleNpcClaim} />
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-4)', textAlign: 'center', marginTop: 12 }}>
+                    暂无相关任务
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <SubHead title="出没怪物" sub={`SPAWNS · ${selectedMap.spawns.length} 种`} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  {selectedMap.spawns.map((sp, i) => {
+                    const elem = inferSpawnElement(sp.tags)
+                    const sch  = ELEM_SCHOOL[elem]
+                    return (
+                      <div key={i} style={{
+                        display: 'flex', alignItems: 'center', gap: 6,
+                        padding: '3px 4px',
+                        borderBottom: i < selectedMap.spawns.length - 1 ? '1px dashed var(--ink-4)' : 'none',
+                      }}>
+                        <Seal size={14} round school={sch} style={{ fontSize: 8, flexShrink: 0 }}>{elem}</Seal>
+                        <span style={{ fontFamily: 'var(--font-body)', color: 'var(--ink-2)', fontSize: 12, flex: 1 }}>{sp.name}</span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-3)' }}>Lv {sp.level}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )}
           </div>
 
           {/* 操作按钮 */}

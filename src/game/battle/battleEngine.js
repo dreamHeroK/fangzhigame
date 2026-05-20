@@ -636,6 +636,7 @@ export function createBattle(opts = {}) {
     planningQueue: [],
     isShuadao:    isCustomFight,
     charDaoYears: opts.charDaoYears ?? 1,
+    mapId:        mapId,
   }
   state = startPlanningPhase(state)
   return state

@@ -71,6 +71,27 @@ export function createWildPetFromFoe(foe, rng = Math.random) {
   }
 }
 
+/** 任务奖励宝宝：精英品质掷骰，带天生技能，active=false 直接入仓库 */
+export function createQuestBabyPet(spawnKey) {
+  const prof      = getMonsterProfile(spawnKey)
+  const innateIds = rollInnateIds(prof.innatePool, { rng: Math.random, isBoss: false })
+  const growth    = rollPetGrowthDetail(spawnKey, Math.random, { qualityBoost: 'elite' })
+  const catalog   = getPetByKey(spawnKey)
+  return {
+    id:            uid('qpet'),
+    kind:          '宝宝',
+    displayName:   `${catalog?.name ?? spawnKey}·宝宝`,
+    spawnKey,
+    level:         1,
+    expIntoLevel:  0,
+    affinity:      prof.affinity,
+    growth,
+    innateIds,
+    active:        false,
+    allocatedAttr: { vit: 0, int: 0, str: 0, agi: 0 },
+  }
+}
+
 const SCHOOL_SLUG = { 金: 'jin', 木: 'mu', 水: 'shui', 火: 'huo', 土: 'tu' }
 
 /** 按宠物等级和相性生成技能池（B系攻击为主） */

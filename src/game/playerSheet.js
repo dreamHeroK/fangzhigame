@@ -26,15 +26,21 @@ import { compileExtraBonuses } from './items/equipQuality.js'
 
 export const AFFINITY_CAP_PER_ELEMENT = 30
 
-/** 四维最低值（端游无强制底盘，最低 1） */
-export function getFixedStatFloor(_level) {
-  return 1
+/**
+ * 四维底盘：每级 +1，不可分配（等于当前等级）。
+ * 作为每项属性的最低值。
+ */
+export function getFixedStatFloor(level) {
+  return Math.max(1, Math.floor(Number(level) || 1))
 }
 
-/** 四维可分配总点数（端游：每级 5 点，1 级为 0） */
+/**
+ * 四维可分配总上限：底盘 4×L + 自由点 (L-1)×4 = 8L-4。
+ * 等价于：每升一级全属性 +1（底盘），另获 4 点自由点。
+ */
 export function getAttributePointBudget(level) {
   const L = Math.min(CHARACTER_MAX_LEVEL, Math.max(1, Math.floor(Number(level) || 1)))
-  return getFreeAttributePointsTotal(L)
+  return Math.max(4, 8 * L - 4)
 }
 
 /** 相性点总预算（与 characterLevelConfig 一致） */

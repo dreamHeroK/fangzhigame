@@ -6,7 +6,8 @@
       "Bash(Format-Table -AutoSize)",
       "PowerShell(Get-ChildItem -Path \"d:\\\\learning\\\\wendao\\\\src\" -Recurse -Force | Where-Object { $_.PSIsContainer -eq $false } | Select-Object FullName | Head -30)",
       "PowerShell(Get-ChildItem -Path \"d:\\\\learning\\\\wendao\\\\src\" -Recurse -Force | Where-Object { $_.PSIsContainer -eq $false } | Select-Object FullName -First 30)",
-      "Bash(del \"d:\\\\learning\\\\wendao\\\\src\\\\game\\\\grindQuests.js\")"
+      "Bash(del \"d:\\\\learning\\\\wendao\\\\src\\\\game\\\\grindQuests.js\")",
+      "Bash(Get-ChildItem -Path \"d:\\\\learning\\\\wendao\\\\src\\\\game\" -Recurse)"
     ]
   }
 }
