@@ -4,12 +4,13 @@ import CharacterScreen from './components/CharacterScreen.jsx'
 import SkillsScreen from './components/SkillsScreen.jsx'
 import PetsScreen from './components/PetsScreen.jsx'
 import BagScreen from './components/BagScreen.jsx'
+import StartScreen from './components/StartScreen.jsx'
 
 import { QuestScreen, ShopScreen, SignScreen, WorldMapScreen } from './components/MiscScreens.jsx'
 import ForgeScreen from './components/ForgeScreen.jsx'
 import DataScreen from './components/DataScreen.jsx'
 import TestScreen from './components/TestScreen.jsx'
-import { subscribe, getSnapshot } from './game/characterStore.js'
+import { subscribe, getSnapshot, hasSaveData } from './game/characterStore.js'
 import { dbReady } from './game/db/sqliteDb.js'
 
 // 提前初始化 DB（非阻塞，DataScreen 内等待 dbReady）
@@ -32,13 +33,29 @@ const SCREENS = [
 ]
 
 export default function App() {
+  const [phase, setPhase] = useState(() => hasSaveData() ? 'start' : 'start')
   const [active, setActive] = useState('combat')
   const char = useSyncExternalStore(subscribe, getSnapshot)
+
+  if (phase === 'start') {
+    return (
+      <div style={{ width: '100vw', height: '100vh' }}>
+        <StartScreen onEnterGame={() => setPhase('game')} />
+      </div>
+    )
+  }
 
   return (
     <>
       <nav className="app-nav">
-        <div className="app-nav-title">问道风</div>
+        <div
+          className="app-nav-title"
+          style={{ cursor: 'pointer' }}
+          onClick={() => setPhase('start')}
+          title="返回主界面"
+        >
+          问道风
+        </div>
         {SCREENS.map((s) => (
           <button
             key={s.id}

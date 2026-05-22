@@ -10,7 +10,7 @@ import {
   STATUS_LABELS,
 } from '../game/battle/battleEngine.js'
 import { getSkill } from '../game/battle/skills.js'
-import { suggestMapIdForLevel } from '../game/battle/wendaoMapsConfig.js'
+import { suggestMapIdForLevel, getMapById } from '../game/battle/wendaoMapsConfig.js'
 import {
   subscribe as charSubscribe,
   getSnapshot as charSnapshot,
@@ -18,11 +18,13 @@ import {
   applyExpToOtherCharsAction,
   saveBattleEndAction,
   saveOtherCharsDefeatAction,
+  savePetsDefeatAction,
   deductBagItemAction,
   toggleAutoRestoreAction,
   addCapturedPetAction,
   clearPendingShuadaoAction,
   progressBattleQuestAction,
+  setLastBattleMapIdAction,
 } from '../game/characterStore.js'
 import { dbReady } from '../game/db/sqliteDb.js'
 import { recordBattle, loadSkillMemory, saveSkillEntry } from '../game/db/saveManager.js'
@@ -60,9 +62,20 @@ function buildCharUnit(c, shared) {
   }, skillPool)
 }
 
+function resolveMapId(char) {
+  // 优先：当前选定地图（世界地图手动切换的战斗图）
+  const current = getMapById(char.currentMapId)
+  if (current?.spawns?.length > 0) return char.currentMapId
+  // 次优：上次实际战斗的地图（跨 session 持久化）
+  const last = getMapById(char.lastBattleMapId)
+  if (last?.spawns?.length > 0) return char.lastBattleMapId
+  // 兜底：按等级推荐
+  return suggestMapIdForLevel(char.level)
+}
+
 function makeNewBattle() {
   const char = charSnapshot()
-  const mapId = char.currentMapId ?? suggestMapIdForLevel(char.level)
+  const mapId = resolveMapId(char)
 
   // 所有角色（出战 + 仓库中）均参战，出战角色排首位
   const allCharData = [
@@ -79,19 +92,18 @@ function makeNewBattle() {
 }
 
 const allyPos = [
-  // 0-2: 角色（后排，最多 3 人）
-  { x: 7,  y: 44, scale: 0.75 },
-  { x: 19, y: 44, scale: 0.75 },
-  { x: 31, y: 44, scale: 0.75 },
-  // 3-7: 宠物（前排，最多 5 只）
+  // 0-4: 角色（后排，最多 5 人）
+  { x: 6,  y: 44, scale: 0.75 },
+  { x: 15, y: 44, scale: 0.75 },
+  { x: 24, y: 44, scale: 0.75 },
+  { x: 33, y: 44, scale: 0.75 },
+  { x: 42, y: 44, scale: 0.75 },
+  // 5-9: 宠物（前排，最多 5 只）
   { x: 5,  y: 84, scale: 0.85 },
   { x: 14, y: 84, scale: 0.85 },
   { x: 23, y: 84, scale: 0.85 },
   { x: 32, y: 84, scale: 0.85 },
   { x: 41, y: 84, scale: 0.85 },
-  // 8-9: 溢出备用
-  { x: 11, y: 62, scale: 0.78 },
-  { x: 22, y: 62, scale: 0.78 },
 ]
 const enemyPos = [
   { x: 56, y: 82, scale: 1.00 },
@@ -312,7 +324,7 @@ const RowGuide = ({ y, label, side }) => (
 
 const PartyCard = ({ unit, isActive }) => (
   <div style={{
-    padding: '5px 8px',
+    padding: '3px 6px',
     background: isActive
       ? 'linear-gradient(90deg, rgba(163,55,58,0.18) 0%, rgba(232,220,192,0.4) 100%)'
       : 'rgba(243,237,224,0.6)',
@@ -322,37 +334,37 @@ const PartyCard = ({ unit, isActive }) => (
   }}>
     {isActive && (
       <div style={{
-        position: 'absolute', left: -7, top: '50%', transform: 'translateY(-50%)',
+        position: 'absolute', left: -6, top: '50%', transform: 'translateY(-50%)',
         width: 0, height: 0,
-        borderTop: '6px solid transparent', borderBottom: '6px solid transparent',
-        borderLeft: '7px solid var(--vermilion)',
+        borderTop: '5px solid transparent', borderBottom: '5px solid transparent',
+        borderLeft: '6px solid var(--vermilion)',
       }} />
     )}
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <div style={{ width: 36, height: 36, position: 'relative' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+      <div style={{ width: 26, height: 26, position: 'relative', flexShrink: 0 }}>
         <div className="portrait" style={{
-          width: 36, height: 36, fontSize: unit.kind === 'pet' ? 11 : 14,
+          width: 26, height: 26, fontSize: unit.kind === 'pet' ? 9 : 11,
           background: unit.kind === 'pet' ? 'linear-gradient(135deg,#1a4a2a,#2d6040)' : undefined,
           border: unit.kind === 'pet' ? '1px solid #3a8040' : undefined,
         }}>
           {unit.kind === 'pet' ? '宠' : unit.name?.[0] ?? '人'}
         </div>
         {unit.affinity && (
-          <div style={{ position: 'absolute', bottom: -3, right: -3 }}>
-            <Seal size={14} round school={unit.affinity}>{unit.affinity}</Seal>
+          <div style={{ position: 'absolute', bottom: -2, right: -2 }}>
+            <Seal size={11} round school={unit.affinity}>{unit.affinity}</Seal>
           </div>
         )}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-          <span className="brush" style={{ fontSize: 13 }}>{unit.name}</span>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-3)' }}>
-            Lv{unit.level}{unit.affinity ? ` · ${unit.kind === 'pet' ? '宠' : '法'}${unit.affinity}` : ''}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 2 }}>
+          <span className="brush" style={{ fontSize: 11, lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 60 }}>{unit.name}</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--ink-3)', flexShrink: 0 }}>
+            {unit.level}{unit.affinity ? unit.affinity : ''}
           </span>
         </div>
-        <Bar value={unit.hp} max={unit.maxHp} type="hp" height={6} />
-        <div style={{ marginTop: 2 }}>
-          <Bar value={unit.mp} max={unit.maxMp} type="mp" height={4} showText={false} />
+        <Bar value={unit.hp} max={unit.maxHp} type="hp" height={5} />
+        <div style={{ marginTop: 1 }}>
+          <Bar value={unit.mp} max={unit.maxMp} type="mp" height={3} showText={false} />
         </div>
         <StatusBadges statusEffects={unit.statusEffects} />
       </div>
@@ -609,6 +621,7 @@ export default function CombatScreen() {
   const autoStartRef  = useRef(false)
   useEffect(() => { autoCombatRef.current = autoCombat }, [autoCombat])
   useEffect(() => { autoStartRef.current  = autoStart  }, [autoStart])
+  useEffect(() => { if (battle.mapId) setLastBattleMapIdAction(battle.mapId) }, [])
   const char = useSyncExternalStore(charSubscribe, charSnapshot)
 
   const allies = battle.units.filter((u) => u.side === 'ally')
@@ -686,15 +699,23 @@ export default function CombatScreen() {
       if (u.charId) charHpMpMap[u.charId] = { hp: u.hp, mp: u.mp }
     }
 
-    // 出战角色：经验 + 掉落 + HP/MP
+    // 宠物战后 HP/MP 映射
+    const petHpMpMap = {}
+    for (const u of allies.filter(u => u.kind === 'pet')) {
+      const petId = snap.petRoster?.find(p => `petunit_${p.id}` === u.id)?.id
+      if (petId) petHpMpMap[petId] = { hp: u.hp, mp: u.mp }
+    }
+
+    // 出战角色：经验 + 掉落 + HP/MP + 宠物 HP/MP
     const activeUnit = charUnitsInBattle.find(u => u.charId === snap.activeCharId) ?? charUnitsInBattle[0]
     applyBattleRewardsAction(
       battle.victoryRewards, activePetIds,
       battle.lastVictoryLoot ?? [], battle.lastEquipDrops ?? [],
       activeUnit?.hp ?? null, activeUnit?.mp ?? null,
+      petHpMpMap,
     )
 
-    // 非出战角色：同步经验 + HP/MP
+    // 非出战角色：同步经验 + HP/MP（若开启自动回满则也消耗药品）
     applyExpToOtherCharsAction(battle.victoryRewards?.exp ?? 0, charHpMpMap)
 
     if (battle.mapId) progressBattleQuestAction(battle.mapId)
@@ -785,6 +806,9 @@ export default function CombatScreen() {
     // 与上次同类型 → 触发连击标签
     pendingComboKindRef.current = lastActionKindRef.current === kind ? kind : null
     lastActionKindRef.current = kind
+    // 出手时更新记忆（确保普通攻击也能被记住）
+    lastSkillByActorRef.current[actor.templateKey] = selectedSkillId
+    saveSkillEntry(actor.templateKey, selectedSkillId).catch(() => {})
     const next = submitPlayerAction(battle, {
       actorId: actor.id,
       skillId: selectedSkillId,
@@ -811,7 +835,9 @@ export default function CombatScreen() {
   }
 
   function handleNewBattle(preBattle = null) {
-    setBattle(preBattle ?? makeNewBattle())
+    const newBattle = preBattle ?? makeNewBattle()
+    if (newBattle.mapId) setLastBattleMapIdAction(newBattle.mapId)
+    setBattle(newBattle)
     setSelectedSkillId('normal_attack')
     setSelectedTargetId(null)
     setMode('skill')
@@ -848,6 +874,7 @@ export default function CombatScreen() {
     if (!battle.defeatNonce) return
     saveBattleEndAction(1, 0)
     saveOtherCharsDefeatAction()
+    savePetsDefeatAction()
     // 败北时停止自动模式
     setAutoCombat(false)
     setAutoStart(false)
@@ -898,9 +925,13 @@ export default function CombatScreen() {
       const next = submitPlayerAction(capturedBattle, {
         actorId: capturedActor.id, skillId, targetIds,
       })
-      setBattle(next)
-      setSelectedTargetId(lFoes[0].id)
-      lastActionKindRef.current = skillDef?.kind ?? null
+      if (next !== capturedBattle) {
+        lastSkillByActorRef.current[capturedActor.templateKey] = skillId
+        saveSkillEntry(capturedActor.templateKey, skillId).catch(() => {})
+        setBattle(next)
+        setSelectedTargetId(lFoes[0].id)
+        lastActionKindRef.current = skillDef?.kind ?? null
+      }
     }, 650)
     return () => clearTimeout(timer)
   }, [actor?.id, battle.roundNum, autoCombat])
@@ -1075,12 +1106,12 @@ export default function CombatScreen() {
         display: 'flex', padding: '16px 20px 18px', gap: 14, zIndex: 5,
       }}>
         {/* Party list */}
-        <div style={{ width: 268, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ width: 300, display: 'flex', flexDirection: 'column', gap: 6 }}>
           <SubHead
             title="同心阵"
             sub={`PARTY · ${allies.filter(u => u.hp > 0).length}/${allies.length}`}
           />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 5, flex: 1 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3, flex: 1, alignContent: 'start', overflow: 'hidden' }}>
             {allies.map((a) => (
               <PartyCard key={a.id} unit={a} isActive={a.id === battle.awaitingActorId} />
             ))}

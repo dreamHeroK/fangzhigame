@@ -3570,5 +3570,858 @@
     "innate_pool_ids": [],
     "innate_pool_zh": [],
     "school_skills": null
+  },
+
+  {
+    "key": "guoguo",
+    "name": "果果",
+    "spawn_level": 1,
+    "spawn_map": "揽仙镇外",
+    "affinity": "木",
+    "growth": {
+      "total_min": 135,
+      "total_max": 225,
+      "hp_min": 40,
+      "hp_max": 60,
+      "mp_min": 50,
+      "mp_max": 70,
+      "spd_min": 30,
+      "spd_max": 40,
+      "patk_min": -10,
+      "patk_max": 10,
+      "matk_min": 25,
+      "matk_max": 45
+    },
+    "innate_pool_ids": [],
+    "innate_pool_zh": [],
+    "school_skills": {
+      "B": ["摘叶飞花", "枝繁叶茂", "落叶归根", "百草缠身", "鬼舞枯藤"],
+      "C": ["中毒"],
+      "D": ["回复气血"]
+    },
+    "ghost": false
+  },
+
+  {
+    "key": "jiuwei_huli",
+    "name": "九尾狐",
+    "type": "神兽",
+    "spawn_level": null,
+    "spawn_map": "神兽秘境",
+    "affinity": "火",
+    "growth": {
+      "total_min": 270,
+      "total_max": 350,
+      "hp_min": 70,
+      "hp_max": 90,
+      "mp_min": 75,
+      "mp_max": 95,
+      "spd_min": 55,
+      "spd_max": 65,
+      "patk_min": -10,
+      "patk_max": 10,
+      "matk_min": 80,
+      "matk_max": 90
+    },
+    "innate_pool_ids": ["shiwanhuoji", "fanzhuanqiankun", "mantianxuewu"],
+    "innate_pool_zh": ["十万火急", "翻转乾坤", "漫天血舞"],
+    "school_skills": {
+      "B": ["举火焚天", "烈焰灼身", "火龙缠绕", "赤焰燃空", "炼狱火海"],
+      "C": ["昏睡"],
+      "D": ["提高速度"]
+    },
+    "ghost": false
+  },
+  {
+    "key": "jiangliang",
+    "name": "疆良",
+    "type": "神兽",
+    "spawn_level": null,
+    "spawn_map": "神兽秘境",
+    "affinity": "水",
+    "growth": {
+      "total_min": 270,
+      "total_max": 350,
+      "hp_min": 100,
+      "hp_max": 120,
+      "mp_min": 35,
+      "mp_max": 55,
+      "spd_min": 55,
+      "spd_max": 65,
+      "patk_min": 80,
+      "patk_max": 100,
+      "matk_min": 0,
+      "matk_max": 10
+    },
+    "innate_pool_ids": ["tianshenshenli", "shemingyiji", "bianchangmoji"],
+    "innate_pool_zh": ["天生神力", "舍命一击", "鞭长莫及"],
+    "school_skills": {
+      "B": ["滴水穿石", "寒冰锥刺", "冰雪飞舞", "冰封千里", "搅海翻江"],
+      "C": ["冰冻"],
+      "D": ["提高防御"]
+    },
+    "ghost": false
+  },
+  {
+    "key": "dongshan_shenling",
+    "name": "东山神灵",
+    "type": "神兽",
+    "spawn_level": null,
+    "spawn_map": "神兽秘境",
+    "affinity": "木",
+    "growth": {
+      "total_min": 270,
+      "total_max": 350,
+      "hp_min": 80,
+      "hp_max": 100,
+      "mp_min": 80,
+      "mp_max": 100,
+      "spd_min": 55,
+      "spd_max": 65,
+      "patk_min": -10,
+      "patk_max": 10,
+      "matk_min": 65,
+      "matk_max": 75
+    },
+    "innate_pool_ids": ["bamiaozhuzhang", "qiankunzhao", "shenshengzenguang"],
+    "innate_pool_zh": ["拔苗助长", "乾坤罩", "神圣之光"],
+    "school_skills": {
+      "B": ["摘叶飞花", "枝繁叶茂", "落叶归根", "百草缠身", "鬼舞枯藤"],
+      "C": ["中毒"],
+      "D": ["回复气血"]
+    },
+    "ghost": false
+  },
+  {
+    "key": "zhuque",
+    "name": "朱雀",
+    "type": "神兽",
+    "spawn_level": null,
+    "spawn_map": "神兽秘境",
+    "affinity": "火",
+    "growth": {
+      "total_min": 270,
+      "total_max": 350,
+      "hp_min": 65,
+      "hp_max": 85,
+      "mp_min": 70,
+      "mp_max": 90,
+      "spd_min": 70,
+      "spd_max": 80,
+      "patk_min": -10,
+      "patk_max": 10,
+      "matk_min": 75,
+      "matk_max": 85
+    },
+    "innate_pool_ids": ["shiwanhuoji", "mantianxuewu", "fanzhuanqiankun"],
+    "innate_pool_zh": ["十万火急", "漫天血舞", "翻转乾坤"],
+    "school_skills": {
+      "B": ["举火焚天", "烈焰灼身", "火龙缠绕", "赤焰燃空", "炼狱火海"],
+      "C": ["昏睡"],
+      "D": ["提高速度"]
+    },
+    "ghost": false
+  },
+  {
+    "key": "xuanwu",
+    "name": "玄武",
+    "type": "神兽",
+    "spawn_level": null,
+    "spawn_map": "神兽秘境",
+    "affinity": "水",
+    "growth": {
+      "total_min": 270,
+      "total_max": 350,
+      "hp_min": 125,
+      "hp_max": 145,
+      "mp_min": 65,
+      "mp_max": 85,
+      "spd_min": 30,
+      "spd_max": 40,
+      "patk_min": -10,
+      "patk_max": 10,
+      "matk_min": 60,
+      "matk_max": 70
+    },
+    "innate_pool_ids": ["shenlongzhao", "qiankunzhao", "fangweidujian"],
+    "innate_pool_zh": ["神龙罩", "乾坤罩", "防微杜渐"],
+    "school_skills": {
+      "B": ["滴水穿石", "寒冰锥刺", "冰雪飞舞", "冰封千里", "搅海翻江"],
+      "C": ["冰冻"],
+      "D": ["提高防御"]
+    },
+    "ghost": false
+  },
+  {
+    "key": "rushou",
+    "name": "蓐收",
+    "type": "神兽",
+    "spawn_level": null,
+    "spawn_map": "神兽秘境",
+    "affinity": "金",
+    "growth": {
+      "total_min": 270,
+      "total_max": 350,
+      "hp_min": 85,
+      "hp_max": 105,
+      "mp_min": 30,
+      "mp_max": 50,
+      "spd_min": 65,
+      "spd_max": 75,
+      "patk_min": 90,
+      "patk_max": 110,
+      "matk_min": 0,
+      "matk_max": 10
+    },
+    "innate_pool_ids": ["tianshenshenli", "bianchangmoji"],
+    "innate_pool_zh": ["天生神力", "鞭长莫及"],
+    "school_skills": {
+      "B": ["金光乍现", "金戈纵横", "万箭穿心", "霸道横推", "逆天残刃"],
+      "C": ["遗忘"],
+      "D": ["提高物攻"]
+    },
+    "ghost": false
+  },
+  {
+    "key": "jumang",
+    "name": "句芒",
+    "type": "神兽",
+    "spawn_level": null,
+    "spawn_map": "神兽秘境",
+    "affinity": "木",
+    "growth": {
+      "total_min": 270,
+      "total_max": 350,
+      "hp_min": 80,
+      "hp_max": 100,
+      "mp_min": 90,
+      "mp_max": 110,
+      "spd_min": 55,
+      "spd_max": 65,
+      "patk_min": -10,
+      "patk_max": 10,
+      "matk_min": 55,
+      "matk_max": 65
+    },
+    "innate_pool_ids": ["bamiaozhuzhang", "shenshengzenguang"],
+    "innate_pool_zh": ["拔苗助长", "神圣之光"],
+    "school_skills": {
+      "B": ["摘叶飞花", "枝繁叶茂", "落叶归根", "百草缠身", "鬼舞枯藤"],
+      "C": ["中毒"],
+      "D": ["回复气血"]
+    },
+    "ghost": false
+  },
+  {
+    "key": "xuanming",
+    "name": "玄冥",
+    "type": "神兽",
+    "spawn_level": null,
+    "spawn_map": "神兽秘境",
+    "affinity": "水",
+    "growth": {
+      "total_min": 270,
+      "total_max": 350,
+      "hp_min": 90,
+      "hp_max": 110,
+      "mp_min": 80,
+      "mp_max": 100,
+      "spd_min": 50,
+      "spd_max": 60,
+      "patk_min": -10,
+      "patk_max": 10,
+      "matk_min": 60,
+      "matk_max": 70
+    },
+    "innate_pool_ids": ["fangweidujian", "shenlongzhao"],
+    "innate_pool_zh": ["防微杜渐", "神龙罩"],
+    "school_skills": {
+      "B": ["滴水穿石", "寒冰锥刺", "冰雪飞舞", "冰封千里", "搅海翻江"],
+      "C": ["冰冻"],
+      "D": ["提高防御"]
+    },
+    "ghost": false
+  },
+  {
+    "key": "zhurong",
+    "name": "祝融",
+    "type": "神兽",
+    "spawn_level": null,
+    "spawn_map": "神兽秘境",
+    "affinity": "火",
+    "growth": {
+      "total_min": 270,
+      "total_max": 350,
+      "hp_min": 75,
+      "hp_max": 95,
+      "mp_min": 65,
+      "mp_max": 85,
+      "spd_min": 75,
+      "spd_max": 85,
+      "patk_min": -10,
+      "patk_max": 10,
+      "matk_min": 65,
+      "matk_max": 75
+    },
+    "innate_pool_ids": ["shiwanhuoji", "fanzhuanqiankun"],
+    "innate_pool_zh": ["十万火急", "翻转乾坤"],
+    "school_skills": {
+      "B": ["举火焚天", "烈焰灼身", "火龙缠绕", "赤焰燃空", "炼狱火海"],
+      "C": ["昏睡"],
+      "D": ["提高速度"]
+    },
+    "ghost": false
+  },
+  {
+    "key": "houtu",
+    "name": "后土",
+    "type": "神兽",
+    "spawn_level": null,
+    "spawn_map": "神兽秘境",
+    "affinity": "土",
+    "growth": {
+      "total_min": 270,
+      "total_max": 350,
+      "hp_min": 110,
+      "hp_max": 130,
+      "mp_min": 55,
+      "mp_max": 75,
+      "spd_min": 45,
+      "spd_max": 55,
+      "patk_min": 50,
+      "patk_max": 70,
+      "matk_min": 10,
+      "matk_max": 20
+    },
+    "innate_pool_ids": ["shemingyiji", "ruyiquan"],
+    "innate_pool_zh": ["舍命一击", "如意圈"],
+    "school_skills": {
+      "B": ["落土飞岩", "岩石重压", "黄沙蔽日", "山崩地裂", "石破天惊"],
+      "C": ["混乱"],
+      "D": ["提高躲闪"]
+    },
+    "ghost": false
+  },
+
+  {
+    "key": "lingli_shu",
+    "name": "伶俐鼠",
+    "type": "生肖",
+    "spawn_level": null,
+    "spawn_map": "生肖幻境",
+    "affinity": null,
+    "growth": {
+      "total_min": 260,
+      "total_max": 340,
+      "hp_min": 55,
+      "hp_max": 75,
+      "mp_min": 50,
+      "mp_max": 70,
+      "spd_min": 80,
+      "spd_max": 90,
+      "patk_min": 30,
+      "patk_max": 50,
+      "matk_min": 45,
+      "matk_max": 55
+    },
+    "innate_pool_ids": ["youshuozhishe"],
+    "innate_pool_zh": ["游说之舌"],
+    "school_skills": null,
+    "ghost": false
+  },
+  {
+    "key": "benben_niu",
+    "name": "笨笨牛",
+    "type": "生肖",
+    "spawn_level": null,
+    "spawn_map": "生肖幻境",
+    "affinity": "土",
+    "growth": {
+      "total_min": 260,
+      "total_max": 340,
+      "hp_min": 110,
+      "hp_max": 130,
+      "mp_min": 40,
+      "mp_max": 60,
+      "spd_min": 30,
+      "spd_max": 40,
+      "patk_min": 70,
+      "patk_max": 90,
+      "matk_min": 10,
+      "matk_max": 20
+    },
+    "innate_pool_ids": ["tianshenshenli"],
+    "innate_pool_zh": ["天生神力"],
+    "school_skills": {
+      "B": ["落土飞岩", "岩石重压", "黄沙蔽日", "山崩地裂", "石破天惊"],
+      "C": ["混乱"],
+      "D": ["提高躲闪"]
+    },
+    "ghost": false
+  },
+  {
+    "key": "weiwei_hu",
+    "name": "威威虎",
+    "type": "生肖",
+    "spawn_level": null,
+    "spawn_map": "生肖幻境",
+    "affinity": "金",
+    "growth": {
+      "total_min": 260,
+      "total_max": 340,
+      "hp_min": 80,
+      "hp_max": 100,
+      "mp_min": 25,
+      "mp_max": 45,
+      "spd_min": 60,
+      "spd_max": 70,
+      "patk_min": 95,
+      "patk_max": 115,
+      "matk_min": 0,
+      "matk_max": 10
+    },
+    "innate_pool_ids": ["shemingyiji"],
+    "innate_pool_zh": ["舍命一击"],
+    "school_skills": {
+      "B": ["金光乍现", "金戈纵横", "万箭穿心", "霸道横推", "逆天残刃"],
+      "C": ["遗忘"],
+      "D": ["提高物攻"]
+    },
+    "ghost": false
+  },
+  {
+    "key": "tiaotiao_tu",
+    "name": "跳跳兔",
+    "type": "生肖",
+    "spawn_level": null,
+    "spawn_map": "生肖幻境",
+    "affinity": "木",
+    "growth": {
+      "total_min": 260,
+      "total_max": 340,
+      "hp_min": 60,
+      "hp_max": 80,
+      "mp_min": 55,
+      "mp_max": 75,
+      "spd_min": 90,
+      "spd_max": 100,
+      "patk_min": 35,
+      "patk_max": 55,
+      "matk_min": 20,
+      "matk_max": 30
+    },
+    "innate_pool_ids": ["bianchangmoji"],
+    "innate_pool_zh": ["鞭长莫及"],
+    "school_skills": {
+      "B": ["摘叶飞花", "枝繁叶茂", "落叶归根", "百草缠身", "鬼舞枯藤"],
+      "C": ["中毒"],
+      "D": ["回复气血"]
+    },
+    "ghost": false
+  },
+  {
+    "key": "kuku_long",
+    "name": "酷酷龙",
+    "type": "生肖",
+    "spawn_level": null,
+    "spawn_map": "生肖幻境",
+    "affinity": "水",
+    "growth": {
+      "total_min": 260,
+      "total_max": 340,
+      "hp_min": 70,
+      "hp_max": 90,
+      "mp_min": 75,
+      "mp_max": 95,
+      "spd_min": 55,
+      "spd_max": 65,
+      "patk_min": -10,
+      "patk_max": 10,
+      "matk_min": 70,
+      "matk_max": 80
+    },
+    "innate_pool_ids": ["fanzhuanqiankun"],
+    "innate_pool_zh": ["翻转乾坤"],
+    "school_skills": {
+      "B": ["滴水穿石", "寒冰锥刺", "冰雪飞舞", "冰封千里", "搅海翻江"],
+      "C": ["冰冻"],
+      "D": ["提高防御"]
+    },
+    "ghost": false
+  },
+  {
+    "key": "huahua_she",
+    "name": "花花蛇",
+    "type": "生肖",
+    "spawn_level": null,
+    "spawn_map": "生肖幻境",
+    "affinity": null,
+    "growth": {
+      "total_min": 260,
+      "total_max": 340,
+      "hp_min": 65,
+      "hp_max": 85,
+      "mp_min": 40,
+      "mp_max": 60,
+      "spd_min": 75,
+      "spd_max": 85,
+      "patk_min": 75,
+      "patk_max": 95,
+      "matk_min": 5,
+      "matk_max": 15
+    },
+    "innate_pool_ids": ["siwangchanmian"],
+    "innate_pool_zh": ["死亡缠绵"],
+    "school_skills": null,
+    "ghost": false
+  },
+  {
+    "key": "liuliu_ma",
+    "name": "溜溜马",
+    "type": "生肖",
+    "spawn_level": null,
+    "spawn_map": "生肖幻境",
+    "affinity": "火",
+    "growth": {
+      "total_min": 260,
+      "total_max": 340,
+      "hp_min": 70,
+      "hp_max": 90,
+      "mp_min": 30,
+      "mp_max": 50,
+      "spd_min": 90,
+      "spd_max": 100,
+      "patk_min": 65,
+      "patk_max": 85,
+      "matk_min": 5,
+      "matk_max": 15
+    },
+    "innate_pool_ids": ["bianchangmoji"],
+    "innate_pool_zh": ["鞭长莫及"],
+    "school_skills": {
+      "B": ["举火焚天", "烈焰灼身", "火龙缠绕", "赤焰燃空", "炼狱火海"],
+      "C": ["昏睡"],
+      "D": ["提高速度"]
+    },
+    "ghost": false
+  },
+  {
+    "key": "miemie_yang",
+    "name": "咩咩羊",
+    "type": "生肖",
+    "spawn_level": null,
+    "spawn_map": "生肖幻境",
+    "affinity": "木",
+    "growth": {
+      "total_min": 260,
+      "total_max": 340,
+      "hp_min": 75,
+      "hp_max": 95,
+      "mp_min": 85,
+      "mp_max": 105,
+      "spd_min": 45,
+      "spd_max": 55,
+      "patk_min": -10,
+      "patk_max": 10,
+      "matk_min": 65,
+      "matk_max": 75
+    },
+    "innate_pool_ids": ["shenshengzenguang"],
+    "innate_pool_zh": ["神圣之光"],
+    "school_skills": {
+      "B": ["摘叶飞花", "枝繁叶茂", "落叶归根", "百草缠身", "鬼舞枯藤"],
+      "C": ["中毒"],
+      "D": ["回复气血"]
+    },
+    "ghost": false
+  },
+  {
+    "key": "shuaishuai_hou",
+    "name": "帅帅猴",
+    "type": "生肖",
+    "spawn_level": null,
+    "spawn_map": "生肖幻境",
+    "affinity": null,
+    "growth": {
+      "total_min": 260,
+      "total_max": 340,
+      "hp_min": 65,
+      "hp_max": 85,
+      "mp_min": 35,
+      "mp_max": 55,
+      "spd_min": 75,
+      "spd_max": 85,
+      "patk_min": 85,
+      "patk_max": 105,
+      "matk_min": 0,
+      "matk_max": 10
+    },
+    "innate_pool_ids": ["shemingyiji"],
+    "innate_pool_zh": ["舍命一击"],
+    "school_skills": null,
+    "ghost": false
+  },
+  {
+    "key": "dandan_ji",
+    "name": "蛋蛋鸡",
+    "type": "生肖",
+    "spawn_level": null,
+    "spawn_map": "生肖幻境",
+    "affinity": "金",
+    "growth": {
+      "total_min": 260,
+      "total_max": 340,
+      "hp_min": 60,
+      "hp_max": 80,
+      "mp_min": 70,
+      "mp_max": 90,
+      "spd_min": 75,
+      "spd_max": 85,
+      "patk_min": -10,
+      "patk_max": 10,
+      "matk_min": 65,
+      "matk_max": 75
+    },
+    "innate_pool_ids": ["youshuozhishe"],
+    "innate_pool_zh": ["游说之舌"],
+    "school_skills": {
+      "B": ["金光乍现", "金戈纵横", "万箭穿心", "霸道横推", "逆天残刃"],
+      "C": ["遗忘"],
+      "D": ["提高物攻"]
+    },
+    "ghost": false
+  },
+  {
+    "key": "guaiguai_gou",
+    "name": "乖乖狗",
+    "type": "生肖",
+    "spawn_level": null,
+    "spawn_map": "生肖幻境",
+    "affinity": null,
+    "growth": {
+      "total_min": 260,
+      "total_max": 340,
+      "hp_min": 80,
+      "hp_max": 100,
+      "mp_min": 50,
+      "mp_max": 70,
+      "spd_min": 60,
+      "spd_max": 70,
+      "patk_min": 60,
+      "patk_max": 80,
+      "matk_min": 10,
+      "matk_max": 20
+    },
+    "innate_pool_ids": ["qiankunzhao"],
+    "innate_pool_zh": ["乾坤罩"],
+    "school_skills": null,
+    "ghost": false
+  },
+  {
+    "key": "zhaocai_zhu",
+    "name": "招财猪",
+    "type": "生肖",
+    "spawn_level": null,
+    "spawn_map": "生肖幻境",
+    "affinity": "土",
+    "growth": {
+      "total_min": 260,
+      "total_max": 340,
+      "hp_min": 105,
+      "hp_max": 125,
+      "mp_min": 70,
+      "mp_max": 90,
+      "spd_min": 30,
+      "spd_max": 40,
+      "patk_min": 30,
+      "patk_max": 50,
+      "matk_min": 25,
+      "matk_max": 35
+    },
+    "innate_pool_ids": ["shenshengzenguang"],
+    "innate_pool_zh": ["神圣之光"],
+    "school_skills": {
+      "B": ["落土飞岩", "岩石重压", "黄沙蔽日", "山崩地裂", "石破天惊"],
+      "C": ["混乱"],
+      "D": ["提高躲闪"]
+    },
+    "ghost": false
+  },
+
+  {
+    "key": "xiangyuan_juli",
+    "name": "巨力",
+    "type": "仙元",
+    "spawn_level": null,
+    "spawn_map": "仙元之地",
+    "affinity": "金",
+    "growth": {
+      "total_min": 320,
+      "total_max": 400,
+      "hp_min": 100,
+      "hp_max": 120,
+      "mp_min": 30,
+      "mp_max": 50,
+      "spd_min": 60,
+      "spd_max": 70,
+      "patk_min": 120,
+      "patk_max": 140,
+      "matk_min": 10,
+      "matk_max": 20
+    },
+    "innate_pool_ids": ["tianshenshenli", "shemingyiji", "bianchangmoji"],
+    "innate_pool_zh": ["天生神力", "舍命一击", "鞭长莫及"],
+    "school_skills": {
+      "B": ["金光乍现", "金戈纵横", "万箭穿心", "霸道横推", "逆天残刃"],
+      "C": ["遗忘"],
+      "D": ["提高物攻"]
+    },
+    "ghost": false
+  },
+  {
+    "key": "xiangyuan_zhulu",
+    "name": "逐鹿",
+    "type": "仙元",
+    "spawn_level": null,
+    "spawn_map": "仙元之地",
+    "affinity": "水",
+    "growth": {
+      "total_min": 320,
+      "total_max": 400,
+      "hp_min": 95,
+      "hp_max": 115,
+      "mp_min": 100,
+      "mp_max": 120,
+      "spd_min": 60,
+      "spd_max": 70,
+      "patk_min": -10,
+      "patk_max": 10,
+      "matk_min": 75,
+      "matk_max": 85
+    },
+    "innate_pool_ids": ["shenlongzhao", "fangweidujian", "siwangchanmian"],
+    "innate_pool_zh": ["神龙罩", "防微杜渐", "死亡缠绵"],
+    "school_skills": {
+      "B": ["滴水穿石", "寒冰锥刺", "冰雪飞舞", "冰封千里", "搅海翻江"],
+      "C": ["冰冻"],
+      "D": ["提高防御"]
+    },
+    "ghost": false
+  },
+  {
+    "key": "xiangyuan_cangqiong",
+    "name": "苍穹",
+    "type": "仙元",
+    "spawn_level": null,
+    "spawn_map": "仙元之地",
+    "affinity": "火",
+    "growth": {
+      "total_min": 320,
+      "total_max": 400,
+      "hp_min": 80,
+      "hp_max": 100,
+      "mp_min": 80,
+      "mp_max": 100,
+      "spd_min": 85,
+      "spd_max": 95,
+      "patk_min": -10,
+      "patk_max": 10,
+      "matk_min": 85,
+      "matk_max": 95
+    },
+    "innate_pool_ids": ["shiwanhuoji", "fanzhuanqiankun", "mantianxuewu"],
+    "innate_pool_zh": ["十万火急", "翻转乾坤", "漫天血舞"],
+    "school_skills": {
+      "B": ["举火焚天", "烈焰灼身", "火龙缠绕", "赤焰燃空", "炼狱火海"],
+      "C": ["昏睡"],
+      "D": ["提高速度"]
+    },
+    "ghost": false
+  },
+  {
+    "key": "xiangyuan_jingping",
+    "name": "净瓶",
+    "type": "仙元",
+    "spawn_level": null,
+    "spawn_map": "仙元之地",
+    "affinity": "木",
+    "growth": {
+      "total_min": 320,
+      "total_max": 400,
+      "hp_min": 90,
+      "hp_max": 110,
+      "mp_min": 120,
+      "mp_max": 140,
+      "spd_min": 55,
+      "spd_max": 65,
+      "patk_min": -10,
+      "patk_max": 10,
+      "matk_min": 65,
+      "matk_max": 75
+    },
+    "innate_pool_ids": ["bamiaozhuzhang", "shenshengzenguang", "qiankunzhao"],
+    "innate_pool_zh": ["拔苗助长", "神圣之光", "乾坤罩"],
+    "school_skills": {
+      "B": ["摘叶飞花", "枝繁叶茂", "落叶归根", "百草缠身", "鬼舞枯藤"],
+      "C": ["中毒"],
+      "D": ["回复气血"]
+    },
+    "ghost": false
+  },
+  {
+    "key": "xiangyuan_wuming",
+    "name": "无名",
+    "type": "仙元",
+    "spawn_level": null,
+    "spawn_map": "仙元之地",
+    "affinity": "土",
+    "growth": {
+      "total_min": 320,
+      "total_max": 400,
+      "hp_min": 140,
+      "hp_max": 160,
+      "mp_min": 60,
+      "mp_max": 80,
+      "spd_min": 40,
+      "spd_max": 50,
+      "patk_min": 60,
+      "patk_max": 80,
+      "matk_min": 20,
+      "matk_max": 30
+    },
+    "innate_pool_ids": ["shemingyiji", "ruyiquan", "siwangchanmian"],
+    "innate_pool_zh": ["舍命一击", "如意圈", "死亡缠绵"],
+    "school_skills": {
+      "B": ["落土飞岩", "岩石重压", "黄沙蔽日", "山崩地裂", "石破天惊"],
+      "C": ["混乱"],
+      "D": ["提高躲闪"]
+    },
+    "ghost": false
+  },
+  {
+    "key": "xiangyuan_kunlun",
+    "name": "昆仑",
+    "type": "仙元",
+    "spawn_level": null,
+    "spawn_map": "仙元之地",
+    "affinity": null,
+    "growth": {
+      "total_min": 320,
+      "total_max": 400,
+      "hp_min": 100,
+      "hp_max": 120,
+      "mp_min": 90,
+      "mp_max": 110,
+      "spd_min": 65,
+      "spd_max": 75,
+      "patk_min": 25,
+      "patk_max": 45,
+      "matk_min": 40,
+      "matk_max": 50
+    },
+    "innate_pool_ids": ["fanzhuanqiankun", "qiankunzhao", "tianshenshenli"],
+    "innate_pool_zh": ["翻转乾坤", "乾坤罩", "天生神力"],
+    "school_skills": null,
+    "ghost": false
   }
 ]

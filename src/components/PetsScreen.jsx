@@ -1,8 +1,10 @@
 import React, { useSyncExternalStore, useState, useEffect } from 'react'
 import { Seal, Placeholder, CornerDeco, PanelHead, SubHead, Tag, useLongPress } from './common.jsx'
-import { subscribe, getSnapshot, setPetActiveAction, addPetAttrAction, resetPetAttrAction } from '../game/characterStore.js'
+import { subscribe, getSnapshot, setPetActiveAction, addPetAttrAction, resetPetAttrAction, equipPetTianShuAction, removePetTianShuAction } from '../game/characterStore.js'
 import { getPetByKey, INNATE_NAMES, INNATE_DESC } from '../game/petCatalog.js'
 import { computeStatsFromGrowth, getPetFreeAttrTotal, sumPetAllocAttr, getPetAttrRates } from '../game/battle/petGrowthTable.js'
+import { petExpRequiredToNextLevel } from '../game/characterLevelConfig.js'
+import { TIANSHU_DEFS, TIANSHU_BY_ID, TIANSHU_QUALITY, TIANSHU_MAX_SLOTS, TIANSHU_SPIRIT_PER_BOOK, TIANSHU_SPIRIT_MAX } from '../game/battle/tianShu.js'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -62,6 +64,29 @@ const AptRow = ({ label, val, lo, hi, color }) => {
       </div>
       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-2)', width: 32, textAlign: 'right' }}>{val}</span>
       <span className="brush" style={{ fontSize: 13, color: gradeColor(grade), width: 12 }}>{grade}</span>
+    </div>
+  )
+}
+
+const StatBar = ({ label, value, max, color }) => {
+  const pct = max > 0 ? Math.min(100, Math.round(value / max * 100)) : 0
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-3)', width: 24, flexShrink: 0 }}>{label}</span>
+      <div style={{ flex: 1, height: 12, background: 'var(--paper-3)', border: '1px solid var(--ink-4)', overflow: 'hidden', position: 'relative' }}>
+        <div style={{ width: pct + '%', height: '100%', background: color, backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.25), rgba(0,0,0,0.1))' }} />
+        <span style={{
+          position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 8, fontFamily: 'var(--font-mono)',
+          color: pct > 55 ? 'rgba(255,255,255,0.92)' : 'var(--ink-2)',
+          pointerEvents: 'none', letterSpacing: 0.3,
+        }}>
+          {value.toLocaleString()} / {max.toLocaleString()}
+        </span>
+      </div>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-3)', width: 28, textAlign: 'right', flexShrink: 0 }}>
+        {pct}%
+      </span>
     </div>
   )
 }
@@ -189,7 +214,148 @@ const PetAddBtn = ({ attrKey, disabled, onAdd }) => {
   )
 }
 
-const PetDetail = ({ pet, onToggleActive, onAddAttr, onResetAttr }) => {
+const TRIGGER_COLOR = {
+  on_physical_hit: 'var(--rust)',
+  on_magic_hit:    '#3a5a8a',
+  on_hit_taken:    'var(--bamboo)',
+  passive:         '#8a6a2a',
+}
+const QUALITY_LABEL = { white: '白', blue: '蓝', gold: '金' }
+
+const TianShuPanel = ({ pet, bag }) => {
+  const [msg, setMsg] = useState(null)
+  const tianShu = pet.tianShu ?? []
+  const spiritMax = Math.min(TIANSHU_SPIRIT_MAX, tianShu.length * TIANSHU_SPIRIT_PER_BOOK)
+
+  function flash(res) {
+    if (res.ok && res.instance) {
+      const def = TIANSHU_BY_ID[res.instance.type]
+      const q   = TIANSHU_QUALITY[res.instance.quality]
+      setMsg({ text: `开书成功：【${q?.name}色】${def?.name ?? ''}天书`, ok: true })
+    } else {
+      setMsg({ text: res.ok ? '操作成功' : (res.reason ?? '操作失败'), ok: res.ok })
+    }
+    setTimeout(() => setMsg(null), 3000)
+  }
+
+  const equippedTypes = new Set(tianShu.map(t => t.type))
+
+  // 背包中可装备的天书（包括超级天书）
+  const bagBooks = [
+    ...TIANSHU_DEFS
+      .filter(def => (bag.find(e => e.itemId === def.id)?.qty ?? 0) > 0 && !equippedTypes.has(def.id))
+      .map(def => ({ itemId: def.id, name: def.name + '天书', qty: bag.find(e => e.itemId === def.id).qty })),
+    ...(bag.find(e => e.itemId === 'tianshu_super')?.qty > 0
+      ? [{ itemId: 'tianshu_super', name: '超级天书', qty: bag.find(e => e.itemId === 'tianshu_super').qty }]
+      : []),
+  ]
+
+  return (
+    <div className="paper-bg scroll-frame" style={{ padding: 12, position: 'relative' }}>
+      <CornerDeco />
+      <SubHead
+        title="天书"
+        sub={`TIANSHU · ${tianShu.length}/${TIANSHU_MAX_SLOTS} 槽 · 灵气 ${spiritMax.toLocaleString()}`}
+      />
+      {msg && (
+        <div style={{
+          padding: '3px 8px', marginBottom: 6,
+          background: msg.ok ? 'rgba(45,138,45,0.12)' : 'rgba(163,55,58,0.12)',
+          border: `1px solid ${msg.ok ? 'var(--bamboo)' : 'var(--vermilion)'}`,
+          fontFamily: 'var(--font-mono)', fontSize: 10,
+          color: msg.ok ? 'var(--bamboo)' : 'var(--vermilion)',
+        }}>{msg.text}</div>
+      )}
+
+      {/* 灵气进度条 */}
+      {spiritMax > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-3)', flexShrink: 0, width: 24 }}>灵气</span>
+          <div style={{ flex: 1, height: 8, background: 'var(--paper-3)', border: '1px solid var(--ink-4)', overflow: 'hidden' }}>
+            <div style={{ width: '100%', height: '100%', background: 'linear-gradient(90deg, #9a6aaa, #c8a020)', backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.2), rgba(0,0,0,0.1))' }} />
+          </div>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-2)', flexShrink: 0 }}>{spiritMax.toLocaleString()}</span>
+        </div>
+      )}
+
+      {/* 已装备天书 */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 8 }}>
+        {tianShu.map((ts, idx) => {
+          const def = TIANSHU_BY_ID[ts.type]
+          if (!def) return null
+          const q = TIANSHU_QUALITY[ts.quality]
+          const trigColor = TRIGGER_COLOR[def.trigger] ?? 'var(--ink-2)'
+          const qColor    = ts.quality === 'gold' ? 'var(--gold-2)' : ts.quality === 'blue' ? '#4a88cc' : '#888'
+          return (
+            <div key={idx} style={{
+              padding: '6px 8px', background: 'rgba(243,237,224,0.8)',
+              border: `1px solid ${qColor}`,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: ts.baseStats?.length ? 4 : 0 }}>
+                <Seal size={22} round style={{ background: trigColor, flexShrink: 0 }}>{def.glyph}</Seal>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <span className="brush" style={{ fontSize: 13 }}>{def.name}天书</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: qColor, border: `1px solid ${qColor}`, padding: '0 3px' }}>{QUALITY_LABEL[ts.quality] ?? ts.quality}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: trigColor, border: `1px solid ${trigColor}`, padding: '0 3px' }}>{def.triggerDesc}</span>
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-3)', marginTop: 1 }}>{def.desc}</div>
+                </div>
+                <button
+                  className="btn-ink btn-ink-sm"
+                  style={{ fontSize: 9, color: 'var(--vermilion)', flexShrink: 0 }}
+                  onClick={() => { if (window.confirm(`确认卸除【${def.name}天书】？卸除后不返还。`)) flash(removePetTianShuAction(pet.id, idx)) }}
+                >卸除</button>
+              </div>
+              {/* 基础属性（蓝/金品质） */}
+              {ts.baseStats?.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, paddingLeft: 30 }}>
+                  {ts.baseStats.map((attr, i) => (
+                    <span key={i} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: qColor, background: 'rgba(243,237,224,0.6)', border: `1px solid ${qColor}`, padding: '0 5px' }}>
+                      {attr.label}+{attr.value}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
+        {Array.from({ length: TIANSHU_MAX_SLOTS - tianShu.length }).map((_, i) => (
+          <div key={'empty' + i} style={{
+            padding: '5px 8px', border: '1px dashed var(--ink-4)',
+            fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-4)',
+          }}>— 空槽 {tianShu.length + i + 1}/{TIANSHU_MAX_SLOTS} —</div>
+        ))}
+      </div>
+
+      {/* 背包中可装备的天书 */}
+      {tianShu.length < TIANSHU_MAX_SLOTS ? (
+        bagBooks.length === 0 ? (
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-4)' }}>
+            背包无可装备天书 — 前往商城购买
+          </div>
+        ) : (
+          <div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-3)', marginBottom: 4 }}>背包可装备：</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+              {bagBooks.map(b => (
+                <button key={b.itemId} className="btn-ink"
+                  style={{ fontSize: 11, padding: '3px 10px' }}
+                  onClick={() => flash(equipPetTianShuAction(pet.id, b.itemId))}>
+                  装备 {b.name}（×{b.qty}）
+                </button>
+              ))}
+            </div>
+          </div>
+        )
+      ) : (
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-4)' }}>天书槽已满</div>
+      )}
+    </div>
+  )
+}
+
+const PetDetail = ({ pet, bag, onToggleActive, onAddAttr, onResetAttr }) => {
   const catalog = getPetByKey(pet.spawnKey)
   const g = petGrowth(pet)
   const alloc = pet.allocatedAttr ?? { vit: 0, int: 0, str: 0, agi: 0 }
@@ -209,6 +375,11 @@ const PetDetail = ({ pet, onToggleActive, onAddAttr, onResetAttr }) => {
   const mAtkRange= catalog ? [catalog.growth.matk_min, catalog.growth.matk_max] : [0, 100]
 
   const affinity = catalog?.affinity ?? null
+  const expNeed   = petExpRequiredToNextLevel(pet.level)
+  const physDmg   = stats.atk
+  const magDmg    = Math.round(stats.mAtk * 0.55 + 18)
+  const comboRate = Math.min(35, Math.floor(stats.speed / 12))
+  const critRate  = Math.min(25, Math.floor(stats.atk / 20))
 
   return (
     <div style={{ flex: 1, display: 'flex', gap: 12, minWidth: 0 }}>
@@ -249,6 +420,12 @@ const PetDetail = ({ pet, onToggleActive, onAddAttr, onResetAttr }) => {
           )}
         </div>
 
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <StatBar label="气血" value={stats.maxHp} max={stats.maxHp} color="var(--vermilion)" />
+          <StatBar label="法力" value={stats.maxMp} max={stats.maxMp} color="#3a5a8a" />
+          <StatBar label="经验" value={pet.expIntoLevel ?? 0} max={expNeed} color="var(--gold-2)" />
+        </div>
+
         <div>
           <SubHead title="六维" sub="COMBAT STATS · 由等级与成长计算" />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 5, fontFamily: 'var(--font-mono)', fontSize: 11 }}>
@@ -258,6 +435,16 @@ const PetDetail = ({ pet, onToggleActive, onAddAttr, onResetAttr }) => {
             <KV k="物攻" v={stats.atk} />
             <KV k="法攻" v={stats.mAtk} c="var(--gold-2)" />
             <KV k="防御" v={stats.def} />
+          </div>
+        </div>
+
+        <div>
+          <SubHead title="战斗" sub="DERIVED · 基于当前属性估算" />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 5, fontFamily: 'var(--font-mono)', fontSize: 11 }}>
+            <KV k="物伤" v={physDmg} c="var(--rust)" />
+            <KV k="法伤" v={magDmg} c="var(--gold-2)" />
+            <KV k="连击率" v={comboRate + '%'} c="var(--bamboo)" />
+            <KV k="必杀率" v={critRate + '%'} c="var(--vermilion)" />
           </div>
         </div>
       </div>
@@ -401,6 +588,9 @@ const PetDetail = ({ pet, onToggleActive, onAddAttr, onResetAttr }) => {
           <SubHead title="修炼技能" sub={affinity ? `SCHOOL SKILLS · ${affinity}系` : 'SCHOOL SKILLS'} />
           <SchoolSkillsPanel affinity={affinity} />
         </div>
+
+        {/* tianshu */}
+        <TianShuPanel pet={pet} bag={bag} />
 
         {/* actions */}
         <div className="paper-bg scroll-frame" style={{ padding: 10, position: 'relative' }}>
@@ -552,6 +742,7 @@ export default function PetsScreen() {
         {selected ? (
           <PetDetail
             pet={selected}
+            bag={char.bag ?? []}
             onToggleActive={() => handleToggle(selected)}
             onAddAttr={(attr, n) => handleAddAttr(selected, attr, n)}
             onResetAttr={() => handleResetAttr(selected)}

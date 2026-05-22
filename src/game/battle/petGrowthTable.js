@@ -96,6 +96,45 @@ export const PET_GROWTH_BY_KEY = {
   keyao: { total: [255, 345], hp: [92, 112], mp: [50, 70], spd: [58, 68], pAtk: [-10, 10], mAtk: [60, 80] },
   fuling: { total: [255, 345], hp: [60, 80], mp: [70, 90], spd: [55, 65], pAtk: [-10, 10], mAtk: [52, 72] },
 
+  // 普通宠物补充
+  guoguo: { total: [135, 225], hp: [40, 60], mp: [50, 70], spd: [30, 40], pAtk: [-10, 10], mAtk: [25, 45] },
+
+  // 神兽 — 上古五神兽
+  jiuwei_huli:       { total: [270, 350], hp: [70, 90],   mp: [75, 95],   spd: [55, 65], pAtk: [-10, 10],  mAtk: [80, 90]  },
+  jiangliang:        { total: [270, 350], hp: [100, 120],  mp: [35, 55],   spd: [55, 65], pAtk: [80, 100],  mAtk: [0, 10]   },
+  dongshan_shenling: { total: [270, 350], hp: [80, 100],   mp: [80, 100],  spd: [55, 65], pAtk: [-10, 10],  mAtk: [65, 75]  },
+  zhuque:            { total: [270, 350], hp: [65, 85],    mp: [70, 90],   spd: [70, 80], pAtk: [-10, 10],  mAtk: [75, 85]  },
+  xuanwu:            { total: [270, 350], hp: [125, 145],  mp: [65, 85],   spd: [30, 40], pAtk: [-10, 10],  mAtk: [60, 70]  },
+
+  // 神兽 — 五行正神
+  rushou:  { total: [270, 350], hp: [85, 105],  mp: [30, 50],   spd: [65, 75], pAtk: [90, 110], mAtk: [0, 10]  },
+  jumang:  { total: [270, 350], hp: [80, 100],  mp: [90, 110],  spd: [55, 65], pAtk: [-10, 10], mAtk: [55, 65] },
+  xuanming:{ total: [270, 350], hp: [90, 110],  mp: [80, 100],  spd: [50, 60], pAtk: [-10, 10], mAtk: [60, 70] },
+  zhurong: { total: [270, 350], hp: [75, 95],   mp: [65, 85],   spd: [75, 85], pAtk: [-10, 10], mAtk: [65, 75] },
+  houtu:   { total: [270, 350], hp: [110, 130], mp: [55, 75],   spd: [45, 55], pAtk: [50, 70],  mAtk: [10, 20] },
+
+  // 生肖兽
+  lingli_shu:    { total: [260, 340], hp: [55, 75],   mp: [50, 70],   spd: [80, 90],  pAtk: [30, 50],  mAtk: [45, 55] },
+  benben_niu:    { total: [260, 340], hp: [110, 130], mp: [40, 60],   spd: [30, 40],  pAtk: [70, 90],  mAtk: [10, 20] },
+  weiwei_hu:     { total: [260, 340], hp: [80, 100],  mp: [25, 45],   spd: [60, 70],  pAtk: [95, 115], mAtk: [0, 10]  },
+  tiaotiao_tu:   { total: [260, 340], hp: [60, 80],   mp: [55, 75],   spd: [90, 100], pAtk: [35, 55],  mAtk: [20, 30] },
+  kuku_long:     { total: [260, 340], hp: [70, 90],   mp: [75, 95],   spd: [55, 65],  pAtk: [-10, 10], mAtk: [70, 80] },
+  huahua_she:    { total: [260, 340], hp: [65, 85],   mp: [40, 60],   spd: [75, 85],  pAtk: [75, 95],  mAtk: [5, 15]  },
+  liuliu_ma:     { total: [260, 340], hp: [70, 90],   mp: [30, 50],   spd: [90, 100], pAtk: [65, 85],  mAtk: [5, 15]  },
+  miemie_yang:   { total: [260, 340], hp: [75, 95],   mp: [85, 105],  spd: [45, 55],  pAtk: [-10, 10], mAtk: [65, 75] },
+  shuaishuai_hou:{ total: [260, 340], hp: [65, 85],   mp: [35, 55],   spd: [75, 85],  pAtk: [85, 105], mAtk: [0, 10]  },
+  dandan_ji:     { total: [260, 340], hp: [60, 80],   mp: [70, 90],   spd: [75, 85],  pAtk: [-10, 10], mAtk: [65, 75] },
+  guaiguai_gou:  { total: [260, 340], hp: [80, 100],  mp: [50, 70],   spd: [60, 70],  pAtk: [60, 80],  mAtk: [10, 20] },
+  zhaocai_zhu:   { total: [260, 340], hp: [105, 125], mp: [70, 90],   spd: [30, 40],  pAtk: [30, 50],  mAtk: [25, 35] },
+
+  // 仙元
+  xiangyuan_juli:     { total: [320, 400], hp: [100, 120], mp: [30, 50],   spd: [60, 70], pAtk: [120, 140], mAtk: [10, 20] },
+  xiangyuan_zhulu:    { total: [320, 400], hp: [95, 115],  mp: [100, 120], spd: [60, 70], pAtk: [-10, 10],  mAtk: [75, 85] },
+  xiangyuan_cangqiong:{ total: [320, 400], hp: [80, 100],  mp: [80, 100],  spd: [85, 95], pAtk: [-10, 10],  mAtk: [85, 95] },
+  xiangyuan_jingping: { total: [320, 400], hp: [90, 110],  mp: [120, 140], spd: [55, 65], pAtk: [-10, 10],  mAtk: [65, 75] },
+  xiangyuan_wuming:   { total: [320, 400], hp: [140, 160], mp: [60, 80],   spd: [40, 50], pAtk: [60, 80],   mAtk: [20, 30] },
+  xiangyuan_kunlun:   { total: [320, 400], hp: [100, 120], mp: [90, 110],  spd: [65, 75], pAtk: [25, 45],   mAtk: [40, 50] },
+
   // 鬼宠（表中为固定档，按总成长=五项和录入）
   ghost_lianyu_xuemoa: { ghost: true, total: [320, 320], hp: [110, 110], mp: [70, 70], spd: [65, 65], pAtk: [10, 10], mAtk: [65, 65] },
   ghost_lianyu_kuangmo: { ghost: true, total: [320, 320], hp: [100, 100], mp: [50, 50], spd: [60, 60], pAtk: [100, 100], mAtk: [10, 10] },

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useSyncExternalStore } from 'react'
-import { Seal, PanelHead, SubHead, Tag, CornerDeco } from './common.jsx'
-import { subscribe, getSnapshot, buyShopItemAction, setPendingShuadaoAction, setMapAction, acceptQuestAction, claimQuestAction, progressVisitQuestAction } from '../game/characterStore.js'
+import { Seal, PanelHead, SubHead, Tag, CornerDeco, Bar } from './common.jsx'
+import { subscribe, getSnapshot, buyShopItemAction, setPendingShuadaoAction, setMapAction, acceptQuestAction, claimQuestAction, progressVisitQuestAction, computePartyHealInfo, healPartyAtNpcAction, claimGuideEquipAction, claimCdkAction } from '../game/characterStore.js'
+import { TIANSHU_DEFS, TIANSHU_QUALITY } from '../game/battle/tianShu.js'
 import { SHUADAO_TYPES, SHUADAO_ORDER } from '../game/shuadao.js'
 import { WENDAO_MAPS, MAP_TYPES, inferSpawnElement } from '../game/battle/wendaoMapsConfig.js'
-import { MAIN_QUESTS, SIDE_QUESTS, getNpcsForMap, getQuestsForNpc } from '../game/quests/questData.js'
+import { MAIN_QUESTS, SIDE_QUESTS, TOWN_QUESTS, getNpcsForMap, getQuestsForNpc, NPC_ROLES } from '../game/quests/questData.js'
 import { getQuestStatus, QS } from '../game/quests/questEngine.js'
 
 // ───── 日常任务（静态演示） ─────
@@ -213,6 +214,7 @@ export function QuestScreen({ navigate }) {
   const charLevel = char.level ?? 1
   const mainList = MAIN_QUESTS.map(q => ({ quest: q, status: getQuestStatus(q, questLog, charLevel) }))
   const sideList = SIDE_QUESTS.map(q => ({ quest: q, status: getQuestStatus(q, questLog, charLevel) }))
+  const townList = TOWN_QUESTS.map(q => ({ quest: q, status: getQuestStatus(q, questLog, charLevel) }))
 
   return (
     <div className="paper-bg" style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', fontFamily: 'var(--font-body)' }}>
@@ -226,7 +228,7 @@ export function QuestScreen({ navigate }) {
       />
       <div style={{ position: 'absolute', inset: '60px 20px 20px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div className="tab-list">
-          {[['shuadao', '刷  道'], ['main', '主  线'], ['side', '支  线'], ['daily', '日常任务']].map(([id, label]) => (
+          {[['shuadao', '刷  道'], ['main', '主  线'], ['side', '支  线'], ['town', '城镇委托'], ['daily', '日常任务']].map(([id, label]) => (
             <div key={id} className={'tab' + (tab === id ? ' active' : '')} style={{ padding: '4px 16px', cursor: 'pointer' }} onClick={() => setTab(id)}>{label}</div>
           ))}
         </div>
@@ -253,6 +255,18 @@ export function QuestScreen({ navigate }) {
         {tab === 'side' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1, overflow: 'auto' }}>
             {sideList.map(({ quest, status }) => (
+              <QuestRow key={quest.id} quest={quest} status={status} questLog={questLog}
+                onAccept={handleAccept} onClaim={handleClaim} />
+            ))}
+          </div>
+        )}
+
+        {tab === 'town' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1, overflow: 'auto' }}>
+            <div style={{ flexShrink: 0, padding: '6px 10px', background: 'var(--paper-2)', border: '1px solid var(--ink-4)', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-3)', lineHeight: 1.6 }}>
+              城镇委托由各主城 NPC 发布，在世界地图进入对应城镇后可向 NPC 接取。
+            </div>
+            {townList.map(({ quest, status }) => (
               <QuestRow key={quest.id} quest={quest} status={status} questLog={questLog}
                 onAccept={handleAccept} onClaim={handleClaim} />
             ))}
@@ -302,9 +316,54 @@ const SHOP_ROWS = [
   { id: 'heishuijing',   n: '黑水晶',    qty: 1,  price: 999999, k: '吸取装备一条随机额外属性',         glyph: '黑', special: true },
 ]
 
+const TIANSHU_PRICES = {
+  ts_mogu: 40000, ts_kuangbao: 50000, ts_lieyian: 38000, ts_potian: 48000,
+  ts_fanji: 42000, ts_nuji: 42000, ts_jiangmozhan: 55000, ts_xiuluoshu: 55000,
+  ts_yunti: 45000, ts_xianfeng: 60000, ts_jinzhong: 35000,
+  tianshu_super: 180000,
+}
+
+const TRIGGER_COLOR = {
+  on_physical_hit: 'var(--rust)',
+  on_magic_hit:    '#3a5a8a',
+  on_hit_taken:    'var(--bamboo)',
+  passive:         '#8a6a2a',
+}
+
+function ShopRow({ row, tael, onBuy }) {
+  const canAfford = tael >= row.price * row.qty
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 10, padding: 8,
+      background: row.special ? 'rgba(106,61,138,0.07)' : 'rgba(243,237,224,0.7)',
+      border: `1px solid ${row.special ? '#6a3d8a' : 'var(--ink-4)'}`,
+    }}>
+      <div className="slot q-common" style={{ width: 46, height: 46, flex: '0 0 46px', borderColor: row.special ? '#6a3d8a' : undefined }}>
+        <Seal size={22} round style={row.special ? { background: '#6a3d8a' } : {}}>{row.glyph}</Seal>
+      </div>
+      <div style={{ flex: 1 }}>
+        <div className="brush" style={{ fontSize: 15, color: row.special ? '#6a3d8a' : 'var(--ink)' }}>{row.n} ×{row.qty}</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-3)' }}>{row.k}</div>
+      </div>
+      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+        <button
+          className="btn-ink btn-ink-primary"
+          disabled={!canAfford}
+          style={row.special ? { background: '#6a3d8a', borderColor: '#6a3d8a' } : {}}
+          onClick={() => onBuy(row)}
+        >
+          {(row.price * row.qty).toLocaleString()} 银两 · 购买
+        </button>
+        {!canAfford && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--vermilion)', marginTop: 2 }}>银两不足</div>}
+      </div>
+    </div>
+  )
+}
+
 export function ShopScreen() {
   const char = useSyncExternalStore(subscribe, getSnapshot)
   const [msg, setMsg] = useState(null)
+  const [shopTab, setShopTab] = useState(0) // 0=消耗品 1=天书
 
   function handleBuy(row) {
     const res = buyShopItemAction(row.id, row.qty)
@@ -312,7 +371,22 @@ export function ShopScreen() {
     setTimeout(() => setMsg(null), 2500)
   }
 
+  function handleBuyTianShu(def) {
+    const price = TIANSHU_PRICES[def.id]
+    const res = buyShopItemAction(def.id, 1)
+    setMsg({ text: res.ok ? `购买成功：${def.name}` : (res.reason ?? '购买失败'), ok: res.ok })
+    setTimeout(() => setMsg(null), 2500)
+  }
+
   const tael = char.tael ?? 0
+  const bag = char.bag ?? []
+
+  const TAB_STYLE = (active) => ({
+    padding: '4px 14px', fontFamily: 'var(--font-brush)', fontSize: 13, cursor: 'pointer',
+    background: active ? 'var(--vermilion)' : 'var(--paper-2)',
+    color: active ? 'var(--paper)' : 'var(--ink-2)',
+    border: `1px solid ${active ? 'var(--vermilion)' : 'var(--ink-4)'}`,
+  })
 
   return (
     <div className="paper-bg" style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', fontFamily: 'var(--font-body)' }}>
@@ -331,6 +405,12 @@ export function ShopScreen() {
           <button className="btn-ink btn-ink-sm">仙玉商城</button>
         </div>
 
+        {/* 标签切换 */}
+        <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+          <button style={TAB_STYLE(shopTab === 0)} onClick={() => setShopTab(0)}>消耗品</button>
+          <button style={TAB_STYLE(shopTab === 1)} onClick={() => setShopTab(1)}>宠物天书</button>
+        </div>
+
         {/* 消息提示 */}
         {msg && (
           <div style={{
@@ -344,42 +424,83 @@ export function ShopScreen() {
           </div>
         )}
 
-        {/* 商品列表 */}
-        <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {SHOP_ROWS.map((r) => {
-            const canAfford = tael >= r.price * r.qty
-            return (
-              <div key={r.id} style={{
-                display: 'flex', alignItems: 'center', gap: 10, padding: 8,
-                background: r.special ? 'rgba(106,61,138,0.07)' : 'rgba(243,237,224,0.7)',
-                border: `1px solid ${r.special ? '#6a3d8a' : 'var(--ink-4)'}`,
-              }}>
-                <div className="slot q-common" style={{ width: 46, height: 46, flex: '0 0 46px', borderColor: r.special ? '#6a3d8a' : undefined }}>
-                  <Seal size={22} round style={r.special ? { background: '#6a3d8a' } : {}}>{r.glyph}</Seal>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div className="brush" style={{ fontSize: 15, color: r.special ? '#6a3d8a' : 'var(--ink)' }}>{r.n} ×{r.qty}</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-3)' }}>{r.k}</div>
-                </div>
-                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <button
-                    className="btn-ink btn-ink-primary"
-                    disabled={!canAfford}
-                    style={r.special ? { background: '#6a3d8a', borderColor: '#6a3d8a' } : {}}
-                    onClick={() => handleBuy(r)}
-                  >
-                    {(r.price * r.qty).toLocaleString()} 银两 · 购买
-                  </button>
-                  {!canAfford && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--vermilion)', marginTop: 2 }}>银两不足</div>}
-                </div>
-              </div>
-            )
-          })}
-        </div>
+        {/* 消耗品列表 */}
+        {shopTab === 0 && (
+          <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {SHOP_ROWS.map((r) => <ShopRow key={r.id} row={r} tael={tael} onBuy={handleBuy} />)}
+            <p style={{ margin: '4px 0 0', fontSize: 10, color: 'var(--ink-3)', lineHeight: 1.6 }}>
+              黑水晶：在背包选中后可吸取任意装备的一条额外属性，永久转化为角色加成。
+            </p>
+          </div>
+        )}
 
-        <p style={{ margin: 0, fontSize: 10, color: 'var(--ink-3)', lineHeight: 1.6, flexShrink: 0 }}>
-          黑水晶：在背包选中后可吸取任意装备（包括已装备）的一条额外属性，永久转化为角色加成。
-        </p>
+        {/* 天书列表 */}
+        {shopTab === 1 && (
+          <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ padding: '6px 10px', background: 'rgba(163,140,80,0.08)', border: '1px solid #9a6a2a', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-2)', lineHeight: 1.7 }}>
+              天书装备后给宠物触发型技能 · 每本 +6000 灵气（上限 30000）· 每只宠最多 3 本 · 同种不可重复 · 开书随机白/蓝/金品质 · 超级天书必得金色
+            </div>
+            {/* 超级天书盒 */}
+            {(() => {
+              const price = TIANSHU_PRICES['tianshu_super']
+              const canAfford = tael >= price
+              const owned = bag.find(e => e.itemId === 'tianshu_super')?.qty ?? 0
+              return (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: 8,
+                  background: 'rgba(200,160,32,0.08)', border: '1px solid var(--gold-2)',
+                }}>
+                  <div className="slot q-rare" style={{ width: 46, height: 46, flex: '0 0 46px', borderColor: 'var(--gold-2)' }}>
+                    <Seal size={22} round style={{ background: 'var(--gold-2)' }}>超</Seal>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div className="brush" style={{ fontSize: 15, color: 'var(--gold-2)' }}>超级天书 {owned > 0 && <span style={{ fontSize: 11 }}>（背包 ×{owned}）</span>}</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-3)' }}>必得金色天书（随机类型）· 金色天书有 5 条基础属性 · 触发概率+10%</div>
+                  </div>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <button className="btn-ink btn-ink-primary" disabled={!canAfford} style={{ borderColor: 'var(--gold-2)' }}
+                      onClick={() => { const res = buyShopItemAction('tianshu_super', 1); setMsg({ text: res.ok ? '购买成功：超级天书' : (res.reason ?? '失败'), ok: res.ok }); setTimeout(() => setMsg(null), 2500) }}>
+                      {price.toLocaleString()} 银两
+                    </button>
+                    {!canAfford && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--vermilion)', marginTop: 2 }}>银两不足</div>}
+                  </div>
+                </div>
+              )
+            })()}
+            {/* 普通天书（11种） */}
+            {TIANSHU_DEFS.map((def) => {
+              const price = TIANSHU_PRICES[def.id]
+              const canAfford = tael >= price
+              const owned = bag.find(e => e.itemId === def.id)?.qty ?? 0
+              const trigColor = TRIGGER_COLOR[def.trigger] ?? 'var(--ink-2)'
+              return (
+                <div key={def.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: 8,
+                  background: 'rgba(243,237,224,0.7)', border: '1px solid var(--ink-4)',
+                }}>
+                  <div className="slot q-common" style={{ width: 46, height: 46, flex: '0 0 46px' }}>
+                    <Seal size={22} round style={{ background: trigColor }}>{def.glyph}</Seal>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span className="brush" style={{ fontSize: 15 }}>{def.name}天书</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: trigColor, border: `1px solid ${trigColor}`, padding: '0 4px' }}>{def.triggerDesc}</span>
+                      {owned > 0 && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--gold-2)' }}>背包×{owned}</span>}
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-3)' }}>{def.desc}</div>
+                  </div>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <button className="btn-ink btn-ink-primary" disabled={!canAfford}
+                      onClick={() => handleBuyTianShu(def)}>
+                      {price.toLocaleString()} 银两
+                    </button>
+                    {!canAfford && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--vermilion)', marginTop: 2 }}>银两不足</div>}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -447,9 +568,10 @@ function MapNode({ map, isActive, isSelected, charLevel, onClick }) {
   const [lo, hi] = map.levelRange
   const inRange  = charLevel >= lo && charLevel <= hi
   const tooHigh  = charLevel < lo
+  const isCity   = map.type === '城镇'
   const typeConf = MAP_TYPES[map.type] ?? MAP_TYPES['野外']
   const color    = isActive ? 'var(--vermilion)' : isSelected ? 'var(--gold)' : tooHigh ? 'var(--ink-4)' : typeConf.color
-  const nodeSize = isActive ? 13 : isSelected ? 11 : inRange ? 10 : 8
+  const nodeSize = isCity ? (isSelected ? 16 : 14) : isActive ? 13 : isSelected ? 11 : inRange ? 10 : 8
 
   return (
     <div
@@ -460,37 +582,57 @@ function MapNode({ map, isActive, isSelected, charLevel, onClick }) {
         top:  map.pos.y + '%',
         transform: 'translate(-50%, -100%)',
         cursor: 'pointer',
-        zIndex: isActive ? 10 : isSelected ? 8 : inRange ? 4 : 2,
+        zIndex: isActive ? 10 : isSelected ? 8 : isCity ? 6 : inRange ? 4 : 2,
         userSelect: 'none',
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div style={{
-          fontFamily: 'var(--font-body)', fontWeight: isActive || inRange ? 600 : 400,
-          fontSize: isActive ? 13 : isSelected ? 12 : inRange ? 11 : 10,
+          fontFamily: 'var(--font-body)', fontWeight: isCity || isActive || inRange ? 600 : 400,
+          fontSize: isCity ? (isSelected ? 13 : 12) : isActive ? 13 : isSelected ? 12 : inRange ? 11 : 10,
           color,
           textShadow: '0 1px 0 rgba(243,237,224,0.9), 1px 0 0 rgba(243,237,224,0.9)',
           whiteSpace: 'nowrap', lineHeight: 1.2, marginBottom: 2,
         }}>
-          {map.name}
+          {isCity ? `【${map.name}】` : map.name}
         </div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: tooHigh ? 'var(--ink-4)' : 'var(--ink-3)', marginBottom: 3 }}>
-          {lo}-{hi}
-        </div>
+        {!isCity && (
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: tooHigh ? 'var(--ink-4)' : 'var(--ink-3)', marginBottom: 3 }}>
+            {lo}-{hi}
+          </div>
+        )}
         <div style={{ position: 'relative' }}>
-          <div style={{
-            width: nodeSize, height: nodeSize,
-            background: color,
-            border: `1.5px solid rgba(243,237,224,0.8)`,
-            boxShadow: `0 1px 3px rgba(0,0,0,0.25), 0 0 0 1px ${color}`,
-            transform: 'rotate(45deg)',
-          }} />
+          {isCity ? (
+            <div style={{
+              width: nodeSize, height: nodeSize,
+              background: color,
+              border: `2px solid rgba(243,237,224,0.9)`,
+              boxShadow: `0 1px 4px rgba(0,0,0,0.3), 0 0 0 1px ${color}, 0 0 8px ${color}40`,
+              borderRadius: '50%',
+            }} />
+          ) : (
+            <div style={{
+              width: nodeSize, height: nodeSize,
+              background: color,
+              border: `1.5px solid rgba(243,237,224,0.8)`,
+              boxShadow: `0 1px 3px rgba(0,0,0,0.25), 0 0 0 1px ${color}`,
+              transform: 'rotate(45deg)',
+            }} />
+          )}
           {isActive && (
             <div style={{
-              position: 'absolute', inset: -8,
+              position: 'absolute', inset: isCity ? -6 : -8,
               border: '1.5px solid var(--vermilion)',
-              borderRadius: 2,
+              borderRadius: isCity ? '50%' : 2,
               animation: 'pulse2 1.6s ease-in-out infinite',
+            }} />
+          )}
+          {isCity && isSelected && (
+            <div style={{
+              position: 'absolute', inset: -5,
+              border: `1.5px solid ${color}`,
+              borderRadius: '50%',
+              opacity: 0.5,
             }} />
           )}
         </div>
@@ -518,6 +660,52 @@ export function WorldMapScreen({ navigate }) {
   useEffect(() => { setSelectedNpcId(null) }, [selectedId])
 
   const [npcMsg, setNpcMsg] = useState(null)
+  const [healInfo, setHealInfo] = useState(null)
+  const [cdkInput, setCdkInput] = useState('')
+
+  // 每次切换到治疗师 NPC 时刷新治疗面板数据
+  useEffect(() => {
+    if (selectedNpc?.role === 'healer') setHealInfo(computePartyHealInfo())
+    else setHealInfo(null)
+  }, [selectedNpcId, char.hpCur, char.mpCur, char.tael])
+
+  // 切换 NPC 时清空 CDK 输入
+  useEffect(() => { setCdkInput('') }, [selectedNpcId])
+
+  function handleGuideEquip() {
+    const res = claimGuideEquipAction()
+    if (res.ok) {
+      setNpcMsg({ ok: true, text: `已为 ${res.charCount} 位道友各发放一套装备，共 ${res.itemCount} 件，已入装备仓库。` })
+    } else {
+      setNpcMsg({ ok: false, text: res.reason ?? '领取失败' })
+    }
+    setTimeout(() => setNpcMsg(null), 4000)
+  }
+
+  function handleCdk() {
+    const res = claimCdkAction(cdkInput)
+    if (res.ok) {
+      setNpcMsg({ ok: true, text: `兑换成功！已为 ${res.charCount} 位道友各赠一只「${res.desc}」，已入宠物仓库。` })
+      setCdkInput('')
+    } else {
+      setNpcMsg({ ok: false, text: res.reason ?? '兑换失败' })
+    }
+    setTimeout(() => setNpcMsg(null), 4000)
+  }
+
+  function handleHeal() {
+    const res = healPartyAtNpcAction()
+    if (res.ok) {
+      setHealInfo(computePartyHealInfo())
+      setNpcMsg(res.alreadyFull
+        ? { ok: true, text: '气血法力皆已充盈，无需治疗。' }
+        : { ok: true, text: res.cost === 0 ? '已为全队补满气血法力（免费）。' : `治疗完成，花费 ${res.cost.toLocaleString()} 银两。` }
+      )
+    } else {
+      setNpcMsg({ ok: false, text: res.reason ?? '治疗失败' })
+    }
+    setTimeout(() => setNpcMsg(null), 3500)
+  }
 
   function handleNpcAccept(questId) {
     const res = acceptQuestAction(questId)
@@ -639,8 +827,11 @@ export function WorldMapScreen({ navigate }) {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="brush" style={{ fontSize: 17, lineHeight: 1.2, color: 'var(--ink)' }}>{selectedMap.name}</div>
                 <div style={{ display: 'flex', gap: 6, marginTop: 4, alignItems: 'center' }}>
-                  <Tag tone={selectedMap.type === '副本' ? 'vermilion' : selectedMap.type === '阵法' ? 'ink' : 'bamboo'}
-                    style={{ fontSize: 10, padding: '1px 6px' }}>
+                  <Tag tone={
+                    selectedMap.type === '城镇' ? 'gold' :
+                    selectedMap.type === '副本' ? 'vermilion' :
+                    selectedMap.type === '阵法' ? 'ink' : 'bamboo'
+                  } style={{ fontSize: 10, padding: '1px 6px' }}>
                     {selectedMap.type}
                   </Tag>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-3)' }}>
@@ -717,6 +908,134 @@ export function WorldMapScreen({ navigate }) {
                     color: npcMsg.ok ? 'var(--bamboo)' : 'var(--vermilion)',
                   }}>{npcMsg.text}</div>
                 )}
+
+                {/* ── 新手指引面板 ── */}
+                {selectedNpc.role === 'guide' && (
+                  <div style={{ marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <SubHead title="新手礼包" sub="STARTER PACK" />
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-2)', lineHeight: 1.8,
+                      padding: '6px 10px', background: 'rgba(243,237,224,0.6)', border: '1px dashed var(--ink-4)' }}>
+                      按队伍人数，每位道友各得一套一级装备：<br />
+                      · 武器（金系·长剑 / 木系·折扇 / 水系·铁爪 / 火系·铜锤 / 土系·长枪）<br />
+                      · 方巾 · 布衣 · 麻鞋 · 布腰带 · 道符<br />
+                      <span style={{ color: 'var(--ink-4)' }}>装备领取后存入装备仓库，每存档仅限一次。</span>
+                    </div>
+                    {char.guideEquipClaimed ? (
+                      <div style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11,
+                        color: 'var(--bamboo)', padding: '6px', letterSpacing: '0.1em' }}>
+                        ✓ 已领取
+                      </div>
+                    ) : (
+                      <button className="btn-ink btn-ink-primary" onClick={handleGuideEquip}
+                        style={{ padding: '8px 0', fontSize: 13, letterSpacing: '0.15em' }}>
+                        领 取 新 手 装 备
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* ── 福利大使面板 ── */}
+                {selectedNpc.role === 'welfare' && (
+                  <div style={{ marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <SubHead title="兑换码" sub="CDK EXCHANGE" />
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-3)',
+                      lineHeight: 1.7, padding: '4px 0' }}>
+                      输入兑换码即可领取专属好礼，每码全服限领一次。
+                    </div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <input
+                        value={cdkInput}
+                        onChange={e => setCdkInput(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleCdk()}
+                        placeholder="请输入兑换码…"
+                        maxLength={32}
+                        style={{
+                          flex: 1, padding: '6px 10px',
+                          fontFamily: 'var(--font-mono)', fontSize: 12,
+                          background: 'rgba(243,237,224,0.8)',
+                          border: '1px solid var(--ink-3)',
+                          color: 'var(--ink)', outline: 'none',
+                          letterSpacing: '0.1em',
+                        }}
+                      />
+                      <button className="btn-ink btn-ink-primary"
+                        onClick={handleCdk}
+                        disabled={!cdkInput.trim()}
+                        style={{ padding: '6px 14px', fontSize: 12, letterSpacing: '0.1em',
+                          opacity: cdkInput.trim() ? 1 : 0.45 }}>
+                        兑 换
+                      </button>
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-4)', lineHeight: 1.6 }}>
+                      · 当前可用兑换码：<span style={{ color: 'var(--gold-2)', letterSpacing: '0.15em' }}>666</span>
+                      <span style={{ marginLeft: 8, color: 'var(--ink-4)' }}>（按队伍人数送金头陀·宝宝）</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── 治疗师面板 ── */}
+                {selectedNpc.role === 'healer' && healInfo && (
+                  <div style={{ marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <SubHead title="队伍状态" sub="PARTY STATUS" />
+                    {healInfo.members.map(m => (
+                      <div key={m.id} style={{
+                        padding: '7px 10px', background: 'var(--paper)',
+                        border: `1px solid ${m.isFull ? 'var(--ink-4)' : '#4a90d9'}`,
+                        display: 'flex', flexDirection: 'column', gap: 4,
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                          <span className="brush" style={{ fontSize: 13, color: 'var(--ink)', flex: 1 }}>{m.name}</span>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-3)' }}>Lv{m.level}</span>
+                          {m.isFull ? (
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--bamboo)' }}>已满</span>
+                          ) : m.isFree ? (
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--bamboo)', border: '1px solid var(--bamboo)', padding: '0 4px' }}>免费</span>
+                          ) : (
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--gold-2)', border: '1px solid var(--gold-2)', padding: '0 4px' }}>
+                              {m.cost.toLocaleString()} 银
+                            </span>
+                          )}
+                        </div>
+                        <Bar value={m.hp} max={m.maxHp} type="hp" height={10} showText={false} />
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-3)', marginTop: -2 }}>
+                          HP {m.hp.toLocaleString()} / {m.maxHp.toLocaleString()}
+                        </div>
+                        <Bar value={m.mp} max={m.maxMp} type="mp" height={10} showText={false} />
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-3)', marginTop: -2 }}>
+                          MP {m.mp.toLocaleString()} / {m.maxMp.toLocaleString()}
+                        </div>
+                      </div>
+                    ))}
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      padding: '6px 10px', background: 'var(--paper-2)', border: '1px solid var(--ink-3)',
+                    }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-3)', flex: 1 }}>
+                        {healInfo.totalCost === 0
+                          ? (healInfo.members.every(m => m.isFull) ? '全队气血充盈' : '全队免费治疗')
+                          : `治疗费用：${healInfo.totalCost.toLocaleString()} 银两`}
+                      </span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-4)' }}>
+                        持有 {(char.tael ?? 0).toLocaleString()}
+                      </span>
+                    </div>
+                    <button
+                      className="btn-ink btn-ink-primary"
+                      onClick={handleHeal}
+                      disabled={!healInfo.canAfford || healInfo.members.every(m => m.isFull)}
+                      style={{
+                        padding: '8px 0', fontSize: 13, letterSpacing: '0.15em',
+                        opacity: (!healInfo.canAfford || healInfo.members.every(m => m.isFull)) ? 0.45 : 1,
+                      }}
+                    >
+                      {healInfo.members.every(m => m.isFull) ? '已无需治疗' : !healInfo.canAfford ? '银两不足' : '治 疗 全 队'}
+                    </button>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-4)', lineHeight: 1.5 }}>
+                      · Lv{`<`}10 免费 · Lv≥10 费用 = ⌈(缺失HP + 缺失MP) × 等级 / 20⌉
+                    </div>
+                  </div>
+                )}
+
                 {npcQuests.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <SubHead title="相关任务" sub={`QUESTS · ${npcQuests.length}`} />
@@ -730,6 +1049,50 @@ export function WorldMapScreen({ navigate }) {
                     暂无相关任务
                   </div>
                 )}
+              </>
+            ) : selectedMap.type === '城镇' ? (
+              <>
+                <SubHead title="城中设施" sub={`NPC · ${npcsOnMap.length} 位`} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {npcsOnMap.map(npc => {
+                    const role = NPC_ROLES[npc.role] ?? { label: npc.role ?? '—', color: 'var(--ink-3)' }
+                    const npcQs = getQuestsForNpc(npc.id)
+                    const hasClaimable = npcQs.some(q => getQuestStatus(q, char.questLog ?? {}, charLevel) === QS.CLAIMABLE)
+                    const hasAvailable = !hasClaimable && npcQs.some(q => getQuestStatus(q, char.questLog ?? {}, charLevel) === QS.AVAILABLE)
+                    const dotColor = hasClaimable ? 'var(--vermilion)' : hasAvailable ? 'var(--bamboo)' : null
+                    return (
+                      <div
+                        key={npc.id}
+                        onClick={() => setSelectedNpcId(npc.id === selectedNpcId ? null : npc.id)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 8,
+                          padding: '6px 8px', cursor: 'pointer', position: 'relative',
+                          background: npc.id === selectedNpcId ? 'rgba(200,120,32,0.08)' : 'transparent',
+                          border: `1px solid ${npc.id === selectedNpcId ? '#c87820' : 'var(--ink-4)'}`,
+                        }}
+                      >
+                        <Seal size={22} round style={{ flexShrink: 0, fontSize: 10,
+                          background: hasClaimable ? 'var(--vermilion)' : hasAvailable ? 'var(--bamboo)' : undefined,
+                        }}>{npc.glyph}</Seal>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--ink)', lineHeight: 1.2 }}>{npc.name}</div>
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-3)', marginTop: 1 }}>{npc.title}</div>
+                        </div>
+                        <span style={{
+                          fontFamily: 'var(--font-mono)', fontSize: 9, padding: '1px 5px',
+                          border: `1px solid ${role.color}`, color: role.color, flexShrink: 0,
+                        }}>{role.label}</span>
+                        {dotColor && (
+                          <div style={{
+                            position: 'absolute', top: 3, right: 3,
+                            width: 7, height: 7, borderRadius: '50%',
+                            background: dotColor, border: '1px solid var(--paper)',
+                          }} />
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
               </>
             ) : (
               <>
@@ -757,16 +1120,28 @@ export function WorldMapScreen({ navigate }) {
 
           {/* 操作按钮 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {!isAtSelected && (
-              <button className="btn-ink" onClick={handleGoTo}
-                style={{ padding: '7px 0', fontSize: 13, letterSpacing: '0.1em' }}>
-                前 往 此 地
+            {selectedMap.type === '城镇' ? (
+              <button
+                className={'btn-ink' + (isAtSelected ? ' btn-ink-primary' : '')}
+                onClick={handleGoTo}
+                style={{ padding: '10px 0', fontSize: 15, letterSpacing: '0.2em' }}
+              >
+                {isAtSelected ? '▶ 当前驻留城镇' : '进 城'}
               </button>
+            ) : (
+              <>
+                {!isAtSelected && (
+                  <button className="btn-ink" onClick={handleGoTo}
+                    style={{ padding: '7px 0', fontSize: 13, letterSpacing: '0.1em' }}>
+                    前 往 此 地
+                  </button>
+                )}
+                <button className="btn-ink btn-ink-primary" onClick={handleBattle}
+                  style={{ padding: '10px 0', fontSize: 15, letterSpacing: '0.2em' }}>
+                  {isAtSelected ? '立 即 开 战' : '前往并开战'}
+                </button>
+              </>
             )}
-            <button className="btn-ink btn-ink-primary" onClick={handleBattle}
-              style={{ padding: '10px 0', fontSize: 15, letterSpacing: '0.2em' }}>
-              {isAtSelected ? '立 即 开 战' : '前往并开战'}
-            </button>
           </div>
         </div>
       </div>

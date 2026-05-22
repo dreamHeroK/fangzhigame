@@ -11,9 +11,41 @@ export const MAP_TYPES = {
   阵法: { color: 'var(--ink)',       label: '阵法' },
   海域: { color: '#4a7ea0',          label: '海域' },
   秘境: { color: '#8a5ab0',          label: '秘境' },
+  城镇: { color: '#c87820',          label: '城镇' },
 }
 
 export const WENDAO_MAPS = /** @type {WendaoMap[]} */ ([
+  // ── 主城 ──────────────────────────────────────────────────────────────
+  {
+    id: 'lanxian_zhen',
+    name: '揽仙镇',
+    levelRange: [1, 30],
+    blurb: '中原西南的修仙起点小镇，镇内有铁匠铺、药坊与武当观。镇长陈福在此主持事务，是新晋修士踏上仙途的第一站。',
+    region: '中原',
+    type: '城镇',
+    pos: { x: 7, y: 78 },
+    spawns: [],
+  },
+  {
+    id: 'tianyong_cheng',
+    name: '天墉城',
+    levelRange: [1, 120],
+    blurb: '中原最繁华的修仙都会，五行阁、兵器铺、帮派联络处云集于此。城主令狐峰统辖全城，各路修士汇聚，是天下公认的修仙中心。',
+    region: '中原',
+    type: '城镇',
+    pos: { x: 29, y: 73 },
+    spawns: [],
+  },
+  {
+    id: 'donghai_yucun',
+    name: '东海渔村',
+    levelRange: [20, 70],
+    blurb: '东海之滨的宁静渔村，老村长海伯世代居于此地。村中有蓬莱探险队在此驻扎，也有观潮老者为修士指引海上迷途。',
+    region: '东海',
+    type: '城镇',
+    pos: { x: 70, y: 68 },
+    spawns: [],
+  },
   // ── 中原初期 ──────────────────────────────────────────────────────────
   {
     id: 'lanxian_wai',
@@ -336,10 +368,11 @@ export function getWorldBossByKey(key) {
   return WENDAO_WORLD_BOSSES.find(b => b.key === key) ?? null
 }
 
-/** 按推荐等级挑练级图（落在 levelRange 内优先） */
+/** 按推荐等级挑练级图（落在 levelRange 内优先，仅选有怪物的野外图） */
 export function suggestMapIdForLevel(level) {
   const L = Math.max(1, level)
-  const scored = WENDAO_MAPS.map(m => {
+  const combatMaps = WENDAO_MAPS.filter(m => m.spawns.length > 0)
+  const scored = combatMaps.map(m => {
     const [lo, hi] = m.levelRange
     if (L >= lo && L <= hi) return { id: m.id, score: 0 }
     return { id: m.id, score: L < lo ? lo - L : L - hi }

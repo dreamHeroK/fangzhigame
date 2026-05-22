@@ -1,6 +1,7 @@
 import React, { useState, useSyncExternalStore } from 'react'
 import { Seal, PanelHead, Tag } from './common.jsx'
 import { subscribe, getSnapshot, useItemFromBagAction, equipItemAction,
+  equipItemForChar,
   sellEquipAction, batchSellEquipAction, absorbToCrystalAction,
   sellBagItemAction, getBagItemSellPrice,
   EQUIP_SELL_PRICE } from '../game/characterStore.js'
@@ -251,12 +252,39 @@ function ConsumableTooltip({ item }) {
 // ── 右侧动作面板 ──────────────────────────────────────────────────────────────
 const QUALITY_ORDER = ['white', 'green', 'blue', 'purple', 'orange']
 
-function ActionPanel({ selItem, equipped, equipBag, crystalMode, setCrystalMode, setSelectedId, activeTab, showMsg }) {
+function CharPicker({ allChars, selectedCharId, onSelect }) {
+  if (allChars.length <= 1) return null
+  return (
+    <div style={{ marginBottom: 8, borderBottom: '1px dashed var(--ink-4)', paddingBottom: 8 }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-4)', marginBottom: 4 }}>装备对象</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {allChars.map(c => (
+          <button
+            key={c.id}
+            className={'btn-ink btn-ink-sm' + (c.id === selectedCharId ? ' btn-ink-primary' : '')}
+            style={{ textAlign: 'left', fontSize: 10, padding: '2px 7px' }}
+            onClick={() => onSelect(c.id)}
+          >
+            {c.name} <span style={{ color: 'var(--ink-3)', fontSize: 9 }}>Lv{c.level}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function ActionPanel({ selItem, allChars, selectedCharId, setSelectedCharId, equipBag, crystalMode, setCrystalMode, setSelectedId, activeTab, showMsg }) {
+  const targetChar = allChars.find(c => c.id === selectedCharId) ?? allChars[0]
+  const equipped = targetChar?.equipped ?? {}
   const equippedUids = new Set(Object.values(equipped).filter(v => typeof v === 'string'))
+  // 所有角色已装的 uid（批量出售时不允许出售任何人已装的）
+  const allEquippedUids = new Set(
+    allChars.flatMap(c => Object.values(c.equipped).filter(v => typeof v === 'string'))
+  )
 
   // 批量出售（装备标签页）
   const batchSellBlock = activeTab === 3 ? (() => {
-    const unequipped = (equipBag ?? []).filter(i => !equippedUids.has(i.uid))
+    const unequipped = (equipBag ?? []).filter(i => !allEquippedUids.has(i.uid))
     const counts = {}
     for (const i of unequipped) counts[i.quality] = (counts[i.quality] ?? 0) + 1
     const rows = QUALITY_ORDER.filter(q => counts[q])
@@ -313,9 +341,10 @@ function ActionPanel({ selItem, equipped, equipBag, crystalMode, setCrystalMode,
   if (selItem.isEquip) {
     const instMap = new Map((equipBag ?? []).map(i => [i.uid, i]))
     const matchSlots = EQUIP_SLOT_DEFS.filter(s => s.filter(selItem.equipData))
-    const isEquipped = equippedUids.has(selItem.inst?.uid)
+    const isEquipped = allEquippedUids.has(selItem.inst?.uid)
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <CharPicker allChars={allChars} selectedCharId={selectedCharId} onSelect={setSelectedCharId} />
         <div style={{ borderBottom: '1px solid var(--ink-4)', paddingBottom: 8, marginBottom: 2 }}>
           <div className="brush" style={{ fontSize: 14, color: selItem.nameColor }}>{selItem.n}</div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-3)', marginTop: 2 }}>
@@ -333,7 +362,7 @@ function ActionPanel({ selItem, equipped, equipBag, crystalMode, setCrystalMode,
             return (
               <button key={slot.key} className="btn-ink btn-ink-primary btn-ink-sm"
                 style={{ textAlign: 'left', fontSize: 10 }}
-                onClick={() => { equipItemAction(slot.key, selItem.inst.uid); setSelectedId(null) }}>
+                onClick={() => { equipItemForChar(slot.key, selItem.inst.uid, selectedCharId); setSelectedId(null) }}>
                 {slot.name}{curItem ? `（替换 ${curItem.item_name}）` : ''}
               </button>
             )
@@ -458,25 +487,36 @@ function buildSlots(items) {
 // ── 主组件 ────────────────────────────────────────────────────────────────────
 export default function BagScreen() {
   const char = useSyncExternalStore(subscribe, getSnapshot)
-  const [activeTab, setActiveTab]     = useState(0)
-  const [selectedId, setSelectedId]   = useState(null)
-  const [tooltip, setTooltip]         = useState(null)
-  const [page, setPage]               = useState(0)
-  const [msg, setMsg]                 = useState(null)
-  const [crystalMode, setCrystalMode] = useState(null)
+  const [activeTab, setActiveTab]         = useState(0)
+  const [selectedId, setSelectedId]       = useState(null)
+  const [tooltip, setTooltip]             = useState(null)
+  const [page, setPage]                   = useState(0)
+  const [msg, setMsg]                     = useState(null)
+  const [crystalMode, setCrystalMode]     = useState(null)
+  const [selectedCharId, setSelectedCharId] = useState(() => char.activeCharId ?? char.id ?? 'char_main')
 
-  const equipped = char.equipped ?? {}
+  // 全角色列表（主角 + 其他角色）
+  const allChars = [
+    { id: char.activeCharId ?? char.id ?? 'char_main', name: char.name ?? '主角', level: char.level ?? 1, equipped: char.equipped ?? {} },
+    ...(char.otherChars ?? []).map(c => ({ id: c.id, name: c.name ?? '角色', level: c.level ?? 1, equipped: c.equipped ?? {} })),
+  ]
+  // 当前选中角色的 equipped
+  const targetChar = allChars.find(c => c.id === selectedCharId) ?? allChars[0]
+  const equipped = targetChar.equipped
 
   function showMsg(text, ok = true) {
     setMsg({ text, ok })
     setTimeout(() => setMsg(null), 2800)
   }
 
-  const equippedUids   = new Set(Object.values(equipped).filter(v => typeof v === 'string'))
+  // 所有角色已装备的 uid 集合（用于从格子中隐藏已装备物品）
+  const allEquippedUids = new Set(
+    allChars.flatMap(c => Object.values(c.equipped).filter(v => typeof v === 'string'))
+  )
   const consumableItems = (char.bag ?? []).map(consumableEntryToDisplay).filter(Boolean)
   const crystalItems    = (char.crystalBag ?? []).map(crystalToDisplay)
   const equipItems      = (char.equipBag ?? [])
-    .filter(inst => !equippedUids.has(inst.uid))
+    .filter(inst => !allEquippedUids.has(inst.uid))
     .map(equipInstToDisplay).filter(Boolean)
 
   const allItems   = [...consumableItems, ...crystalItems, ...equipItems]
@@ -636,7 +676,9 @@ export default function BagScreen() {
           </div>
           <ActionPanel
             selItem={selItem}
-            equipped={equipped}
+            allChars={allChars}
+            selectedCharId={selectedCharId}
+            setSelectedCharId={setSelectedCharId}
             equipBag={char.equipBag ?? []}
             crystalMode={crystalMode}
             setCrystalMode={setCrystalMode}

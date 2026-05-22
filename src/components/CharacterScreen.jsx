@@ -274,7 +274,7 @@ export default function CharacterScreen() {
                 {c.isActive ? '★' : '○'} {c.name} {c.level}级
               </button>
             ))}
-            {allChars.length < 3 && !creating && (
+            {allChars.length < 5 && !creating && (
               <button
                 onClick={() => setCreating(true)}
                 style={{ padding: '2px 7px', fontSize: 10, cursor: 'pointer', background: 'var(--paper)', border: '1px dashed var(--ink-3)', color: 'var(--ink-3)', fontFamily: 'var(--font-mono)' }}

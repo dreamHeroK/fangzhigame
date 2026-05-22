@@ -7,7 +7,27 @@
       "PowerShell(Get-ChildItem -Path \"d:\\\\learning\\\\wendao\\\\src\" -Recurse -Force | Where-Object { $_.PSIsContainer -eq $false } | Select-Object FullName | Head -30)",
       "PowerShell(Get-ChildItem -Path \"d:\\\\learning\\\\wendao\\\\src\" -Recurse -Force | Where-Object { $_.PSIsContainer -eq $false } | Select-Object FullName -First 30)",
       "Bash(del \"d:\\\\learning\\\\wendao\\\\src\\\\game\\\\grindQuests.js\")",
-      "Bash(Get-ChildItem -Path \"d:\\\\learning\\\\wendao\\\\src\\\\game\" -Recurse)"
+      "Bash(Get-ChildItem -Path \"d:\\\\learning\\\\wendao\\\\src\\\\game\" -Recurse)",
+      "Bash(powershell -Command \"\\(Get-Content 'd:\\\\learning\\\\wendao\\\\src\\\\game\\\\data\\\\petCatalog.json' | Measure-Object -Line\\).Lines\")",
+      "Bash(node -e \"const d=require\\('./src/game/data/petCatalog.json'\\); console.log\\('总数:', d.length\\); const types={}; d.forEach\\(p=>{const t=p.type||'普通'; types[t]=\\(types[t]||0\\)+1}\\); console.log\\(types\\)\")",
+      "WebFetch(domain:wanwd.gyyx.cn)",
+      "WebFetch(domain:doc.quark.cn)",
+      "WebFetch(domain:zhuanlan.zhihu.com)",
+      "WebFetch(domain:www.te5.com)",
+      "WebFetch(domain:asktao.17173.com)",
+      "WebFetch(domain:www.ali213.net)",
+      "WebFetch(domain:newgame.17173.com)",
+      "WebFetch(domain:wenwen.sogou.com)",
+      "WebFetch(domain:max.book118.com)",
+      "WebFetch(domain:games.sina.cn)",
+      "WebFetch(domain:www.sgamer.com)",
+      "WebFetch(domain:www.sohu.com)",
+      "WebFetch(domain:gl.ali213.net)",
+      "WebFetch(domain:ol.gamersky.com)",
+      "WebFetch(domain:www.9game.cn)",
+      "Bash(node -e ' *)",
+      "Bash(node -e \"const d = require\\('./src/game/data/petCatalog.json'\\); console.log\\('总条目:', d.length\\); const types = [...new Set\\(d.map\\(p => p.type ?? '普通'\\)\\)]; console.log\\('宠物类型:', types\\); const byType = {}; for \\(const t of types\\) byType[t] = d.filter\\(p => \\(p.type ?? '普通'\\) === t\\).length; console.log\\('各类型数量:', JSON.stringify\\(byType\\)\\);\")",
+      "WebFetch(domain:wd.leiting.com)"
     ]
   }
 }

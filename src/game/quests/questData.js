@@ -3,8 +3,63 @@
  * objective.type: 'visit_map' | 'battle' | 'talk'
  */
 
+// NPC 角色类型
+export const NPC_ROLES = {
+  quest:    { label: '任务', color: 'var(--vermilion)' },
+  merchant: { label: '商人', color: 'var(--gold-2)' },
+  trainer:  { label: '修炼', color: 'var(--bamboo)' },
+  activity: { label: '活动', color: '#7a5ab0' },
+  event:    { label: '节庆', color: '#c84c20' },
+  guild:    { label: '帮派', color: 'var(--ink-2)' },
+  healer:   { label: '治疗', color: '#4a90d9' },
+  guide:    { label: '指引', color: '#2d8a2d' },
+  welfare:  { label: '福利', color: '#c87820' },
+}
+
 // ── NPC ────────────────────────────────────────────────────────────────────
 export const NPCS = [
+  // ── 揽仙镇（城镇）──
+  { id: 'npc_lanxian_guide',   name: '小仙童',   title: '揽仙镇新手指引',  mapId: 'lanxian_zhen',   role: 'guide',    glyph: '引',
+    idle: '初来乍到？贫道为你指引仙途——每位道友人手一套入门行头，助你少走弯路！' },
+  { id: 'npc_lanxian_welfare', name: '福缘使者', title: '揽仙镇福利大使',  mapId: 'lanxian_zhen',   role: 'welfare',  glyph: '福',
+    idle: '手持兑换码，好礼不等人！大千世界，缘分到了，礼也就到了。' },
+  { id: 'npc_lanxian_mayor',   name: '陈福',     title: '揽仙镇镇长',     mapId: 'lanxian_zhen',   role: 'quest',    glyph: '陈',
+    idle: '老夫在此镇守了三十年，见过无数修士从这里出发，踏上各自的道途。你来了，正是时候。' },
+  { id: 'npc_lanxian_smith',   name: '铁匠老孟', title: '揽仙镇铁匠铺',   mapId: 'lanxian_zhen',   role: 'merchant', glyph: '孟',
+    idle: '炉火日夜不熄，老汉这里的兵器件件手打，便宜不了，但绝对耐用。' },
+  { id: 'npc_lanxian_teacher', name: '武当老道', title: '武当观修炼导师',  mapId: 'lanxian_zhen',   role: 'trainer',  glyph: '道',
+    idle: '修炼之道，贵在持恒。老道在此为有缘人指点入门功法，不收分文。' },
+  { id: 'npc_lanxian_post',    name: '驿站小二', title: '揽仙镇驿站',     mapId: 'lanxian_zhen',   role: 'activity', glyph: '驿',
+    idle: '打尖住店一站搞定！咱们驿站每日有师门派发的差事，完成了有额外赏钱哦。' },
+  { id: 'npc_lanxian_healer',  name: '陈大夫',   title: '揽仙镇游医',     mapId: 'lanxian_zhen',   role: 'healer',   glyph: '医',
+    idle: '老夫行医三十载，金针度气、驱邪续命，样样在行。道行低的年轻人不收分文，高手么……那就得看伤势深浅了。' },
+
+  // ── 天墉城（城镇）──
+  { id: 'npc_tianyong_lord',    name: '令狐峰',   title: '天墉城城主',     mapId: 'tianyong_cheng', role: 'quest',    glyph: '令',
+    idle: '天下修士皆以天墉城为家，老夫自当守护这片净土。有何要事，尽管直言。' },
+  { id: 'npc_tianyong_wuxing',  name: '五行阁主', title: '五行感悟导师',   mapId: 'tianyong_cheng', role: 'trainer',  glyph: '五',
+    idle: '金木水火土，五行相生相克。若你对自身属性有所疑惑，来找阁主便是。' },
+  { id: 'npc_tianyong_arms',    name: '兵器大师', title: '天墉城兵器铺',   mapId: 'tianyong_cheng', role: 'merchant', glyph: '铸',
+    idle: '天下名兵，皆出自老夫之手。如今材料难寻，价格自然水涨船高……' },
+  { id: 'npc_tianyong_crystal', name: '天珠阁掌柜', title: '天珠黑水晶专卖', mapId: 'tianyong_cheng', role: 'merchant', glyph: '珠',
+    idle: '黑水晶乃东海深处孕育的异宝，可吸附装备灵韵，万金难求。' },
+  { id: 'npc_tianyong_quest',   name: '韩清',     title: '任务发布官',     mapId: 'tianyong_cheng', role: 'quest',    glyph: '韩',
+    idle: '城内外的事务多如牛毛，官府单靠一己之力应付不来，故而向修士发布委托。' },
+  { id: 'npc_tianyong_event',   name: '节庆使者', title: '天墉城活动官',   mapId: 'tianyong_cheng', role: 'event',    glyph: '节',
+    idle: '近日中秋将至，城中将举办灯谜会、斗酒宴，欢迎各路修士踊跃参与！' },
+  { id: 'npc_tianyong_guild',   name: '帮派使者', title: '各大帮派联络处', mapId: 'tianyong_cheng', role: 'guild',    glyph: '帮',
+    idle: '天下各大帮派在此设有驻点，入帮、叛帮、帮派战事，皆可在此登记。' },
+
+  // ── 东海渔村（城镇）──
+  { id: 'npc_donghai_chief',    name: '海伯',     title: '东海渔村村长',   mapId: 'donghai_yucun',  role: 'quest',    glyph: '海',
+    idle: '这渔村世代靠海为生，前些时日海兽横行，村里损失惨重，还望道友出手相助。' },
+  { id: 'npc_donghai_merchant', name: '海货商人', title: '渔村集市',       mapId: 'donghai_yucun',  role: 'merchant', glyph: '货',
+    idle: '东海珍馐，新鲜出水！海龟壳、鱼人珠、蓬莱灵草，应有尽有。' },
+  { id: 'npc_donghai_captain',  name: '周文',     title: '蓬莱探险队长',   mapId: 'donghai_yucun',  role: 'quest',    glyph: '周',
+    idle: '蓬莱岛上奇宝无数，但险象环生。本队长每次出航都要精心准备，道友若有意同行，先来与我说。' },
+  { id: 'npc_donghai_diviner',  name: '观潮老者', title: '海图占卜师',     mapId: 'donghai_yucun',  role: 'activity', glyph: '潮',
+    idle: '老夫观潮四十年，只要海面有变，都逃不过这双眼睛。来，让老夫为你推算一番行程。' },
+
   // 揽仙镇外
   { id: 'npc_zhang_elder', name: '张长老', title: '揽仙镇守护长老', mapId: 'lanxian_wai', glyph: '张',
     idle: '年轻人，这里便是你踏上修仙之路的起点。机遇与凶险并存，且行且珍重。' },
@@ -394,7 +449,110 @@ export const SIDE_QUESTS = [
   },
 ]
 
-export const ALL_QUESTS = [...MAIN_QUESTS, ...SIDE_QUESTS]
+// ── 城镇委托任务 ──────────────────────────────────────────────────────────────
+export const TOWN_QUESTS = [
+  // ── 揽仙镇 ──
+  {
+    id: 'town_lanxian_01', chain: 'town', chapter: '揽仙镇·委托',
+    order: 1, npcId: 'npc_lanxian_mayor', levelReq: 3, prereqs: [],
+    title: '镇中失窃',
+    openText: '近日镇内频频失窃，追查下来竟是卧龙坡里的野兽作怪，顺着官道流窜进来的。烦请道友前去将其驱散，还镇子一份安宁，老夫必有重谢。',
+    closeText: '多谢道友出手！那帮畜生总算消停了，这些银两和丹药是镇上百姓的心意，还望笑纳。',
+    objectives: [{ type: 'battle', target: 'wolong_po', count: 3, label: '在卧龙坡胜利 3 场' }],
+    reward: { exp: 900, gold: 400, daoDays: 1, potential: 40,
+      items: [{ itemId: 'xiao_huanhun', qty: 3 }, { itemId: 'xiao_juling', qty: 2 }] },
+  },
+  {
+    id: 'town_lanxian_02', chain: 'town', chapter: '揽仙镇·委托',
+    order: 2, npcId: 'npc_lanxian_smith', levelReq: 10, prereqs: [],
+    title: '采购矿石',
+    openText: '官道南北的山头里藏着不少铁矿石，老汉一个人去取不方便，还有那些狐狸野狗拦路。你若路过官道，帮老汉踩踩点，看看矿脉位置如何。',
+    closeText: '有你这份情报，老汉采矿便方便多了！拿着这块强化石，算是老汉的一点心意。',
+    objectives: [{ type: 'visit_map', target: 'guandao_nanbei', count: 1, label: '前往官道南/北探查' }],
+    reward: { exp: 2200, gold: 800, daoDays: 2, potential: 60,
+      items: [{ itemId: 'qianghuashi', qty: 1 }] },
+  },
+  {
+    id: 'town_lanxian_03', chain: 'town', chapter: '揽仙镇·委托',
+    order: 3, npcId: 'npc_lanxian_teacher', levelReq: 5, prereqs: [],
+    title: '修炼指引',
+    openText: '修炼之道，不可纸上谈兵。揽仙镇外便是试炼场，老道要你亲身出战，以实战淬炼本心。打赢了，再来见我，老道自有传授。',
+    closeText: '不错，身手见长！老道这里有一套入门心法，可助你凝练气血，好生修炼。',
+    objectives: [{ type: 'battle', target: 'lanxian_wai', count: 5, label: '在揽仙镇外胜利 5 场' }],
+    reward: { exp: 1500, gold: 600, daoDays: 2, potential: 80,
+      items: [{ itemId: 'xiao_juling', qty: 5 }] },
+  },
+
+  // ── 天墉城 ──
+  {
+    id: 'town_tianyong_01', chain: 'town', chapter: '天墉城·委托',
+    order: 1, npcId: 'npc_tianyong_quest', levelReq: 20, prereqs: [],
+    title: '城防巡逻',
+    openText: '官道一带盗匪横行，已有数批押运队伍遭到袭击。官府委托修士协助清剿，以保商道畅通。请前往官道南/北，连续击退来犯之敌，还往来商旅一份安全。',
+    closeText: '干得漂亮！商道已安全许多，城防账下已记录你的功劳，这是这次委托的酬劳。',
+    objectives: [{ type: 'battle', target: 'guandao_nanbei', count: 5, label: '在官道南/北胜利 5 场' }],
+    reward: { exp: 7000, gold: 2000, daoDays: 6, potential: 120 },
+  },
+  {
+    id: 'town_tianyong_02', chain: 'town', chapter: '天墉城·委托',
+    order: 2, npcId: 'npc_tianyong_quest', levelReq: 35, prereqs: [],
+    title: '清剿山贼',
+    openText: '十里坡近来聚集了一批凶悍山贼，与狼虎勾结，截杀过路修士已有数起。城主令狐峰下令重金悬赏，凡能连续清剿成功者，重重有赏。',
+    closeText: '十里坡的威胁解除，百姓拍手称快！你的名字已列入天墉城英雄录，这份赏金实至名归。',
+    objectives: [{ type: 'battle', target: 'shilipo', count: 5, label: '在十里坡胜利 5 场' }],
+    reward: { exp: 22000, gold: 5000, daoDays: 16, potential: 300 },
+  },
+  {
+    id: 'town_tianyong_03', chain: 'town', chapter: '天墉城·委托',
+    order: 3, npcId: 'npc_tianyong_wuxing', levelReq: 60, prereqs: [],
+    title: '五行感悟之旅',
+    openText: '五行阁的传承功法需以实战印证悟道，百花谷中五行灵气最为纯粹。你且亲赴百花谷，以身感悟五行之力，回来后方可继续研习阁中秘典。',
+    closeText: '不错，你身上的五行之气已颇为纯正。继续修炼，终有一日可达五行圆融之境。',
+    objectives: [{ type: 'visit_map', target: 'baihua_gu', count: 1, label: '前往百花谷感悟五行' }],
+    reward: { exp: 75000, gold: 13000, daoDays: 38, potential: 750 },
+  },
+  {
+    id: 'town_tianyong_04', chain: 'town', chapter: '天墉城·委托',
+    order: 4, npcId: 'npc_tianyong_lord', levelReq: 80, prereqs: [],
+    title: '守护中原',
+    openText: '绝人阵封印出现松动的迹象，大量煞气涌向中原腹地。老夫以城主之名，请求道友前往绝人阵以战力震慑魔气，为中原百万生灵守住这最后一道防线！',
+    closeText: '有你这等高手相助，中原无忧矣！此乃天墉城最高规格的勋章，望日后继续守护中原。',
+    objectives: [{ type: 'battle', target: 'jueren_zhen', count: 3, label: '在绝人阵胜利 3 场' }],
+    reward: { exp: 120000, gold: 22000, daoDays: 60, potential: 1200 },
+  },
+
+  // ── 东海渔村 ──
+  {
+    id: 'town_donghai_01', chain: 'town', chapter: '东海渔村·委托',
+    order: 1, npcId: 'npc_donghai_chief', levelReq: 22, prereqs: [],
+    title: '渔获告急',
+    openText: '北海沙滩上的海龟群近来异常凶暴，渔船屡屡被掀翻，渔获大减。村里老幼都指望着这片海域过活，还望道友伸出援手，驱散那批横行的海龟！',
+    closeText: '多谢道友！海龟群退了，渔船终于可以安心出海了。这是村里筹的一些酬谢，不多，心意到了。',
+    objectives: [{ type: 'battle', target: 'beiha_shatan', count: 3, label: '在北海沙滩胜利 3 场' }],
+    reward: { exp: 5500, gold: 1600, daoDays: 5, potential: 110,
+      items: [{ itemId: 'zhong_huanhun', qty: 2 }, { itemId: 'zhong_juling', qty: 1 }] },
+  },
+  {
+    id: 'town_donghai_02', chain: 'town', chapter: '东海渔村·委托',
+    order: 2, npcId: 'npc_donghai_captain', levelReq: 45, prereqs: [],
+    title: '探索蓬莱',
+    openText: '本队长已派出三批人手前往蓬莱岛勘探，无一生还。那岛上的巨蜥与石魔凶悍异常。听说道友身手不凡，可否先行踏上蓬莱岛踩个点，探查地形后回来汇报？',
+    closeText: '好！蓬莱岛的情形已基本摸清，接下来可以部署正式探险了。这是你应得的报酬，后续行动还需仰仗道友！',
+    objectives: [{ type: 'visit_map', target: 'penglai_dao', count: 1, label: '前往蓬莱岛探查' }],
+    reward: { exp: 42000, gold: 7500, daoDays: 24, potential: 480 },
+  },
+  {
+    id: 'town_donghai_03', chain: 'town', chapter: '东海渔村·委托',
+    order: 3, npcId: 'npc_donghai_diviner', levelReq: 30, prereqs: [],
+    title: '海图推算',
+    openText: '老夫推算出北海有一处隐藏礁石群，正是渔船触礁之因。若想验证，须在北海沙滩多次出战，借助战力扰动海面气流，老夫方可借机推演精确位置。',
+    closeText: '礁石位置已确认！老夫绘制了一份海图，渔船从此可绕开险地。这份酬谢是村里众人的心意。',
+    objectives: [{ type: 'battle', target: 'beiha_shatan', count: 8, label: '在北海沙滩胜利 8 场' }],
+    reward: { exp: 9000, gold: 2200, daoDays: 8, potential: 180 },
+  },
+]
+
+export const ALL_QUESTS = [...MAIN_QUESTS, ...SIDE_QUESTS, ...TOWN_QUESTS]
 
 /** 按 mapId 获取该地图的 NPC 列表 */
 export function getNpcsForMap(mapId) {

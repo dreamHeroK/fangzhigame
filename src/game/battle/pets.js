@@ -6,6 +6,7 @@ import {
 } from './petGrowthTable.js'
 import { WENDAO_MAPS } from './wendaoMapsConfig.js'
 import { getPetByKey } from '../petCatalog.js'
+import { applyTianShuBaseStats, calcPetSpiritMax } from './tianShu.js'
 
 function spawnLabel(key) {
   for (const m of WENDAO_MAPS) {
@@ -113,7 +114,10 @@ function buildPetSkillPool(level, affinity) {
  */
 export function createPetAllyUnit(pet) {
   const isBaby = pet.kind === '宝宝'
-  const stats = computeStatsFromGrowth(pet.level, pet.growth, { baby: isBaby, allocatedAttr: pet.allocatedAttr })
+  const g = pet.growth ?? pet.growthDetail
+  const baseStats = computeStatsFromGrowth(pet.level, g, { baby: isBaby, allocatedAttr: pet.allocatedAttr })
+  const stats = applyTianShuBaseStats(baseStats, pet.tianShu)
+  const spiritMax = calcPetSpiritMax(pet.tianShu)
   const catalog = getPetByKey(pet.spawnKey)
   const affinity = catalog?.affinity ?? null
   const skillPool = buildPetSkillPool(pet.level, affinity)
@@ -125,9 +129,9 @@ export function createPetAllyUnit(pet) {
     name: pet.displayName,
     level: pet.level,
     maxHp: stats.maxHp,
-    hp: stats.maxHp,
+    hp: pet.hpCur != null ? Math.min(pet.hpCur, stats.maxHp) : stats.maxHp,
     maxMp: stats.maxMp,
-    mp: stats.maxMp,
+    mp: pet.mpCur != null ? Math.min(pet.mpCur, stats.maxMp) : stats.maxMp,
     atk: stats.atk,
     mAtk: stats.mAtk,
     def: stats.def,
@@ -136,6 +140,9 @@ export function createPetAllyUnit(pet) {
     skillLevels: {},
     affinity,
     innateSkillIds: pet.innateIds ?? [],
+    tianShu: pet.tianShu ?? [],
+    spiritMax,
+    spiritCur: spiritMax,
   }
 }
 

@@ -1,4 +1,4 @@
-﻿import { expRequiredToNextLevel, petExpRequiredToNextLevel } from '../characterLevelConfig.js'
+﻿import { expRequiredToNextLevel } from '../characterLevelConfig.js'
 import { daoRewardMultiplier, daoStatusHitBonus, daoStatusResistBonus } from './daoStandard.js'
 import { getSkill } from './skills.js'
 import {
@@ -18,6 +18,7 @@ import {
   getMapById,
 } from './monsters.js'
 import { computeCaptureProbability, createWildPetFromFoe } from './pets.js'
+import { TIANSHU_BY_ID, TIANSHU_QUALITY } from './tianShu.js'
 import { getConsumable } from '../items/catalog.js'
 import { formatLootLine, mergeLootStacks, rollBattleDrops, rollBattleEquipDrops, rollDropsForFoe } from '../items/drops.js'
 import { getEquipByCode } from '../items/equipCatalog.js'
@@ -42,21 +43,30 @@ const STATUS_EXPIRE_MSG = {
 }
 
 /**
- * 端游经验计算：每只怪 ≈ 0.2% 同级升级经验，宠物 ≈ 0.2% 宠物升级经验。
- * 100 场同级战（5 怪/场）≈ 升一级，与端游节奏一致。
- * 道行：每只怪约 L×0.04 天；潜能：每只怪约 L×0.15 点。
+ * 端游经验计算：怪物经验 ∝ 怪物等级²（与升级需求指数增长结合，早级快升晚级慢磨）。
+ * 等级差惩罚：玩家超出怪物 10 级以上时经验递减，超出 27+ 级降至 5% 底限。
+ * 宠物经验约为人物 1.6 倍（宠物升级需求约为人物 65%，实际约快 2.5×）。
+ * 参考节奏（同级混战）：Lv10 ≈ 40 场/级，Lv30 ≈ 220 场/级，Lv50 ≈ 1800 场/级。
  */
-function calcVictoryRewards(foes, rng) {
+function calcVictoryRewards(foes, rng, playerLevel = 1) {
   let exp    = 0
   let petExp = 0
   let gold   = 0
   let daoDays   = 0
   let potential = 0
   for (const f of foes) {
-    const L = Math.max(1, f.level)
-    const bm = f.isFieldBoss ? 3 : 1
-    exp    += Math.max(10, Math.floor(expRequiredToNextLevel(L) * 0.002 * bm))
-    petExp += Math.max(5,  Math.floor(petExpRequiredToNextLevel(L) * 0.002 * bm))
+    const L  = Math.max(1, f.level)
+    const bm = f.isFieldBoss ? 4 : 1
+
+    // 怪物基础经验：正比于等级平方
+    const baseExp = Math.max(5, Math.floor(L * L * 0.12))
+
+    // 等级差惩罚（玩家高于怪物超过 10 级时每级衰减 6%，最低 5%）
+    const diff = Math.max(0, playerLevel - L)
+    const diffFactor = diff <= 10 ? 1.0 : Math.max(0.05, 1.0 - (diff - 10) * 0.06)
+
+    exp    += Math.round(baseExp * bm * diffFactor)
+    petExp += Math.round(baseExp * bm * diffFactor * 1.6)
     gold   += Math.floor(L * (2 + rng() * 3) * bm)
     daoDays   += Math.max(1, Math.round(L * 0.04 * bm))
     potential += Math.max(2, Math.round(L * 0.15 * bm))
@@ -70,7 +80,9 @@ function finalizeVictory(s, rng, extraLoot = []) {
   const fromField = rollBattleDrops(foes, rng)
   const lastVictoryLoot = mergeLootStacks([...fromField, ...extraLoot])
   const lastEquipDrops = rollBattleEquipDrops(foes, rng)
-  let { exp, petExp, gold, daoDays, potential } = calcVictoryRewards(foes, rng)
+  const playerUnit = s.units.find(u => u.side === 'ally' && u.kind !== 'pet')
+  const playerLevel = playerUnit?.level ?? 1
+  let { exp, petExp, gold, daoDays, potential } = calcVictoryRewards(foes, rng, playerLevel)
 
   // 刷道战斗：不发经验，道行按当前道行年数计算
   if (s.isShuadao) {
@@ -84,7 +96,6 @@ function finalizeVictory(s, rng, extraLoot = []) {
   }
 
   // 道行奖励衰减：玩家道行超出本级标准后递减
-  const playerUnit = s.units.find(u => u.side === 'ally' && u.kind !== 'pet')
   const daoMul = daoRewardMultiplier(playerUnit?.daoExcessRatio ?? 0)
   if (daoMul < 1) {
     daoDays = Math.max(1, Math.round(daoDays * daoMul))
@@ -154,6 +165,124 @@ function patchUnit(state, id, patch) {
   return { ...state, units }
 }
 
+// ── 天书触发系统 ─────────────────────────────────────────────────────────────
+
+/**
+ * 尝试触发宠物天书效果
+ * @param {'on_physical_hit'|'on_magic_hit'|'on_hit_taken'} triggerType
+ * @param {string} petId  – 触发天书的宠物
+ * @param {string} targetId – 攻击目标（对 on_hit_taken 则为攻击者）
+ * @param {number} primaryDmg – 主攻击伤害量
+ */
+function checkTianShuTriggers(state, petId, triggerType, targetId, primaryDmg, rng) {
+  const pet = getActor(state, petId)
+  if (!pet || pet.kind !== 'pet' || !pet.tianShu?.length) return state
+  let s = state
+
+  for (const ts of pet.tianShu) {
+    const def = TIANSHU_BY_ID[ts.type]
+    if (!def || def.trigger !== triggerType) continue
+
+    const q = TIANSHU_QUALITY[ts.quality]
+    const chance = def.triggerChance + (q?.triggerBonus ?? 0)
+    if (rng() > chance) continue
+
+    const spiritNeeded = def.spiritCost
+    const actor = getActor(s, petId)
+    if ((actor.spiritCur ?? 0) < spiritNeeded) continue
+    s = patchUnit(s, petId, { spiritCur: (actor.spiritCur ?? 0) - spiritNeeded })
+
+    s = applyTianShuEffect(s, petId, ts, def, targetId, primaryDmg, rng)
+  }
+  return s
+}
+
+function applyTianShuEffect(state, petId, ts, def, targetId, primaryDmg, rng) {
+  const pet = getActor(state, petId)
+  if (!pet) return state
+  const target = getActor(state, targetId)
+  let s = state
+  const eff = def.effect
+
+  switch (eff.type) {
+    case 'extra_magic_dmg': {
+      if (!target || target.hp <= 0) break
+      const dmg = Math.max(1, Math.floor((pet.mAtk ?? pet.atk) * eff.mAtkRatio))
+      s = applyDamage(s, targetId, dmg)
+      s = pushLog(s, `  ✦ ${pet.name}【魔引】触发 → ${target.name} 额外受到 ${dmg} 法术伤害`)
+      break
+    }
+    case 'splash_dmg': {
+      const foes = living(s, 'foe').filter(u => u.id !== targetId)
+      const splash = foes[Math.floor(rng() * foes.length)]
+      const dmg = Math.max(1, Math.floor(primaryDmg * eff.primaryRatio))
+      if (splash) {
+        s = applyDamage(s, splash.id, dmg)
+        s = pushLog(s, `  ✦ ${pet.name}【狂暴】溅射 → ${splash.name} 受到 ${dmg} 溅射伤害`)
+      }
+      break
+    }
+    case 'elemental_dmg': {
+      if (!target || target.hp <= 0) break
+      const dmg = Math.max(1, Math.floor((pet.mAtk ?? pet.atk) * eff.mAtkRatio))
+      s = applyDamage(s, targetId, dmg)
+      s = pushLog(s, `  ✦ ${pet.name}【烈炎】触发 → ${target.name} 受到 ${dmg} 属性法伤`)
+      break
+    }
+    case 'counter_atk': {
+      if (!target || target.hp <= 0) break
+      const dmg = Math.max(1, Math.floor(pet.atk * eff.atkRatio))
+      s = applyDamage(s, targetId, dmg)
+      s = pushLog(s, `  ✦ ${pet.name}【反击】→ ${target.name} 受到 ${dmg} 反击伤害`)
+      break
+    }
+    case 'neutral_magic_dmg': {
+      if (!target || target.hp <= 0) break
+      const dmg = Math.max(1, Math.floor((pet.mAtk ?? pet.atk) * eff.mAtkRatio))
+      s = applyDamage(s, targetId, dmg)
+      s = pushLog(s, `  ✦ ${pet.name}【降魔斩】→ ${target.name} 受到 ${dmg} 无视相性法伤`)
+      break
+    }
+    case 'dmg_amp':
+      // 追加伤害（基于主伤害的比例）
+      if (!target || target.hp <= 0) break
+      {
+        const bonus = Math.max(1, Math.floor(primaryDmg * eff.ratio))
+        s = applyDamage(s, targetId, bonus)
+        s = pushLog(s, `  ✦ ${pet.name}【怒击】→ ${target.name} 额外受到 ${bonus} 点`)
+      }
+      break
+    case 'bonus_normal_attack':
+      if (!target || target.hp <= 0) break
+      if (rng() < eff.chance) {
+        const res = applyStrike(s, petId, targetId, 'normal_attack', rng)
+        s = res.state
+        s = pushLog(s, `  ✦ ${pet.name}【修罗术】追击 → ${target.name} 受到 ${res.damage} 点`)
+      }
+      break
+    case 'dmg_reduce':
+      // 已在 applyStrikePet 中处理，此处只记日志
+      s = pushLog(s, `  ✦ ${pet.name}【云体】减免 ${Math.round(eff.ratio * 100)}% 伤害`)
+      break
+    case 'xianfeng':
+      s = pushLog(s, `  ✦ ${pet.name}【仙风】减免 ${Math.round(eff.dmgReduceRatio * 100)}% 伤害`)
+      break
+    default: break
+  }
+  return s
+}
+
+// ── 天书灵气回复（尽忠，每回合） ─────────────────────────────────────────────
+
+function applyJinzhongRegen(state, petId) {
+  const pet = getActor(state, petId)
+  if (!pet || pet.kind !== 'pet') return state
+  const hasJinzhong = pet.tianShu?.some(ts => ts.type === 'ts_jinzhong')
+  if (!hasJinzhong) return state
+  const newSpirit = Math.min(pet.spiritMax ?? 0, (pet.spiritCur ?? 0) + 500)
+  return patchUnit(state, petId, { spiritCur: newSpirit })
+}
+
 function baseDamage(attacker, defender, skillId, rng = Math.random) {
   const skillLevel = attacker.skillLevels?.[skillId] ?? 0
   const sk = getSkill(skillId, skillLevel)
@@ -201,9 +330,48 @@ function applyStrike(state, attackerId, defenderId, skillId, rng) {
   if (raw === 0) return { state: s, damage: 0 }  // 控制技能：接触但无伤害
   const incoming = resolveIncomingInnate(defender, skillId, raw, rng)
   for (const line of incoming.logs) s = pushLog(s, line)
-  const dmg = incoming.damage
+  let dmg = incoming.damage
+
+  // 宠物天书被攻击前：云体/仙风减伤检查
+  if (defender.kind === 'pet') {
+    const tsBooks = defender.tianShu ?? []
+    for (const ts of tsBooks) {
+      const def = TIANSHU_BY_ID[ts.type]
+      if (!def || def.trigger !== 'on_hit_taken') continue
+      if ((defender.spiritCur ?? 0) < def.spiritCost) continue
+      const q = TIANSHU_QUALITY[ts.quality]
+      const chance = def.triggerChance + (q?.triggerBonus ?? 0)
+      if (rng() > chance) continue
+      if (def.effect.type === 'dmg_reduce') {
+        dmg = Math.max(1, Math.floor(dmg * (1 - def.effect.ratio)))
+        s = patchUnit(s, defenderId, { spiritCur: (getActor(s, defenderId)?.spiritCur ?? 0) - def.spiritCost })
+        s = pushLog(s, `  ✦ ${defender.name}【云体】减伤 ${Math.round(def.effect.ratio * 100)}%`)
+      } else if (def.effect.type === 'xianfeng') {
+        dmg = Math.max(1, Math.floor(dmg * (1 - def.effect.dmgReduceRatio)))
+        s = patchUnit(s, defenderId, { spiritCur: (getActor(s, defenderId)?.spiritCur ?? 0) - def.spiritCost })
+        s = pushLog(s, `  ✦ ${defender.name}【仙风】减伤 ${Math.round(def.effect.dmgReduceRatio * 100)}%`)
+      }
+    }
+  }
+
   s = applyDamage(s, defenderId, dmg)
   const defAft = getActor(s, defenderId)
+
+  // 宠物天书被攻击后：反击触发；仙风复活检查
+  if (defender.kind === 'pet') {
+    if (defAft && defAft.hp > 0) {
+      s = checkTianShuTriggers(s, defenderId, 'on_hit_taken', attackerId, dmg, rng)
+    } else if (!defAft || defAft.hp <= 0) {
+      // 仙风复活
+      const xianfeng = (defender.tianShu ?? []).find(ts => ts.type === 'ts_xianfeng')
+      const xfDef = xianfeng ? TIANSHU_BY_ID['ts_xianfeng'] : null
+      if (xfDef && (defender.spiritCur ?? 0) >= xfDef.spiritCost && rng() < xfDef.effect.reviveChance) {
+        s = patchUnit(s, defenderId, { hp: 1 })
+        s = pushLog(s, `  ✦ ${defender.name}【仙风】以 1 点气血复活！`)
+      }
+    }
+  }
+
   if (defAft && defAft.hp > 0 && defAft.side === 'ally') {
     s = maybeApplyDeathChant(s, attacker, defAft, dmg, patchUnit, rng)
   }
@@ -446,6 +614,11 @@ function executeAllySkill(state, actor, skill, targetIds, rng) {
     const res = applyStrike(s, actor.id, tgt.id, effectiveSkill.id, rng)
     s = res.state
     hits.push({ name: getActor(s, tgt.id)?.name ?? tgt.name, damage: res.damage, id: tgt.id })
+    // 宠物天书触发（物理/法术攻击命中后）
+    if (actor.kind === 'pet' && res.damage > 0) {
+      const trigType = effectiveSkill.kind === 'magic' ? 'on_magic_hit' : 'on_physical_hit'
+      s = checkTianShuTriggers(s, actor.id, trigType, tgt.id, res.damage, rng)
+    }
   }
 
   const forceNote = hasForget && skill.id !== 'normal_attack' ? '（遗忘·强制普攻）' : ''
@@ -482,6 +655,7 @@ function executeRound(state, rng) {
     if (!u || u.hp <= 0) continue
 
     if (u.side === 'ally') {
+      if (u.kind === 'pet') s = applyJinzhongRegen(s, u.id)
       s = startOfTurnHooks(s, u.id, rng)
       const uA = getActor(s, u.id)
       if (!uA || uA.hp <= 0) continue
@@ -532,6 +706,7 @@ export function executeNextStep(state, rng = Math.random) {
     if (!u || u.hp <= 0) { idx++; continue }  // 已阵亡，跳过
 
     if (u.side === 'ally') {
+      if (u.kind === 'pet') s = applyJinzhongRegen(s, u.id)
       s = startOfTurnHooks(s, u.id, rng)
       const uA = getActor(s, u.id)
       if (!uA || uA.hp <= 0) { idx++; continue }

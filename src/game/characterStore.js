@@ -20,12 +20,13 @@ import {
   applyPetExp,
   PET_MAX_LEVEL,
 } from './characterLevelConfig.js'
-import { getPetFreeAttrTotal, sumPetAllocAttr } from './battle/petGrowthTable.js'
+import { getPetFreeAttrTotal, sumPetAllocAttr, computeStatsFromGrowth } from './battle/petGrowthTable.js'
 import { computeHeroDerived } from './playerSheet.js'
 import { getConsumable, isQuotaOrb, getRestoreAmount } from './items/catalog.js'
 import { EMPTY_EQUIPPED, getEquipByCode, EQUIP_SLOT_KEYS, EQUIP_SLOT_DEFS } from './items/equipCatalog.js'
 import { acceptQuest, progressBattle, progressVisitMap, claimQuest } from './quests/questEngine.js'
 import { createQuestBabyPet } from './battle/pets.js'
+import { TIANSHU_BY_ID, TIANSHU_DEFS, TIANSHU_MAX_SLOTS, openTianShuBook } from './battle/tianShu.js'
 
 const STORAGE_KEY = 'wendao_char_v1'
 
@@ -172,6 +173,9 @@ const DEFAULT_STATE = {
 
   /** 当前选定练级地图 id */
   currentMapId: 'wulong_ku',
+
+  /** 上次实际战斗的地图 id（跨 session 持久化，供"重新修炼"使用） */
+  lastBattleMapId: null,
 
   /** 任务日志 { [questId]: { status, progress } } */
   questLog: {},
@@ -389,7 +393,7 @@ export function equipSkillAction(skillId) {
  * @param {number|null} remainingHp
  * @param {number|null} remainingMp
  */
-export function applyBattleRewardsAction(rewards, activePetIds = [], loot = [], equipLoot = [], remainingHp = null, remainingMp = null) {
+export function applyBattleRewardsAction(rewards, activePetIds = [], loot = [], equipLoot = [], remainingHp = null, remainingMp = null, petHpMpMap = {}) {
   const { exp = 0, petExp = 0, gold = 0, daoDays = 0, potential = 0 } = rewards
 
   // ── 角色经验 ──
@@ -428,6 +432,31 @@ export function applyBattleRewardsAction(rewards, activePetIds = [], loot = [], 
     finalBag = res.newBag
   }
 
+  // ── 宠物战后 HP/MP + 自动回满 ──
+  const newPetRosterFinal = newPetRoster.map(p => {
+    const hpMp = petHpMpMap[p.id]
+    if (!hpMp) return p
+    const g = p.growth ?? p.growthDetail
+    if (!g) return p
+    const ps = computeStatsFromGrowth(p.level, g, { baby: p.kind === '宝宝', allocatedAttr: p.allocatedAttr })
+    const rawHp = Math.max(0, hpMp.hp)
+    const rawMp = Math.max(0, hpMp.mp)
+    if (!leveled && state.autoRestore) {
+      const res = autoRestoreWithPotions(
+        rawHp >= ps.maxHp ? null : rawHp,
+        rawMp >= ps.maxMp ? null : rawMp,
+        ps.maxHp, ps.maxMp, finalBag,
+      )
+      finalBag = res.newBag
+      return { ...p, hpCur: res.newHpCur, mpCur: res.newMpCur }
+    }
+    return {
+      ...p,
+      hpCur: rawHp >= ps.maxHp ? null : rawHp,
+      mpCur: rawMp >= ps.maxMp ? null : rawMp,
+    }
+  })
+
   // ── 道行 / 潜能 ──
   const totalDays = (state.daoDays ?? 0) + daoDays
   const newDaoYears = (state.daoYears ?? 0) + Math.floor(totalDays / 365)
@@ -446,7 +475,7 @@ export function applyBattleRewardsAction(rewards, activePetIds = [], loot = [], 
     daoYears:     newDaoYears,
     daoDays:      newDaoDays,
     potential:    newPotential,
-    petRoster:    newPetRoster,
+    petRoster:    newPetRosterFinal,
     bag:          finalBag,
     equipBag:     newEquipBag,
     hpCur:        finalHp,
@@ -777,6 +806,10 @@ export function buyShopItemAction(itemId, qty = 1) {
     da_huanhun: 2500, da_juling: 2200,
     heishuijing: 999999,
     qianghuashi: 3000,
+    ts_mogu: 40000, ts_kuangbao: 50000, ts_lieyian: 38000, ts_potian: 48000,
+    ts_fanji: 42000, ts_nuji: 42000, ts_jiangmozhan: 55000, ts_xiuluoshu: 55000,
+    ts_yunti: 45000, ts_xianfeng: 60000, ts_jinzhong: 35000,
+    tianshu_super: 180000,
   }
   const price = SHOP_PRICES[itemId]
   if (price == null) return { ok: false, reason: '该商品不存在' }
@@ -796,6 +829,61 @@ export function buyShopItemAction(itemId, qty = 1) {
   if (idx >= 0) bag[idx] = { ...bag[idx], qty: bag[idx].qty + qty }
   else bag.push({ itemId, qty })
   patch({ bag, tael: (state.tael ?? 0) - total })
+  return { ok: true }
+}
+
+// ── 宠物天书 ─────────────────────────────────────────────────────────────────
+
+/**
+ * 开书并装备到宠物（消耗背包1本 → 随机品质 → 加入 tianShu 列表）
+ * 超级天书（tianshu_super）必得金色，随机类型
+ */
+export function equipPetTianShuAction(petId, itemId) {
+  const roster = state.petRoster ?? []
+  const petIdx = roster.findIndex(p => p.id === petId)
+  if (petIdx < 0) return { ok: false, reason: '宠物不存在' }
+  const pet = roster[petIdx]
+  const tianShu = pet.tianShu ?? []
+  if (tianShu.length >= TIANSHU_MAX_SLOTS) return { ok: false, reason: `天书槽已满（最多 ${TIANSHU_MAX_SLOTS} 本）` }
+  const bag = [...(state.bag ?? [])]
+  const bagIdx = bag.findIndex(e => e.itemId === itemId)
+  if (bagIdx < 0 || bag[bagIdx].qty < 1) return { ok: false, reason: '背包中没有该天书' }
+  bag[bagIdx] = { ...bag[bagIdx], qty: bag[bagIdx].qty - 1 }
+  if (bag[bagIdx].qty <= 0) bag.splice(bagIdx, 1)
+
+  let instance
+  if (itemId === 'tianshu_super') {
+    // 超级天书：随机已有槽位能装的类型（不重复），必得金色
+    const equippedTypes = new Set(tianShu.map(t => t.type))
+    const available = TIANSHU_DEFS.filter(d => !equippedTypes.has(d.id))
+    if (!available.length) return { ok: false, reason: '所有天书类型已装备' }
+    const pick = available[Math.floor(Math.random() * available.length)]
+    instance = openTianShuBook(pick.id, 'gold')
+  } else {
+    const def = TIANSHU_BY_ID[itemId]
+    if (!def) return { ok: false, reason: '未知天书类型' }
+    if (tianShu.some(t => t.type === itemId)) return { ok: false, reason: '同种天书不可重复装备' }
+    instance = openTianShuBook(itemId)
+  }
+
+  const newRoster = [...roster]
+  newRoster[petIdx] = { ...pet, tianShu: [...tianShu, instance] }
+  patch({ petRoster: newRoster, bag })
+  return { ok: true, instance }
+}
+
+/**
+ * 卸除天书（无返还）
+ */
+export function removePetTianShuAction(petId, slotIndex) {
+  const roster = state.petRoster ?? []
+  const petIdx = roster.findIndex(p => p.id === petId)
+  if (petIdx < 0) return { ok: false, reason: '宠物不存在' }
+  const pet = roster[petIdx]
+  const tianShu = (pet.tianShu ?? []).filter((_, i) => i !== slotIndex)
+  const newRoster = [...roster]
+  newRoster[petIdx] = { ...pet, tianShu }
+  patch({ petRoster: newRoster })
   return { ok: true }
 }
 
@@ -954,6 +1042,11 @@ export function setMapAction(mapId) {
   patch({ currentMapId: mapId })
 }
 
+/** 记录上次实际战斗地图（战斗创建时写入） */
+export function setLastBattleMapIdAction(mapId) {
+  patch({ lastBattleMapId: mapId })
+}
+
 // ── 任务系统 ──────────────────────────────────────────────────────────────────
 
 /** 接受任务 */
@@ -1026,12 +1119,40 @@ export function progressVisitQuestAction(mapId) {
 export function applyExpToOtherCharsAction(exp, charHpMpMap = {}) {
   const others = state.otherChars ?? []
   if (!others.length) return
+  let currentBag = state.bag ?? []
   const newOthers = others.map(c => {
     const r = applyExpTowardLevelUp(c.level, c.expIntoLevel ?? c.expCur ?? 0, exp)
     const newLevel    = Math.min(CHARACTER_MAX_LEVEL, r.newLevel)
     const newExpInto  = newLevel >= CHARACTER_MAX_LEVEL ? 0 : r.expIntoLevel
     const gained      = newLevel - c.level
+    const leveled     = gained > 0
     const hpMp        = charHpMpMap[c.id]
+    let hpCur, mpCur
+    if (hpMp != null) {
+      const rawHp = hpMp.hp <= 0 ? 1 : hpMp.hp
+      const rawMp = Math.max(0, hpMp.mp)
+      const maxHp = c.maxHp ?? 9999
+      const maxMp = c.maxMp ?? 9999
+      if (leveled) {
+        hpCur = null
+        mpCur = null
+      } else if (state.autoRestore) {
+        const res = autoRestoreWithPotions(
+          rawHp >= maxHp ? null : rawHp,
+          rawMp >= maxMp ? null : rawMp,
+          maxHp, maxMp, currentBag,
+        )
+        currentBag = res.newBag
+        hpCur = res.newHpCur
+        mpCur = res.newMpCur
+      } else {
+        hpCur = rawHp >= maxHp ? null : rawHp
+        mpCur = rawMp >= maxMp ? null : rawMp
+      }
+    } else {
+      hpCur = c.hpCur
+      mpCur = c.mpCur
+    }
     return {
       ...c,
       level:        newLevel,
@@ -1041,11 +1162,11 @@ export function applyExpToOtherCharsAction(exp, charHpMpMap = {}) {
       int: (c.int ?? 0) + gained,
       str: (c.str ?? 0) + gained,
       agi: (c.agi ?? 0) + gained,
-      hpCur: hpMp != null ? (hpMp.hp <= 0 ? 1 : hpMp.hp >= (c.maxHp ?? 9999) ? null : hpMp.hp) : c.hpCur,
-      mpCur: hpMp != null ? (Math.max(0, hpMp.mp) >= (c.maxMp ?? 9999) ? null : Math.max(0, hpMp.mp)) : c.mpCur,
+      hpCur,
+      mpCur,
     }
   })
-  patch({ otherChars: newOthers })
+  patch({ otherChars: newOthers, bag: currentBag })
 }
 
 /**
@@ -1054,18 +1175,49 @@ export function applyExpToOtherCharsAction(exp, charHpMpMap = {}) {
 export function saveOtherCharsDefeatAction() {
   const others = state.otherChars ?? []
   if (!others.length) return
-  patch({ otherChars: others.map(c => ({ ...c, hpCur: 1, mpCur: 0 })) })
+  if (!state.autoRestore) {
+    patch({ otherChars: others.map(c => ({ ...c, hpCur: 1, mpCur: 0 })) })
+    return
+  }
+  let currentBag = state.bag ?? []
+  const newOthers = others.map(c => {
+    const maxHp = c.maxHp ?? 9999
+    const maxMp = c.maxMp ?? 9999
+    const res = autoRestoreWithPotions(1, 0, maxHp, maxMp, currentBag)
+    currentBag = res.newBag
+    return { ...c, hpCur: res.newHpCur, mpCur: res.newMpCur }
+  })
+  patch({ otherChars: newOthers, bag: currentBag })
+}
+
+export function savePetsDefeatAction() {
+  const roster = state.petRoster ?? []
+  if (!roster.length) return
+  if (!state.autoRestore) {
+    patch({ petRoster: roster.map(p => ({ ...p, hpCur: 1, mpCur: 0 })) })
+    return
+  }
+  let currentBag = state.bag ?? []
+  const newRoster = roster.map(p => {
+    const g = p.growth ?? p.growthDetail
+    if (!g) return { ...p, hpCur: 1, mpCur: 0 }
+    const ps = computeStatsFromGrowth(p.level, g, { baby: p.kind === '宝宝', allocatedAttr: p.allocatedAttr })
+    const res = autoRestoreWithPotions(1, 0, ps.maxHp, ps.maxMp, currentBag)
+    currentBag = res.newBag
+    return { ...p, hpCur: res.newHpCur, mpCur: res.newMpCur }
+  })
+  patch({ petRoster: newRoster, bag: currentBag })
 }
 
 // ── 多角色系统 ────────────────────────────────────────────────────────────────
 
 /**
- * 创建新角色（最多 3 个），自动切换到新角色出战。
+ * 创建新角色（最多 5 个），自动切换到新角色出战。
  * 新角色从 Lv1 起步，共用银两 / 背包 / 装备背包。
  */
 export function createCharacterAction(name, school) {
   const others = state.otherChars ?? []
-  if (others.length >= 2) return { ok: false, reason: '最多同时拥有 3 个角色' }
+  if (others.length >= 4) return { ok: false, reason: '最多同时拥有 5 个角色' }
   const newId = _charUid()
   const curSnap = _extractChar(state)
   const newChar = {
@@ -1150,6 +1302,55 @@ export function unequipItemForChar(slotKey, charId) {
   return { ok: true }
 }
 
+// ── 城镇治疗 ────────────────────────────────────────────────────────────────
+
+const HEAL_FREE_LEVEL = 10   // 低于此等级免费
+
+function _charHealStats(c) {
+  const sheet = c.equipBag != null ? c : { ...c, equipBag: state.equipBag ?? [] }
+  const d = computeHeroDerived(c.level, sheet)
+  const curHp = c.hpCur == null ? d.maxHp : Math.min(d.maxHp, c.hpCur)
+  const curMp = c.mpCur == null ? d.maxMp : Math.min(d.maxMp, c.mpCur)
+  const missingHp = d.maxHp - curHp
+  const missingMp = d.maxMp - curMp
+  const isFree = c.level < HEAL_FREE_LEVEL
+  // 收费：缺失(HP + MP) × 等级 / 20，向上取整
+  const cost = isFree ? 0 : Math.ceil((missingHp + missingMp) * c.level / 20)
+  return { id: c.id, name: c.name, level: c.level,
+    hp: curHp, maxHp: d.maxHp, mp: curMp, maxMp: d.maxMp,
+    missingHp, missingMp, isFree, cost,
+    isFull: missingHp === 0 && missingMp === 0 }
+}
+
+/** 返回队伍所有成员的当前血蓝状态和治疗费用（供 UI 展示） */
+export function computePartyHealInfo() {
+  const allChars = [
+    { ...state, id: state.activeCharId ?? state.id },
+    ...(state.otherChars ?? []),
+  ]
+  const members = allChars.map(_charHealStats)
+  const totalCost = members.reduce((s, m) => s + m.cost, 0)
+  return { members, totalCost, canAfford: (state.tael ?? 0) >= totalCost }
+}
+
+/** 城镇医师治疗全队（10级前免费，10级后按缺失量收费） */
+export function healPartyAtNpcAction() {
+  const { members, totalCost, canAfford } = computePartyHealInfo()
+  if (totalCost > 0 && !canAfford) {
+    return { ok: false, reason: `银两不足（需 ${totalCost.toLocaleString()}）` }
+  }
+  if (members.every(m => m.isFull)) {
+    return { ok: true, cost: 0, alreadyFull: true }
+  }
+  patch({
+    hpCur: null,
+    mpCur: null,
+    tael: (state.tael ?? 0) - totalCost,
+    otherChars: (state.otherChars ?? []).map(c => ({ ...c, hpCur: null, mpCur: null })),
+  })
+  return { ok: true, cost: totalCost }
+}
+
 // ── 多角色专用加点工具 ────────────────────────────────────────────────────────
 
 function _getCharData(charId) {
@@ -1226,4 +1427,120 @@ export function resetToDefaults() {
   state = { ...DEFAULT_STATE }
   save(state)
   notify()
+}
+
+/** localStorage 中是否存在存档数据 */
+export function hasSaveData() {
+  try { return !!localStorage.getItem(STORAGE_KEY) } catch { return false }
+}
+
+function _buildFreshChar(id, name, school) {
+  // Lv1 预算=4，底盘各+1，自由=0
+  return {
+    id, name, school,
+    level: 1, potential: 0,
+    vit: 1, int: 1, str: 1, agi: 1,
+    affMetal: 0, affWood: 0, affWater: 0, affFire: 0, affEarth: 0,
+    daoYears: 0, daoDays: 0, fame: 0,
+    staminaCur: 5000, staminaMax: 5000, meritRecord: 0,
+    expCur: 0, expIntoLevel: 0,
+    skillLevels: {}, equippedSkills: [],
+    hpCur: null, mpCur: null,
+    equipped: { ...EMPTY_EQUIPPED },
+  }
+}
+
+/**
+ * 全新开局：重置所有状态，按传入角色列表建队。
+ * @param {{ name: string, school: string }[]} chars  至少 1 个，最多 5 个
+ */
+export function newGameAction(chars) {
+  if (!chars || chars.length === 0) return
+  const [first, ...rest] = chars
+  const mainId = _charUid()
+  const mainChar = _buildFreshChar(mainId, first.name, first.school)
+  const otherChars = rest.map(c => _buildFreshChar(_charUid(), c.name, c.school))
+  state = {
+    ...DEFAULT_STATE,
+    ...mainChar,
+    activeCharId: mainId,
+    otherChars,
+    tael: 0,
+    bag: [], equipBag: [], crystalBag: [],
+    petRoster: [],
+    questLog: {},
+    currentMapId: 'lanxian_zhen',
+    lastBattleMapId: null,
+    pendingShuadao: null,
+    autoRestore: false,
+    guideEquipClaimed: false,
+    usedCdks: [],
+  }
+  save(state)
+  notify()
+}
+
+// ── 新手指引：1 级装备套装（不含首饰）──
+const _SCHOOL_WEAPON = { '金': 800033, '木': 800049, '水': 800017, '火': 800065, '土': 800001 }
+const _NEWBIE_ARMOR  = [800081, 800097, 800113, 800129, 800145] // 方巾,布衣,麻鞋,布腰带,道符
+
+function _mkEquipInst(baseCode) {
+  return {
+    uid: `eq_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
+    baseCode,
+    quality: 'white',
+    extra: [],
+    forgeLevel: 0,
+    forgePity: 0,
+  }
+}
+
+/**
+ * 新手指引 NPC 发放装备：按队伍人数，各给一套 1 级装备（对应系别武器 + 5 件防具）。
+ * 每存档仅限领取一次。
+ */
+export function claimGuideEquipAction() {
+  if (state.guideEquipClaimed) return { ok: false, reason: '已领取过新手装备' }
+  const allChars = [
+    { school: state.school },
+    ...(state.otherChars ?? []),
+  ]
+  const newItems = []
+  for (const c of allChars) {
+    const weaponCode = _SCHOOL_WEAPON[c.school] ?? 800049
+    newItems.push(_mkEquipInst(weaponCode))
+    for (const code of _NEWBIE_ARMOR) newItems.push(_mkEquipInst(code))
+  }
+  patch({ equipBag: [...(state.equipBag ?? []), ...newItems], guideEquipClaimed: true })
+  return { ok: true, charCount: allChars.length, itemCount: newItems.length }
+}
+
+// ── CDK 福利兑换 ──
+const _CDK_DEFS = {
+  '666': { type: 'pet', spawnKey: 'jintoutuo', desc: '金头陀·宝宝' },
+}
+
+/**
+ * 福利大使 NPC：输入兑换码领取奖励，每码仅限使用一次。
+ */
+export function claimCdkAction(code) {
+  const key = (code ?? '').trim()
+  const def = _CDK_DEFS[key]
+  if (!def) return { ok: false, reason: '无效兑换码，请确认后重试' }
+  const usedCdks = state.usedCdks ?? []
+  if (usedCdks.includes(key)) return { ok: false, reason: '此兑换码已使用' }
+  if (def.type === 'pet') {
+    const charCount = 1 + (state.otherChars?.length ?? 0)
+    const newPets = []
+    for (let i = 0; i < charCount; i++) {
+      const p = createQuestBabyPet(def.spawnKey)
+      if (p) newPets.push({ ...p, active: false, master: state.name })
+    }
+    patch({
+      petRoster: [...(state.petRoster ?? []), ...newPets],
+      usedCdks: [...usedCdks, key],
+    })
+    return { ok: true, desc: def.desc, charCount }
+  }
+  return { ok: false, reason: '未知奖励类型' }
 }

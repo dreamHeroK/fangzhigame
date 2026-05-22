@@ -203,7 +203,8 @@ export function createAllyUnit(name, stats, skillIds) {
   return {
     id: uid('ally'),
     side: 'ally',
-    templateKey: 'player',
+    templateKey: stats.charId ?? name ?? 'player',
+    charId: stats.charId ?? null,
     name,
     level: stats.level ?? 10,
     /** 本级经验条（与 `level` 成对，见 characterLevelConfig） */
@@ -216,6 +217,8 @@ export function createAllyUnit(name, stats, skillIds) {
     mAtk: stats.mAtk ?? stats.atk,
     def: stats.def,
     speed: stats.speed,
+    piercingPct:    stats.piercingPct    ?? 0,
+    daoExcessRatio: stats.daoExcessRatio ?? 0,
     skillPool: skillIds ?? allySkillPoolDefault(),
     /** Record<skillId, number> 技能修炼等级（来自 characterStore） */
     skillLevels: stats.skillLevels ?? {},

@@ -102,6 +102,19 @@ export const CONSUMABLE_BY_ID = {
     id: 'qianghuashi', name: '强化石', glyph: '石', kind: 'material', tier: 5,
     note: '装备强化所需材料，每次强化消耗 1 颗。',
   },
+  // 宠物天书（11种触发型，白/蓝/金三品质随机开出）
+  ts_mogu:        { id: 'ts_mogu',        name: '魔引天书',  glyph: '魔', kind: 'tianshu', note: '物理攻击触发：附加法术伤害' },
+  ts_kuangbao:    { id: 'ts_kuangbao',    name: '狂暴天书',  glyph: '狂', kind: 'tianshu', note: '物理攻击触发：溅射伤害' },
+  ts_lieyian:     { id: 'ts_lieyian',     name: '烈炎天书',  glyph: '炎', kind: 'tianshu', note: '物理攻击触发：附加属性法伤' },
+  ts_potian:      { id: 'ts_potian',      name: '破天天书',  glyph: '破', kind: 'tianshu', note: '物理攻击触发：无视40%防御' },
+  ts_fanji:       { id: 'ts_fanji',       name: '反击天书',  glyph: '反', kind: 'tianshu', note: '被攻击触发：物理反击' },
+  ts_nuji:        { id: 'ts_nuji',        name: '怒击天书',  glyph: '怒', kind: 'tianshu', note: '法术攻击触发：伤害提升30%' },
+  ts_jiangmozhan: { id: 'ts_jiangmozhan', name: '降魔斩天书', glyph: '降', kind: 'tianshu', note: '法术攻击触发：无视相性附加法伤' },
+  ts_xiuluoshu:   { id: 'ts_xiuluoshu',   name: '修罗术天书', glyph: '罗', kind: 'tianshu', note: '法术攻击触发：追加连击' },
+  ts_yunti:       { id: 'ts_yunti',       name: '云体天书',  glyph: '云', kind: 'tianshu', note: '防御触发：减伤35%' },
+  ts_xianfeng:    { id: 'ts_xianfeng',    name: '仙风天书',  glyph: '仙', kind: 'tianshu', note: '防御触发：减伤+概率复活' },
+  ts_jinzhong:    { id: 'ts_jinzhong',    name: '尽忠天书',  glyph: '忠', kind: 'tianshu', note: '持续：灵气回复+气血提升' },
+  tianshu_super:  { id: 'tianshu_super',  name: '超级天书',  glyph: '超', kind: 'tianshu_super', note: '开启必得金色天书（随机类型）' },
 }
 
 /** 按怪物等级取掉落池 tier 1–5 */
